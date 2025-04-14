@@ -8,7 +8,8 @@ export default registerAs('database', () => ({
     password: process.env.DATABASE_PASSWORD || 'postgres',
     database: process.env.DATABASE_NAME || 'roadtripplanner',
     entities: ['dist/**/*.entity{.ts,.js}'],
-    synchronize: process.env.NODE_ENV !== 'production',
+    //synchronize: process.env.NODE_ENV !== 'production',
+    synchronize: false,
     logging: process.env.NODE_ENV !== 'production',
     autoLoadEntities: true,
     ssl: process.env.DATABASE_SSL === 'true'
