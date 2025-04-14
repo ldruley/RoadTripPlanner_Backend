@@ -5,8 +5,8 @@ import { Vehicle } from '../../vehicles/entities/vehicle.entity';
 
 @Entity('users')
 export class User {
-    @PrimaryGeneratedColumn('uuid')
-    user_id: string;
+    @PrimaryGeneratedColumn()
+    user_id: number;
 
     @Column({ unique: true })
     username: string;

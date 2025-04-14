@@ -10,13 +10,13 @@ export class CreateStintDto {
     sequence_number: number;
 
     @IsString()
-    trip_id: string;
+    trip_id: number;
 
     @IsString()
-    start_location_id: string;
+    start_location_id: number;
 
     @IsString()
-    end_location_id: string;
+    end_location_id: number;
 
     @IsNumber()
     @IsOptional()

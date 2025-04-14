@@ -30,7 +30,7 @@ export class UsersService {
         return this.usersRepository.find();
     }
 
-    async findOne(id: string): Promise<User> {
+    async findOne(id: number): Promise<User> {
         const user = await this.usersRepository.findOne({
             where: { user_id: id }
         });
@@ -49,7 +49,7 @@ export class UsersService {
     async findByUsername(username: string): Promise<User | null> {
         return this.usersRepository.findByUsername(username);
     }
-    async update(id: string, updateUserDto: Partial<User>): Promise<User> {
+    async update(id: number, updateUserDto: Partial<User>): Promise<User> {
         const user = await this.findOne(id);
         const updates: Partial<User> = {};
 
@@ -65,7 +65,7 @@ export class UsersService {
         return this.usersRepository.save(user);
     }
 
-    async remove(id: string) : Promise<void> {
+    async remove(id: number) : Promise<void> {
         const user = await this.findOne(id);
         await this.usersRepository.remove(user);
     }

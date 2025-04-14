@@ -12,8 +12,8 @@ export enum RouteType {
 
 @Entity('legs')
 export class Leg {
-    @PrimaryGeneratedColumn('uuid')
-    leg_id: string;
+    @PrimaryGeneratedColumn()
+    leg_id: number;
 
     @Column()
     sequence_number: number;
@@ -52,19 +52,19 @@ export class Leg {
     stint: Stint;
 
     @Column()
-    stint_id: string;
+    stint_id: number;
 
     @ManyToOne(() => Stop)
     @JoinColumn({ name: 'start_stop_id' })
     start_stop: Stop;
 
     @Column()
-    start_stop_id: string;
+    start_stop_id: number;
 
     @ManyToOne(() => Stop)
     @JoinColumn({ name: 'end_stop_id' })
     end_stop: Stop;
 
     @Column()
-    end_stop_id: string;
+    end_stop_id: number;
 }

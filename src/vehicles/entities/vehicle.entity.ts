@@ -3,8 +3,8 @@ import { User } from '../../users/entities/user.entity';
 
 @Entity('vehicles')
 export class Vehicle {
-    @PrimaryGeneratedColumn('uuid')
-    vehicle_id: string;
+    @PrimaryGeneratedColumn()
+    vehicle_id: number;
 
     @Column()
     name: string;
@@ -39,5 +39,5 @@ export class Vehicle {
     owner: User;
 
     @Column()
-    owner_id: string;
+    owner_id: number;
 }

@@ -8,8 +8,8 @@ import { User } from '../../users/entities/user.entity';
 
 @Entity('stints')
 export class Stint {
-    @PrimaryGeneratedColumn('uuid')
-    stint_id: string;
+    @PrimaryGeneratedColumn()
+    stint_id: number;
 
     @Column()
     sequence_number: number;
@@ -38,21 +38,21 @@ export class Stint {
     trip: Trip;
 
     @Column()
-    trip_id: string;
+    trip_id: number;
 
     @ManyToOne(() => Stop)
     @JoinColumn({ name: 'start_location_id' })
     start_location: Stop;
 
     @Column()
-    start_location_id: string;
+    start_location_id: number;
 
     @ManyToOne(() => Stop)
     @JoinColumn({ name: 'end_location_id' })
     end_location: Stop;
 
     @Column()
-    end_location_id: string;
+    end_location_id: number;
 
     @OneToMany(() => Stop, (stop) => stop.stint)
     stops: Stop[];

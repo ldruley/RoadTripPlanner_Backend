@@ -6,8 +6,8 @@ import { Supply } from '../../supplies/entities/supply.entity';
 
 @Entity('trips')
 export class Trip {
-    @PrimaryGeneratedColumn('uuid')
-    trip_id: string;
+    @PrimaryGeneratedColumn()
+    trip_id: number;
 
     @Column()
     title: string;
@@ -39,7 +39,7 @@ export class Trip {
     creator: User;
 
     @Column()
-    creator_id: string;
+    creator_id: number;
 
     @OneToMany(() => Stint, (stint) => stint.trip)
     stints: Stint[];

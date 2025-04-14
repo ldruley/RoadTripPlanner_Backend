@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn } from 'typeorm';
+import {Entity, Column, PrimaryGeneratedColumn, CreateDateColumn} from 'typeorm';
 
 export enum SupplyCategory {
     FOOD = 'food',
@@ -11,8 +11,8 @@ export enum SupplyCategory {
 
 @Entity('supplies')
 export class Supply {
-    @PrimaryGeneratedColumn('uuid')
-    supply_id: string;
+    @PrimaryGeneratedColumn()
+    supply_id: number;
 
     @Column()
     name: string;

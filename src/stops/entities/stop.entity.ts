@@ -13,8 +13,8 @@ export enum StopType {
 
 @Entity('stops')
 export class Stop {
-    @PrimaryGeneratedColumn('uuid')
-    stop_id: string;
+    @PrimaryGeneratedColumn()
+    stop_id: number;
 
     @Column()
     name: string;
@@ -62,12 +62,12 @@ export class Stop {
     trip: Trip;
 
     @Column()
-    trip_id: string;
+    trip_id: number;
 
     @ManyToOne(() => Stint, (stint) => stint.stops, { nullable: true })
     @JoinColumn({ name: 'stint_id' })
     stint: Stint;
 
     @Column({ nullable: true })
-    stint_id: string;
+    stint_id: number;
 }

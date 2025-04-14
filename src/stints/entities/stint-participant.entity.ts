@@ -11,22 +11,22 @@ export enum ParticipantRole {
 
 @Entity('stint_participants')
 export class StintParticipant {
-    @PrimaryGeneratedColumn('uuid')
-    participant_id: string;
+    @PrimaryGeneratedColumn()
+    participant_id: number;
 
     @ManyToOne(() => Stint)
     @JoinColumn({ name: 'stint_id' })
     stint: Stint;
 
     @Column()
-    stint_id: string;
+    stint_id: number;
 
     @ManyToOne(() => User)
     @JoinColumn({ name: 'user_id' })
     user: User;
 
     @Column()
-    user_id: string;
+    user_id: number;
 
     @Column({
         type: 'enum',
