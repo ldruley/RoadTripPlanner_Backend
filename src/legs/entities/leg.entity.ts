@@ -2,18 +2,12 @@ import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateCol
 import { Stint } from '../../stints/entities/stint.entity';
 import { Stop } from '../../stops/entities/stop.entity';
 
+//tbd if we even want this
 export enum RouteType {
     HIGHWAY = 'highway',
     BACKROAD = 'backroad',
     CITY = 'city',
     MIXED = 'mixed',
-}
-
-export enum TrafficCondition {
-    LIGHT = 'light',
-    MODERATE = 'moderate',
-    HEAVY = 'heavy',
-    UNKNOWN = 'unknown',
 }
 
 @Entity('legs')
@@ -30,6 +24,7 @@ export class Leg {
     @Column({ type: 'integer' })
     estimated_travel_time: number;
 
+    // optional - may remove
     @Column({
         type: 'enum',
         enum: RouteType,
@@ -38,13 +33,6 @@ export class Leg {
     })
     route_type: RouteType;
 
-    @Column({
-        type: 'enum',
-        enum: TrafficCondition,
-        default: TrafficCondition.UNKNOWN,
-        nullable: true,
-    })
-    traffic_conditions: TrafficCondition;
 
     @Column({ nullable: true, type: 'text' })
     notes: string;

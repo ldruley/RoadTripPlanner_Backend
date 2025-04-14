@@ -4,6 +4,7 @@ import { Stop } from '../../stops/entities/stop.entity';
 import { Leg } from '../../legs/entities/leg.entity';
 import { Vehicle } from '../../vehicles/entities/vehicle.entity';
 import { Supply } from '../../supplies/entities/supply.entity';
+import { User } from '../../users/entities/user.entity';
 
 @Entity('stints')
 export class Stint {
@@ -58,6 +59,21 @@ export class Stint {
 
     @OneToMany(() => Leg, (leg) => leg.stint)
     legs: Leg[];
+
+    // Many-to-many relation with users (participants)
+    @ManyToMany(() => User)
+    @JoinTable({
+        name: 'stint_participants',
+        joinColumn: {
+            name: 'stint_id',
+            referencedColumnName: 'stint_id',
+        },
+        inverseJoinColumn: {
+            name: 'user_id',
+            referencedColumnName: 'user_id',
+        },
+    })
+    participants: User[];
 
     // Many-to-many relation with vehicles
     @ManyToMany(() => Vehicle)
