@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import {TypeOrmModule, TypeOrmModuleOptions} from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
@@ -27,8 +27,10 @@ import databaseConfig from './config/database.config';
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) =>
-          configService.get('database'),
+      useFactory: (configService: ConfigService) : TypeOrmModuleOptions => {
+        const dbConfig = configService.get('database');
+        return dbConfig as TypeOrmModuleOptions;
+      },
     }),
 
     // Feature modules
