@@ -9,11 +9,11 @@ export class TripsRepository extends Repository<Trip> {
         super(Trip, dataSource.createEntityManager());
     }
 
-    findById(trip_id: string): Promise<Trip | null> {
+    findById(trip_id: number): Promise<Trip | null> {
         return this.findOne({ where: { trip_id } });
     }
 
-    findByCreator(creator_id: string): Promise<Trip[]> {
+    findByCreator(creator_id: number): Promise<Trip[]> {
         return this.find({ where: { creator_id } });
     }
 }
