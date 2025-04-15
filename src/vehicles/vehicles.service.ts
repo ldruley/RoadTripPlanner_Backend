@@ -36,6 +36,8 @@ export class VehiclesService {
         const vehicle = await this.findOne(id);
         if (vehicle.owner_id !== userId) {
             throw new ForbiddenException(`You don't have permission to update this vehicle`);
+        } else if (!vehicle) {
+            throw new NotFoundException(`Vehicle with ID ${id} not found`);
         }
 
         Object.assign(vehicle, updateVehicleDto);

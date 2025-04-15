@@ -1,13 +1,5 @@
 import {Entity, Column, PrimaryGeneratedColumn, CreateDateColumn} from 'typeorm';
-
-export enum SupplyCategory {
-    FOOD = 'food',
-    GEAR = 'gear',
-    EMERGENCY = 'emergency',
-    CLOTHING = 'clothing',
-    ELECTRONICS = 'electronics',
-    OTHER = 'other',
-}
+import {SupplyCategory} from "../../common/enums";
 
 @Entity('supplies')
 export class Supply {

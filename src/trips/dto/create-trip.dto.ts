@@ -3,13 +3,13 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateTripDto {
     @ApiProperty({
-        example: 'West Coast Trip Updated',
-        required: false,
-        description: 'The updated title of the trip'
+        example: 'West Coast Trip',
+        required: true,
+        description: 'The title of the trip'
     })
-    @IsOptional()
+    @IsNotEmpty()
     @IsString()
-    title?: string;
+    title: string;
 
     @ApiProperty({
         example: 'Driving all the way up highway 1 and back again',
