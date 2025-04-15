@@ -57,17 +57,17 @@ export class Stop {
     updated_at: Date;
 
     // Relations
-    @ManyToOne(() => Trip, (trip) => trip.stops)
+ /*   @ManyToOne(() => Trip, (trip) => trip.stops)
     @JoinColumn({ name: 'trip_id' })
-    trip: Trip;
+    trip: Trip;*/
 
     @Column()
     trip_id: number;
 
-    @ManyToOne(() => Stint, (stint) => stint.stops, { nullable: true })
+/*    @ManyToOne(() => Stint, (stint) => stint.stops, { nullable: true })
     @JoinColumn({ name: 'stint_id' })
     stint: Stint;
 
     @Column({ nullable: true })
-    stint_id: number;
+    stint_id: number;*/
 }

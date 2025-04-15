@@ -33,10 +33,10 @@ export class Vehicle {
     @UpdateDateColumn()
     updated_at: Date;
 
-    // Relations
+/*    // Relations
     @ManyToOne(() => User, (user) => user.owned_vehicles)
     @JoinColumn({ name: 'owner_id' })
-    owner: User;
+    owner: User;*/
 
     @Column()
     owner_id: number;

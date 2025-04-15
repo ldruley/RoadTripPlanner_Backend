@@ -41,7 +41,7 @@ export class Trip {
     @Column()
     creator_id: number;
 
-    @OneToMany(() => Stint, (stint) => stint.trip)
+   /* @OneToMany(() => Stint, (stint) => stint.trip)
     stints: Stint[];
 
     @OneToMany(() => Stop, (stop) => stop.trip)
@@ -60,5 +60,5 @@ export class Trip {
             referencedColumnName: 'supply_id',
         },
     })
-    supplies: Supply[];
+    supplies: Supply[];*/
 }

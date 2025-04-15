@@ -46,7 +46,7 @@ export class Leg {
     @UpdateDateColumn()
     updated_at: Date;
 
-    // Relations
+/*    // Relations
     @ManyToOne(() => Stint, (stint) => stint.legs)
     @JoinColumn({ name: 'stint_id' })
     stint: Stint;
@@ -66,5 +66,5 @@ export class Leg {
     end_stop: Stop;
 
     @Column()
-    end_stop_id: number;
+    end_stop_id: number;*/
 }

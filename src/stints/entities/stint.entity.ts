@@ -33,9 +33,11 @@ export class Stint {
     updated_at: Date;
 
     // Relations
+/*
     @ManyToOne(() => Trip, (trip) => trip.stints)
     @JoinColumn({ name: 'trip_id' })
     trip: Trip;
+
 
     @Column()
     trip_id: number;
@@ -103,5 +105,5 @@ export class Stint {
             referencedColumnName: 'supply_id',
         },
     })
-    supplies: Supply[];
+    supplies: Supply[];*/
 }
