@@ -10,22 +10,13 @@ export class Vehicle {
     name: string;
 
     @Column()
-    make: string;
-
-    @Column()
-    model: string;
-
-    @Column()
     year: number;
 
     @Column({ type: 'float', nullable: true })
     fuel_capacity: number;
 
     @Column({ type: 'float', nullable: true })
-    mpg_highway: number;
-
-    @Column({ type: 'float', nullable: true })
-    mpg_city: number;
+    mpg: number;
 
     @CreateDateColumn()
     created_at: Date;
@@ -33,10 +24,10 @@ export class Vehicle {
     @UpdateDateColumn()
     updated_at: Date;
 
-/*    // Relations
+    // Relations
     @ManyToOne(() => User, (user) => user.owned_vehicles)
     @JoinColumn({ name: 'owner_id' })
-    owner: User;*/
+    owner: User;
 
     @Column()
     owner_id: number;

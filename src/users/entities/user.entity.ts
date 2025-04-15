@@ -31,6 +31,6 @@ export class User {
     @OneToMany(() => Trip, (trip) => trip.creator)
     created_trips: Trip[];
 
-    /*@OneToMany(() => Vehicle, (vehicle) => vehicle.owner)
-    owned_vehicles: Vehicle[];*/
+    @OneToMany(() => Vehicle, (vehicle) => vehicle.owner)
+    owned_vehicles: Vehicle[];
 }
