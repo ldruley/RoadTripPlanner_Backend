@@ -9,7 +9,7 @@ export class StintsRepository extends Repository<Stint>{
         super(Stint, dataSource.createEntityManager());
     }
 
-    findById(stint_id: string): Promise<Stint | null> {
+    findById(stint_id: number): Promise<Stint | null> {
         return this.findOne({ where: { stint_id } });
     }
 }

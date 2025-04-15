@@ -13,10 +13,12 @@ export class CreateStintDto {
     trip_id: number;
 
     @IsString()
-    start_location_id: number;
+    @IsOptional()
+    start_location_id?: number;
 
     @IsString()
-    end_location_id: number;
+    @IsOptional()
+    end_location_id?: number;
 
     @IsNumber()
     @IsOptional()

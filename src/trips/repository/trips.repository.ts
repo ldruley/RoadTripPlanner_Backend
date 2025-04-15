@@ -16,4 +16,8 @@ export class TripsRepository extends Repository<Trip> {
     findByCreator(creator_id: number): Promise<Trip[]> {
         return this.find({ where: { creator_id } });
     }
+
+    findPublicTrips(is_public: boolean): Promise<Trip[]> {
+        return this.find({ where: { is_public } });
+    }
 }

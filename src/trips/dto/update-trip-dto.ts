@@ -1,19 +1,18 @@
 import {IsString, IsOptional, IsDateString, IsBoolean, IsNotEmpty} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
-export class CreateTripDto {
+export class UpdateTripDto {
     @ApiProperty({
-        example: 'West Coast Trip Updated',
-        required: false,
-        description: 'The updated title of the trip'
+        example: 'West Coast Trip',
+        description: 'The title of the trip'
     })
-    @IsOptional()
+    @IsNotEmpty()
     @IsString()
-    title?: string;
+    title: string;
 
     @ApiProperty({
-        example: 'Driving all the way up highway 1 and back again',
-        description: 'An updated description of the trip',
+        example: 'Driving all the way up highway 1',
+        description: 'A detailed description of the trip',
         required: false
     })
     @IsString()
@@ -21,8 +20,8 @@ export class CreateTripDto {
     description?: string;
 
     @ApiProperty({
-        example: '2025-05-16',
-        description: 'The updated planned start date of the trip in ISO format',
+        example: '2025-05-15',
+        description: 'The planned start date of the trip in ISO format',
         required: false
     })
     @IsDateString()
@@ -30,8 +29,8 @@ export class CreateTripDto {
     start_date?: Date;
 
     @ApiProperty({
-        example: '2025-06-02',
-        description: 'The updated planned end date of the trip in ISO format',
+        example: '2025-05-30',
+        description: 'The planned end date of the trip in ISO format',
         required: false
     })
     @IsDateString()
