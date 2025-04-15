@@ -1,9 +1,11 @@
-import {Body, Controller, Delete, Get, Param, Post, Put} from '@nestjs/common';
+import {Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards} from '@nestjs/common';
 import {UsersService} from "./users.service";
 import {CreateUserDto} from "./dto/create-user-dto";
 import {UpdateUserDto} from "./dto/update-user.dto";
-import {ApiOperation, ApiParam, ApiResponse} from "@nestjs/swagger";
+import {ApiOperation, ApiParam, ApiQuery, ApiResponse} from "@nestjs/swagger";
 import {User} from "./entities/user.entity";
+import {JwtAuthGuard} from "../auth/guards/jwt-auth-guard";
+import {GetUser} from "../auth/decorators/get-user-decorator";
 
 @Controller('users')
 export class UsersController {
@@ -19,9 +21,23 @@ export class UsersController {
     }
 
     @Get()
-    @ApiOperation({ summary: 'Get all users' })
-    @ApiResponse({ status: 200, description: 'Returns all users' })
-    findAll() {
+    @ApiOperation({ summary: 'Find users with optional Filters' })
+    @ApiQuery({ name: 'username', required: false, type: String, description: 'Filter by username' })
+    @ApiQuery({ name: 'email', required: false, type: String, description: 'Filter by email' })
+    @ApiResponse({ status: 200, description: 'Returns users matching the criteria' })
+    @ApiResponse({ status: 400, description: 'Bad Request - Invalid parameters' })
+    @ApiResponse({ status: 404, description: 'Not Found - No users match the criteria' })
+    @ApiResponse({ status: 500, description: 'Internal Server Error' })
+    findUsers(
+        @Query ('username') username?: string,
+        @Query ('email') email?: string
+    ) {
+        if (username) {
+            return this.usersService.findByUsername(username);
+        }
+        if (email) {
+            return this.usersService.findByEmail(email);
+        }
         return this.usersService.findAll();
     }
 
@@ -32,6 +48,15 @@ export class UsersController {
     @ApiResponse({ status: 404, description: 'User not found' })
     findOne(@Param('id') id: number) {
         return this.usersService.findOne(id);
+    }
+
+    @Get('me')
+    @UseGuards(JwtAuthGuard)
+    @ApiOperation({ summary: 'Get authenticated user' })
+    @ApiResponse({ status: 200, description: 'Returns the authenticated user' })
+    @ApiResponse({ status: 401, description: 'Unauthorized' })
+    findByAuthenticatedUser(@GetUser() user: User) {
+        return this.usersService.findOne(user.user_id);
     }
 
     @Put(':id')

@@ -36,6 +36,18 @@ export class TripsController {
         return this.tripsService.findOne(id);
     }
 
+    @Get('my')
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Get trips by authenticated user' })
+    @ApiResponse({ status: 200, description: 'Trips found' })
+    @ApiResponse({ status: 401, description: 'Unauthorized' })
+    @ApiResponse({ status: 404, description: 'No trips found' })
+    findByAuthenticatedUser(@GetUser() user: User) {
+        return this.tripsService.findByCreator(user.user_id);
+    }
+
+
     @Put(':id')
     @UseGuards(JwtAuthGuard)
     @ApiBearerAuth()

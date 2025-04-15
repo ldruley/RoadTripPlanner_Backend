@@ -23,6 +23,14 @@ export class TripsService {
         return trip;
     }
 
+    async findByCreator(creatorId: number): Promise<Trip[]> {
+        const trips = await this.tripsRepository.findByCreator(creatorId);
+        if (!trips || trips.length === 0) {
+            throw new NotFoundException(`No trips found for creator with ID ${creatorId}`);
+        }
+        return trips;
+    }
+
     async update(id: number, updateTripDto: Partial<Trip>, userId: number): Promise<Trip> {
         const trip = await this.findOne(id);
         if (trip.creator_id !== userId) {

@@ -43,7 +43,7 @@ export class VehiclesController {
         return this.vehiclesService.findByOwner(ownerId);
     }
 
-    @Get('owner')
+    @Get('my')
     @UseGuards(JwtAuthGuard)
     @ApiBearerAuth()
     @ApiOperation({ summary: 'Get vehicles by authenticated user' })
