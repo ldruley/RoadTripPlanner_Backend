@@ -36,7 +36,7 @@ export class TripsController {
         return this.tripsService.findOne(id);
     }
 
-    @Get('my')
+    @Get('me')
     @UseGuards(JwtAuthGuard)
     @ApiBearerAuth()
     @ApiOperation({ summary: 'Get trips by authenticated user' })
