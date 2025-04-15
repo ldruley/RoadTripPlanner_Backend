@@ -10,6 +10,7 @@ import { StopsModule } from './stops/stops.module';
 import { LegsModule } from './legs/legs.module';
 import { VehiclesModule } from './vehicles/vehicles.module';
 import { SuppliesModule } from './supplies/supplies.module';
+import { AuthModule } from './auth/auth.module';
 
 import appConfig from './config/configuration';
 import databaseConfig from './config/database.config';
@@ -41,6 +42,7 @@ import databaseConfig from './config/database.config';
     LegsModule,
     VehiclesModule,
     SuppliesModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],
