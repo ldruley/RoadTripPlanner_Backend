@@ -11,11 +11,7 @@ export class UsersController {
 
     @Post()
     @ApiOperation({ summary: 'Create a new user' })
-    @ApiResponse({
-        status: 201,
-        description: 'User has been successfully created',
-        type: User
-    })
+    @ApiResponse({ status: 201, description: 'User has been successfully created '})
     @ApiResponse({ status: 400, description: 'Bad request - invalid input' })
     @ApiResponse({ status: 409, description: 'Conflict - email already in use' })
     create(@Body() createUserDto: CreateUserDto) {
@@ -24,11 +20,7 @@ export class UsersController {
 
     @Get()
     @ApiOperation({ summary: 'Get all users' })
-    @ApiResponse({
-        status: 200,
-        description: 'Returns all users',
-        type: [User]
-    })
+    @ApiResponse({ status: 200, description: 'Returns all users' })
     findAll() {
         return this.usersService.findAll();
     }
@@ -36,11 +28,7 @@ export class UsersController {
     @Get(':id')
     @ApiOperation({ summary: 'Get a user by ID' })
     @ApiParam({ name: 'id', description: 'User ID' })
-    @ApiResponse({
-        status: 200,
-        description: 'Returns the user',
-        type: User
-    })
+    @ApiResponse({ status: 200, description: 'Returns the user' })
     @ApiResponse({ status: 404, description: 'User not found' })
     findOne(@Param('id') id: number) {
         return this.usersService.findOne(id);
@@ -49,11 +37,7 @@ export class UsersController {
     @Put(':id')
     @ApiOperation({ summary: 'Update a user' })
     @ApiParam({ name: 'id', description: 'User ID' })
-    @ApiResponse({
-        status: 200,
-        description: 'User has been successfully updated',
-        type: User
-    })
+    @ApiResponse({ status: 200, description: 'User has been successfully updated' })
     @ApiResponse({ status: 400, description: 'Bad request - invalid input' })
     @ApiResponse({ status: 404, description: 'User not found' })
     update(@Param('id') id: number, @Body() updateUserDto: Partial<UpdateUserDto>) {
