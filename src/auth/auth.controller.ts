@@ -5,8 +5,8 @@ import { LoginDto } from './dto/login.dto';
 import { CreateUserDto } from '../users/dto/create-user-dto';
 import { RegisterDto } from './dto/register.dto';
 import { AuthGuard } from '@nestjs/passport';
-import { User } from 'src/users/entities/user.entity';
-import { OAuthResponse } from '../types/oauth-response.interface'; // Adjust path if needed
+import { OAuthResponse } from '../types/oauth-response.interface';
+import { Request } from 'express';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -39,7 +39,7 @@ export class AuthController {
 
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
-  googleAuthCallback(@Req() req) {
+  googleAuthCallback(@Req() req: Request) {
     const oauthUser = req.user as OAuthResponse;
     const { access_token, user, platform } = oauthUser;
     if (platform === 'mobile') {
