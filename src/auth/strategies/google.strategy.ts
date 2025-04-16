@@ -4,6 +4,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AuthService } from '../auth.service';
 import { Request } from 'express';
+import { OAuthUser } from '../../types/oauth-user.interface';
 
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
@@ -11,10 +12,11 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     private configService: ConfigService,
     private authService: AuthService,
   ) {
+    // Explicitly telling TypeScript I know these environment variables are defined
     super({
-      clientID: configService.get<string>('GOOGLE_CLIENT_ID'),
-      clientSecret: configService.get<string>('GOOGLE_CLIENT_SECRET'),
-      callbackURL: configService.get<string>('GOOGLE_CALLBACK_URL'),
+      clientID: configService.get<string>('GOOGLE_CLIENT_ID')!,
+      clientSecret: configService.get<string>('GOOGLE_CLIENT_SECRET')!,
+      callbackURL: configService.get<string>('GOOGLE_CALLBACK_URL')!,
       scope: ['email', 'profile'],
       passReqToCallback: true, // ✅ Enables access to `req` in validate
     });
@@ -29,11 +31,21 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
   ): Promise<any> {
     const { name, emails, photos } = profile;
 
-    const user = {
-      email: emails?.[0]?.value,
-      fullname: `${name?.givenName ?? ''} ${name?.familyName ?? ''}`.trim(),
-      username: emails?.[0]?.value.split('@')[0],
-      picture: photos?.[0]?.value,
+    const email = emails?.[0]?.value;
+    const username = email?.split('@')[0];
+    const picture = photos?.[0]?.value;
+    const fullname =
+      `${name?.givenName ?? ''} ${name?.familyName ?? ''}`.trim();
+
+    if (!email || !username) {
+      throw new Error('Missing email or username from Google profile');
+    }
+
+    const user: OAuthUser = {
+      email,
+      fullname,
+      username,
+      picture,
     };
 
     const platform = req.query?.platform ?? req.headers['x-platform'] ?? 'web';
