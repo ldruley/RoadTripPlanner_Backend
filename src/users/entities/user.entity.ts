@@ -33,4 +33,12 @@ export class User {
 
     @OneToMany(() => Vehicle, (vehicle) => vehicle.owner)
     owned_vehicles: Vehicle[];
+
+    // OAuth Fields
+    @Column({ nullable: true })
+    authProvider?: 'google' | 'local';
+
+    @Column({ nullable: true })
+    picture?: string; // optional profile photo
+
 }
