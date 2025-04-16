@@ -7,4 +7,5 @@ export default registerAs('app', () => ({
     jwtSecret: process.env.JWT_SECRET || 'super-secret-jwt',
     jwtExpiresIn: process.env.JWT_EXPIRES_IN || '1d',
     apiKey: process.env.API_KEY || 'map-api-key-here',
+    hereApiKey: process.env.HERE_API_KEY || '',
 }));

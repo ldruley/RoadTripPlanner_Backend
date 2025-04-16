@@ -11,6 +11,7 @@ import { LegsModule } from './legs/legs.module';
 import { VehiclesModule } from './vehicles/vehicles.module';
 import { SuppliesModule } from './supplies/supplies.module';
 import { AuthModule } from './auth/auth.module';
+import { HereApiModule } from './here-api/here-api.module';
 
 import appConfig from './config/configuration';
 import databaseConfig from './config/database.config';
@@ -43,6 +44,7 @@ import databaseConfig from './config/database.config';
     VehiclesModule,
     SuppliesModule,
     AuthModule,
+    HereApiModule,
   ],
   controllers: [AppController],
   providers: [AppService],
