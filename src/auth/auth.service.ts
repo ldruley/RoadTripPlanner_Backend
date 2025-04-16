@@ -6,13 +6,7 @@ import { LoginDto } from './dto/login.dto';
 import { CreateUserDto } from '../users/dto/create-user-dto';
 import { RegisterDto } from './dto/register.dto';
 import { User } from 'src/users/entities/user.entity';
-
-interface OAuthUser {
-  email: string;
-  fullname: string;
-  username: string;
-  picture?: string;
-}
+import { OAuthUser } from '../types/oauth-user.interface'; // Adjust path if needed
 
 @Injectable()
 export class AuthService {
