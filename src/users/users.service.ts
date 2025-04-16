@@ -70,4 +70,14 @@ export class UsersService {
         await this.usersRepository.remove(user);
     }
 
+    async createOAuthUser(userData: Partial<User>): Promise<User> {
+        const user = this.usersRepository.create({
+          ...userData,
+          authProvider: 'google',
+          password: null, // since it's OAuth, no password
+        });
+        return this.usersRepository.save(user);
+    }
+      
+
 }
