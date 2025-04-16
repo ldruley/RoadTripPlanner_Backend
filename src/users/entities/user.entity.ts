@@ -24,9 +24,17 @@ export class User {
   @Column({ unique: true })
   email: string;
 
+  // This could be modified to avoid using an empty string
+  // However, if the database schema must not have NULL constraints for the password
+
   @Column()
   @Exclude({ toPlainOnly: true })
   password_hash: string;
+
+  // How it would be modified
+  // @Column({ nullable: true })
+  // @Exclude({ toPlainOnly: true })
+  // password_hash?: string;
 
   @CreateDateColumn()
   created_at: Date;

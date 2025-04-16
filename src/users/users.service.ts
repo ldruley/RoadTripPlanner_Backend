@@ -83,7 +83,10 @@ export class UsersService {
     const user = this.usersRepository.create({
       ...userData,
       authProvider: 'google',
-      password: null, // since it's OAuth, no password
+      password_hash: '',
+      // Currently faking it because OAuth doesn't provide password
+      // Second option is to rework the user.entity.ts
+      // Check that file for more details
     });
     return this.usersRepository.save(user);
   }
