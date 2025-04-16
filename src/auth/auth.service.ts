@@ -57,4 +57,24 @@ export class AuthService {
             },
         };
     }
+
+    async findOrCreateUserFromOAuth(userDetails: any): Promise<any> {
+        let user = await this.usersService.findByEmail(userDetails.email);
+      
+        if (!user) {
+          user = await this.usersService.createOAuthUser({
+            username: userDetails.username,
+            email: userDetails.email,
+            fullname: userDetails.fullname,
+            picture: userDetails.picture,
+          });
+        }
+      
+        const payload = { sub: user.user_id, email: user.email };
+        return {
+          access_token: this.jwtService.sign(payload),
+          user,
+        };
+      }
+      
 }
