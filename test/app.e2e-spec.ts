@@ -1,5 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
+import {
+  FastifyAdapter,
+  NestFastifyApplication,
+} from '@nestjs/platform-fastify';
 import * as request from 'supertest';
 import { AppModule } from '../src/app.module';
 
@@ -12,7 +15,7 @@ describe('AppController (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication<NestFastifyApplication>(
-        new FastifyAdapter()
+      new FastifyAdapter(),
     );
     await app.init();
     await app.getHttpAdapter().getInstance().ready(); // Important: wait for Fastify to be ready
@@ -20,8 +23,8 @@ describe('AppController (e2e)', () => {
 
   it('/ (GET)', () => {
     return request(app.getHttpServer())
-        .get('/')
-        .expect(200)
-        .expect('Welcome to the Road Trip Planner API');
+      .get('/')
+      .expect(200)
+      .expect('Welcome to the Road Trip Planner API');
   });
 });

@@ -1,44 +1,50 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  OneToMany,
+} from 'typeorm';
 import { Exclude } from 'class-transformer';
 import { Trip } from '../../trips/entities/trip.entity';
 import { Vehicle } from '../../vehicles/entities/vehicle.entity';
 
 @Entity('users')
 export class User {
-    @PrimaryGeneratedColumn()
-    user_id: number;
+  @PrimaryGeneratedColumn()
+  user_id: number;
 
-    @Column({ unique: true })
-    username: string;
+  @Column({ unique: true })
+  username: string;
 
-    @Column()
-    fullname: string;
+  @Column()
+  fullname: string;
 
-    @Column({ unique: true })
-    email: string;
+  @Column({ unique: true })
+  email: string;
 
-    @Column()
-    @Exclude({ toPlainOnly: true })
-    password_hash: string;
+  @Column()
+  @Exclude({ toPlainOnly: true })
+  password_hash: string;
 
-    @CreateDateColumn()
-    created_at: Date;
+  @CreateDateColumn()
+  created_at: Date;
 
-    @UpdateDateColumn()
-    updated_at: Date;
+  @UpdateDateColumn()
+  updated_at: Date;
 
-    // Relations
-    @OneToMany(() => Trip, (trip) => trip.creator)
-    created_trips: Trip[];
+  // Relations
+  @OneToMany(() => Trip, (trip) => trip.creator)
+  created_trips: Trip[];
 
-    @OneToMany(() => Vehicle, (vehicle) => vehicle.owner)
-    owned_vehicles: Vehicle[];
+  @OneToMany(() => Vehicle, (vehicle) => vehicle.owner)
+  owned_vehicles: Vehicle[];
 
-    // OAuth Fields
-    @Column({ nullable: true })
-    authProvider?: 'google' | 'local';
+  // OAuth Fields
+  @Column({ nullable: true })
+  authProvider?: 'google' | 'local';
 
-    @Column({ nullable: true })
-    picture?: string; // optional profile photo
-
+  @Column({ nullable: true })
+  picture?: string; // optional profile photo
 }

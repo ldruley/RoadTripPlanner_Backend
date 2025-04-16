@@ -1,4 +1,15 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, ManyToOne, OneToMany, JoinColumn, ManyToMany, JoinTable } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  OneToMany,
+  JoinColumn,
+  ManyToMany,
+  JoinTable,
+} from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { Stint } from '../../stints/entities/stint.entity';
 import { Stop } from '../../stops/entities/stop.entity';
@@ -6,42 +17,42 @@ import { Supply } from '../../supplies/entities/supply.entity';
 
 @Entity('trips')
 export class Trip {
-    @PrimaryGeneratedColumn()
-    trip_id: number;
+  @PrimaryGeneratedColumn()
+  trip_id: number;
 
-    @Column()
-    title: string;
+  @Column()
+  title: string;
 
-    @Column({ nullable: true, type: 'text' })
-    description: string;
+  @Column({ nullable: true, type: 'text' })
+  description: string;
 
-    @Column({ type: 'date', nullable: true })
-    start_date: Date;
+  @Column({ type: 'date', nullable: true })
+  start_date: Date;
 
-    @Column({ type: 'date', nullable: true })
-    end_date: Date;
+  @Column({ type: 'date', nullable: true })
+  end_date: Date;
 
-    @Column({ type: 'float', nullable: true })
-    total_distance: number;
+  @Column({ type: 'float', nullable: true })
+  total_distance: number;
 
-    @Column({ default: false })
-    is_public: boolean;
+  @Column({ default: false })
+  is_public: boolean;
 
-    @CreateDateColumn()
-    created_at: Date;
+  @CreateDateColumn()
+  created_at: Date;
 
-    @UpdateDateColumn()
-    updated_at: Date;
+  @UpdateDateColumn()
+  updated_at: Date;
 
-    // Relations
-    @ManyToOne(() => User, (user) => user.created_trips)
-    @JoinColumn({ name: 'creator_id' })
-    creator: User;
+  // Relations
+  @ManyToOne(() => User, (user) => user.created_trips)
+  @JoinColumn({ name: 'creator_id' })
+  creator: User;
 
-    @Column()
-    creator_id: number;
+  @Column()
+  creator_id: number;
 
-   /* @OneToMany(() => Stint, (stint) => stint.trip)
+  /* @OneToMany(() => Stint, (stint) => stint.trip)
     stints: Stint[];
 
     @OneToMany(() => Stop, (stop) => stop.trip)

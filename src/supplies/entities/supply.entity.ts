@@ -1,29 +1,34 @@
-import {Entity, Column, PrimaryGeneratedColumn, CreateDateColumn} from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+} from 'typeorm';
 
 export enum SupplyCategory {
-    FOOD = 'food',
-    GEAR = 'gear',
-    EMERGENCY = 'emergency',
-    CLOTHING = 'clothing',
-    ELECTRONICS = 'electronics',
-    OTHER = 'other',
+  FOOD = 'food',
+  GEAR = 'gear',
+  EMERGENCY = 'emergency',
+  CLOTHING = 'clothing',
+  ELECTRONICS = 'electronics',
+  OTHER = 'other',
 }
 
 @Entity('supplies')
 export class Supply {
-    @PrimaryGeneratedColumn()
-    supply_id: number;
+  @PrimaryGeneratedColumn()
+  supply_id: number;
 
-    @Column()
-    name: string;
+  @Column()
+  name: string;
 
-    @Column({
-        type: 'enum',
-        enum: SupplyCategory,
-        default: SupplyCategory.OTHER,
-    })
-    category: SupplyCategory;
+  @Column({
+    type: 'enum',
+    enum: SupplyCategory,
+    default: SupplyCategory.OTHER,
+  })
+  category: SupplyCategory;
 
-    @CreateDateColumn()
-    created_at: Date;
+  @CreateDateColumn()
+  created_at: Date;
 }

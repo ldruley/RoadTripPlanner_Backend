@@ -1,4 +1,15 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, ManyToOne, OneToMany, JoinColumn, ManyToMany, JoinTable } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  OneToMany,
+  JoinColumn,
+  ManyToMany,
+  JoinTable,
+} from 'typeorm';
 import { Trip } from '../../trips/entities/trip.entity';
 import { Stop } from '../../stops/entities/stop.entity';
 import { Leg } from '../../legs/entities/leg.entity';
@@ -8,32 +19,32 @@ import { User } from '../../users/entities/user.entity';
 
 @Entity('stints')
 export class Stint {
-    @PrimaryGeneratedColumn()
-    stint_id: number;
+  @PrimaryGeneratedColumn()
+  stint_id: number;
 
-    @Column()
-    sequence_number: number;
+  @Column()
+  sequence_number: number;
 
-    @Column()
-    name: string;
+  @Column()
+  name: string;
 
-    @Column({ type: 'float', nullable: true })
-    distance: number;
+  @Column({ type: 'float', nullable: true })
+  distance: number;
 
-    @Column({ type: 'integer', nullable: true })
-    estimated_duration: number;
+  @Column({ type: 'integer', nullable: true })
+  estimated_duration: number;
 
-    @Column({ nullable: true, type: 'text' })
-    notes: string;
+  @Column({ nullable: true, type: 'text' })
+  notes: string;
 
-    @CreateDateColumn()
-    created_at: Date;
+  @CreateDateColumn()
+  created_at: Date;
 
-    @UpdateDateColumn()
-    updated_at: Date;
+  @UpdateDateColumn()
+  updated_at: Date;
 
-    // Relations
-/*
+  // Relations
+  /*
     @ManyToOne(() => Trip, (trip) => trip.stints)
     @JoinColumn({ name: 'trip_id' })
     trip: Trip;
