@@ -6,6 +6,13 @@ import { LoginDto } from './dto/login.dto';
 import { CreateUserDto } from '../users/dto/create-user-dto';
 import { RegisterDto } from './dto/register.dto';
 
+interface OAuthUser {
+  email: string;
+  fullname: string;
+  username: string;
+  picture?: string;
+}
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -58,7 +65,9 @@ export class AuthService {
     };
   }
 
-  async findOrCreateUserFromOAuth(userDetails: any): Promise<any> {
+  async findOrCreateUserFromOAuth(
+    userDetails: OAuthUser,
+  ): Promise<{ access_token: string; user: User }> {
     let user = await this.usersService.findByEmail(userDetails.email);
 
     if (!user) {
