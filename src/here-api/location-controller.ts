@@ -1,4 +1,4 @@
-import {Controller, Get, ParseIntPipe, Query, UseGuards} from '@nestjs/common';
+import {BadRequestException, Controller, Get, ParseIntPipe, Query, UseGuards} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { HereApiService } from './here-api.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth-guard';
@@ -20,16 +20,40 @@ export class LocationController {
         return this.hereApiService.geocodeLocations(query, limit);
     }
 
-    @Get('discover')
+    @Get('discover/by-stop')
     @UseGuards(JwtAuthGuard)
     @ApiBearerAuth()
-    @ApiOperation({ summary: '[Not working yet] Search for locations by query string' })
+    @ApiOperation({ summary: 'Search for locations near a previous stop' })
     @ApiResponse({ status: 200, description: 'Returns matching locations' })
-    async discoverLocations(
+    @ApiResponse({ status: 404, description: 'Previous stop not found' })
+    async discoverLocationsByStop(
         @Query('query') query: string,
-        @Query('limit', ParseIntPipe) limit: number
+        @Query('limit', ParseIntPipe) limit: number,
+        @Query('prevStopId', ParseIntPipe) prevStopId: number
     ) {
-        return this.hereApiService.discoverLocations(query, limit);
+        return this.hereApiService.discoverLocationsByStop(query, limit, prevStopId);
+    }
+
+    @Get('discover/by-coordinates')
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Search for locations near specified coordinates' })
+    @ApiResponse({ status: 200, description: 'Returns matching locations' })
+    @ApiResponse({ status: 400, description: 'Invalid coordinates' })
+    async discoverLocationsByCoordinates(
+        @Query('query') query: string,
+        @Query('limit', ParseIntPipe) limit: number,
+        @Query('lat') lat: string,
+        @Query('lng') lng: string
+    ) {
+        const latitude = parseFloat(lat);
+        const longitude = parseFloat(lng);
+
+        if (isNaN(latitude) || isNaN(longitude)) {
+            throw new BadRequestException('Invalid coordinates. Lat and lng must be valid numbers.');
+        }
+
+        return this.hereApiService.discoverLocationsByCoordinates(query, limit, latitude, longitude);
     }
 
     @Get('poi')

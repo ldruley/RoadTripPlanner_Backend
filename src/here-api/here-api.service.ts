@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { StopsService } from '../stops/stops.service';
 import axios from 'axios';
+import {Stop} from "../stops/entities/stop.entity";
 
 @Injectable()
 export class HereApiService {
@@ -8,7 +10,10 @@ export class HereApiService {
     private readonly discoverBaseUrl: string = 'https://discover.search.hereapi.com/v1';
     private readonly routingBaseUrl: string = 'https://router.hereapi.com/v8';
 
-    constructor(private configService: ConfigService) {
+    constructor(
+        private configService: ConfigService,
+        private stopsService: StopsService
+    ) {
         this.apiKey = this.configService.get<string>('app.hereApiKey') || '';
     }
 
@@ -49,7 +54,11 @@ export class HereApiService {
         }
     }
 
-    async discoverLocations(query: string, limit: number) {
+    async discoverLocationsByStop(
+        query: string,
+        limit: number,
+        prevStopId: number
+    ) {
         try {
             if (!query || query.trim() === '') {
                 throw new Error('Search query cannot be empty');
@@ -59,28 +68,69 @@ export class HereApiService {
                 throw new Error('HERE API key is not configured');
             }
 
-            console.log('Making HERE API request with key:', this.apiKey.substring(0, 3) + '...');
+            // Get previous stop coordinates
+            const prevStop = await this.stopsService.findOne(prevStopId);
+
+            const params = {
+                apiKey: this.apiKey,
+                q: query,
+                limit: limit,
+                in: 'countryCode:USA',
+                at: `${prevStop.latitude},${prevStop.longitude}`
+            };
+
+            console.log('Making HERE Discover API request with key:', this.apiKey.substring(0, 3) + '...');
             console.log('Query:', query);
 
-            const response = await axios.get(`${this.discoverBaseUrl}/discover`, {
-                params: {
-                    apiKey: this.apiKey,
-                    q: query,
-                    in: 'countryCode:USA',
-                    limit : limit
-                }
-            });
+            const response = await axios.get(`${this.discoverBaseUrl}/discover`, { params });
             return response.data;
         } catch (error) {
+            // Error handling
             if (error.response) {
-                // The request was made and the server responded with a status code
-                // that falls out of the range of 2xx
                 throw new Error(`HERE API search failed: ${error.response.status} - ${JSON.stringify(error.response.data)}`);
             } else if (error.request) {
-                // The request was made but no response was received
                 throw new Error(`HERE API search failed: No response received`);
             } else {
-                // Something happened in setting up the request that triggered an Error
+                throw new Error(`HERE API search failed: ${error.message}`);
+            }
+        }
+    }
+
+    async discoverLocationsByCoordinates(
+        query: string,
+        limit: number,
+        lat: number,
+        lng: number
+    ) {
+        try {
+            if (!query || query.trim() === '') {
+                throw new Error('Search query cannot be empty');
+            }
+
+            if (!this.apiKey || this.apiKey === '') {
+                throw new Error('HERE API key is not configured');
+            }
+
+            const params = {
+                apiKey: this.apiKey,
+                q: query,
+                limit: limit,
+                in: 'countryCode:USA',
+                at: `${lat},${lng}`
+            };
+
+            console.log('Making HERE Discover API request with key:', this.apiKey.substring(0, 3) + '...');
+            console.log('Query:', query);
+
+            const response = await axios.get(`${this.discoverBaseUrl}/discover`, { params });
+            return response.data;
+        } catch (error) {
+            // Error handling
+            if (error.response) {
+                throw new Error(`HERE API search failed: ${error.response.status} - ${JSON.stringify(error.response.data)}`);
+            } else if (error.request) {
+                throw new Error(`HERE API search failed: No response received`);
+            } else {
                 throw new Error(`HERE API search failed: ${error.message}`);
             }
         }
