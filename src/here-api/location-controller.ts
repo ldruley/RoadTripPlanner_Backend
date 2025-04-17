@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import {Controller, Get, ParseIntPipe, Query, UseGuards} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { HereApiService } from './here-api.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth-guard';
@@ -15,7 +15,7 @@ export class LocationController {
     @ApiResponse({ status: 200, description: 'Returns matching locations' })
     async geocodeLocations(
         @Query('query') query: string,
-        @Query('limit') limit?: number
+        @Query('limit', ParseIntPipe) limit: number
     ) {
         return this.hereApiService.geocodeLocations(query, limit);
     }
@@ -27,7 +27,7 @@ export class LocationController {
     @ApiResponse({ status: 200, description: 'Returns matching locations' })
     async discoverLocations(
         @Query('query') query: string,
-        @Query('limit') limit?: number
+        @Query('limit', ParseIntPipe) limit: number
     ) {
         return this.hereApiService.discoverLocations(query, limit);
     }

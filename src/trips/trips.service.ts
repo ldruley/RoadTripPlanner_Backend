@@ -15,7 +15,7 @@ export class TripsService {
         return this.tripsRepository.save(trip);
     }
 
-    async findOne(id: number): Promise<any> {
+    async findOne(id: number): Promise<Trip> {
         const trip = await this.tripsRepository.findById(id);
         if (!trip) {
             throw new NotFoundException(`Trip with ID ${id} not found`);

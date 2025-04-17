@@ -6,11 +6,15 @@ import {CreateTripDto} from "./dto/create-trip.dto";
 import {JwtAuthGuard} from "../auth/guards/jwt-auth-guard";
 import {GetUser} from "../auth/decorators/get-user-decorator";
 import {User} from "../users/entities/user.entity";
+import {StintsService} from "../stints/stints.service";
 
 @Controller('trips')
 export class TripsController {
 
-    constructor(private readonly tripsService: TripsService) {}
+    constructor(
+        private readonly tripsService: TripsService,
+        private readonly stintsService: StintsService
+    ) {}
 
     @Post()
     @UseGuards(JwtAuthGuard)
@@ -34,6 +38,16 @@ export class TripsController {
     @ApiResponse({ status: 404, description: 'Trip not found' })
     findOne(@Param('id', ParseIntPipe) id: number) {
         return this.tripsService.findOne(id);
+    }
+
+    @Get(':id/stints')
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Get all stints for a trip' })
+    @ApiResponse({ status: 200, description: 'Returns stints for the trip' })
+    @ApiResponse({ status: 404, description: 'Trip not found or no stints' })
+    findTripStints(@Param('id', ParseIntPipe) id: number) {
+        return this.stintsService.findAllByTrip(id);
     }
 
     @Get('me')

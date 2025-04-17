@@ -12,7 +12,7 @@ export class HereApiService {
         this.apiKey = this.configService.get<string>('app.hereApiKey') || '';
     }
 
-    async geocodeLocations(query: string, limit: number = 10) {
+    async geocodeLocations(query: string, limit: number) {
         try {
             if (!query || query.trim() === '') {
                 throw new Error('Search query cannot be empty');
@@ -30,7 +30,7 @@ export class HereApiService {
                     apiKey: this.apiKey,
                     q: query,
                     in: 'countryCode:USA',
-                    limit
+                    limit : limit
                 }
             });
             return response.data;
@@ -49,7 +49,7 @@ export class HereApiService {
         }
     }
 
-    async discoverLocations(query: string, limit: number = 10) {
+    async discoverLocations(query: string, limit: number) {
         try {
             if (!query || query.trim() === '') {
                 throw new Error('Search query cannot be empty');
@@ -67,7 +67,7 @@ export class HereApiService {
                     apiKey: this.apiKey,
                     q: query,
                     in: 'countryCode:USA',
-                    limit
+                    limit : limit
                 }
             });
             return response.data;

@@ -1,4 +1,4 @@
-import {Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards} from '@nestjs/common';
+import {Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query, UseGuards} from '@nestjs/common';
 import {UsersService} from "./users.service";
 import {CreateUserDto} from "./dto/create-user-dto";
 import {UpdateUserDto} from "./dto/update-user.dto";
@@ -46,7 +46,7 @@ export class UsersController {
     @ApiParam({ name: 'id', description: 'User ID' })
     @ApiResponse({ status: 200, description: 'Returns the user' })
     @ApiResponse({ status: 404, description: 'User not found' })
-    findOne(@Param('id') id: number) {
+    findOne(@Param('id', ParseIntPipe) id: number) {
         return this.usersService.findOne(id);
     }
 
@@ -65,7 +65,7 @@ export class UsersController {
     @ApiResponse({ status: 200, description: 'User has been successfully updated' })
     @ApiResponse({ status: 400, description: 'Bad request - invalid input' })
     @ApiResponse({ status: 404, description: 'User not found' })
-    update(@Param('id') id: number, @Body() updateUserDto: Partial<UpdateUserDto>) {
+    update(@Param('id', ParseIntPipe) id: number, @Body() updateUserDto: Partial<UpdateUserDto>) {
         return this.usersService.update(id, updateUserDto);
     }
 
@@ -74,7 +74,7 @@ export class UsersController {
     @ApiParam({ name: 'id', description: 'User ID' })
     @ApiResponse({ status: 200, description: 'User has been successfully deleted' })
     @ApiResponse({ status: 404, description: 'User not found' })
-    remove(@Param('id') id: number) {
+    remove(@Param('id', ParseIntPipe) id: number) {
         return this.usersService.remove(id);
     }
 }

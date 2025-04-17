@@ -4,9 +4,13 @@ import { TripsService } from './trips.service';
 import {TypeOrmModule} from "@nestjs/typeorm";
 import {Trip} from "./entities/trip.entity";
 import {TripsRepository} from "./repository/trips.repository";
+import {StintsModule} from "../stints/stints.module";
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Trip])],
+  imports: [
+      TypeOrmModule.forFeature([Trip]),
+      StintsModule
+  ],
   controllers: [TripsController],
   providers: [TripsService, TripsRepository],
   exports: [TripsService, TripsRepository]
