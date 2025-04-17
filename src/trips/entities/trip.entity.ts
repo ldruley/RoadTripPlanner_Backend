@@ -41,24 +41,25 @@ export class Trip {
     @Column()
     creator_id: number;
 
-   @OneToMany(() => Stint, (stint) => stint.trip)
+    @OneToMany(() => Stint, (stint) => stint.trip)
     stints: Stint[];
 
-    /*  @OneToMany(() => Stop, (stop) => stop.trip)
+     @OneToMany(() => Stop, (stop) => stop.trip)
      stops: Stop[];
 
-     // Many-to-many relation with supplies
-     @ManyToMany(() => Supply)
-     @JoinTable({
-         name: 'trip_supplies',
-         joinColumn: {
-             name: 'trip_id',
-             referencedColumnName: 'trip_id',
-         },
-         inverseJoinColumn: {
-             name: 'supply_id',
-             referencedColumnName: 'supply_id',
-         },
-     })
-     supplies: Supply[];*/
+    /*
+    // Many-to-many relation with supplies
+    @ManyToMany(() => Supply)
+    @JoinTable({
+        name: 'trip_supplies',
+        joinColumn: {
+            name: 'trip_id',
+            referencedColumnName: 'trip_id',
+        },
+        inverseJoinColumn: {
+            name: 'supply_id',
+            referencedColumnName: 'supply_id',
+        },
+    })
+    supplies: Supply[];*/
 }

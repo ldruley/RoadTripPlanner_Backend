@@ -2,7 +2,7 @@ import {ForbiddenException, Injectable, NotFoundException} from '@nestjs/common'
 import {CreateStintDto} from "./dto/create-stint-dto";
 import {StintsRepository} from "./repository/stints.repository";
 import {Stint} from "./entities/stint.entity";
-import {UpdateSprintDto} from "./dto/update-sprint-dto";
+import {UpdateStintDto} from "./dto/update-sprint-dto";
 
 @Injectable()
 export class StintsService {
@@ -32,7 +32,7 @@ export class StintsService {
         return stints;
     }
 
-    async update(id: number, updateStintDto: UpdateSprintDto, userId: number): Promise<Stint> {
+    async update(id: number, updateStintDto: UpdateStintDto, userId: number): Promise<Stint> {
         const stint = await this.findOne(id);
         if (stint.trip.creator_id !== userId) {
             throw new ForbiddenException(`You don't have permission to update this stint`);

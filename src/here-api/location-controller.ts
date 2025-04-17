@@ -3,7 +3,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagg
 import { HereApiService } from './here-api.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth-guard';
 
-@ApiTags('locations')
+@ApiTags('Locations')
 @Controller('locations')
 export class LocationController {
     constructor(private readonly hereApiService: HereApiService) {}

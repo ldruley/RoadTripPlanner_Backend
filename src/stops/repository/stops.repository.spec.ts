@@ -1,4 +1,4 @@
-import { StopsRepository } from './stops.repository';
+import { StopsRepository } from '../stops/stops.repository';
 
 describe('StopsRepository', () => {
   it('should be defined', () => {
