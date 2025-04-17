@@ -33,7 +33,7 @@ export class Stint {
     updated_at: Date;
 
     // Relations
-/*
+
     @ManyToOne(() => Trip, (trip) => trip.stints)
     @JoinColumn({ name: 'trip_id' })
     trip: Trip;
@@ -41,69 +41,69 @@ export class Stint {
 
     @Column()
     trip_id: number;
+    /*
+        @ManyToOne(() => Stop)
+        @JoinColumn({ name: 'start_location_id' })
+        start_location: Stop;
 
-    @ManyToOne(() => Stop)
-    @JoinColumn({ name: 'start_location_id' })
-    start_location: Stop;
+        @Column({ nullable: true })
+        start_location_id: number;
 
-    @Column({ nullable: true })
-    start_location_id: number;
+        @ManyToOne(() => Stop)
+        @JoinColumn({ name: 'end_location_id' })
+        end_location: Stop;
 
-    @ManyToOne(() => Stop)
-    @JoinColumn({ name: 'end_location_id' })
-    end_location: Stop;
+        @Column({ nullable: true })
+        end_location_id: number;
 
-    @Column({ nullable: true })
-    end_location_id: number;
+        @OneToMany(() => Stop, (stop) => stop.stint)
+        stops: Stop[];
 
-    @OneToMany(() => Stop, (stop) => stop.stint)
-    stops: Stop[];
+        @OneToMany(() => Leg, (leg) => leg.stint)
+        legs: Leg[];
 
-    @OneToMany(() => Leg, (leg) => leg.stint)
-    legs: Leg[];
+        // Many-to-many relation with users (participants)
+        @ManyToMany(() => User)
+        @JoinTable({
+            name: 'stint_participants',
+            joinColumn: {
+                name: 'stint_id',
+                referencedColumnName: 'stint_id',
+            },
+            inverseJoinColumn: {
+                name: 'user_id',
+                referencedColumnName: 'user_id',
+            },
+        })
+        participants: User[];
 
-    // Many-to-many relation with users (participants)
-    @ManyToMany(() => User)
-    @JoinTable({
-        name: 'stint_participants',
-        joinColumn: {
-            name: 'stint_id',
-            referencedColumnName: 'stint_id',
-        },
-        inverseJoinColumn: {
-            name: 'user_id',
-            referencedColumnName: 'user_id',
-        },
-    })
-    participants: User[];
+        // Many-to-many relation with vehicles
+        @ManyToMany(() => Vehicle)
+        @JoinTable({
+            name: 'stint_vehicles',
+            joinColumn: {
+                name: 'stint_id',
+                referencedColumnName: 'stint_id',
+            },
+            inverseJoinColumn: {
+                name: 'vehicle_id',
+                referencedColumnName: 'vehicle_id',
+            },
+        })
+        vehicles: Vehicle[];
 
-    // Many-to-many relation with vehicles
-    @ManyToMany(() => Vehicle)
-    @JoinTable({
-        name: 'stint_vehicles',
-        joinColumn: {
-            name: 'stint_id',
-            referencedColumnName: 'stint_id',
-        },
-        inverseJoinColumn: {
-            name: 'vehicle_id',
-            referencedColumnName: 'vehicle_id',
-        },
-    })
-    vehicles: Vehicle[];
-
-    // Many-to-many relation with supplies
-    @ManyToMany(() => Supply)
-    @JoinTable({
-        name: 'stint_supplies',
-        joinColumn: {
-            name: 'stint_id',
-            referencedColumnName: 'stint_id',
-        },
-        inverseJoinColumn: {
-            name: 'supply_id',
-            referencedColumnName: 'supply_id',
-        },
-    })
-    supplies: Supply[];*/
+        // Many-to-many relation with supplies
+        @ManyToMany(() => Supply)
+        @JoinTable({
+            name: 'stint_supplies',
+            joinColumn: {
+                name: 'stint_id',
+                referencedColumnName: 'stint_id',
+            },
+            inverseJoinColumn: {
+                name: 'supply_id',
+                referencedColumnName: 'supply_id',
+            },
+        })
+        supplies: Supply[];*/
 }

@@ -12,4 +12,8 @@ export class StintsRepository extends Repository<Stint>{
     findById(stint_id: number): Promise<Stint | null> {
         return this.findOne({ where: { stint_id } });
     }
+
+    findAllByTrip(trip_id: number): Promise<Stint[]> {
+        return this.find({ where: { trip_id } });
+    }
 }
