@@ -1,52 +1,59 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
 import { Stint } from '../../stints/entities/stint.entity';
 import { Stop } from '../../stops/entities/stop.entity';
 
 //tbd if we even want this
 export enum RouteType {
-    HIGHWAY = 'highway',
-    BACKROAD = 'backroad',
-    CITY = 'city',
-    MIXED = 'mixed',
+  HIGHWAY = 'highway',
+  BACKROAD = 'backroad',
+  CITY = 'city',
+  MIXED = 'mixed',
 }
 
 @Entity('legs')
 export class Leg {
-    @PrimaryGeneratedColumn()
-    leg_id: number;
+  @PrimaryGeneratedColumn()
+  leg_id: number;
 
-    @Column()
-    sequence_number: number;
+  @Column()
+  sequence_number: number;
 
-    @Column({ type: 'float' })
-    distance: number;
+  @Column({ type: 'float' })
+  distance: number;
 
-    @Column({ type: 'integer' })
-    estimated_travel_time: number;
+  @Column({ type: 'integer' })
+  estimated_travel_time: number;
 
-    // optional - may remove
-    @Column({
-        type: 'enum',
-        enum: RouteType,
-        default: RouteType.HIGHWAY,
-        nullable: true,
-    })
-    route_type: RouteType;
+  // optional - may remove
+  @Column({
+    type: 'enum',
+    enum: RouteType,
+    default: RouteType.HIGHWAY,
+    nullable: true,
+  })
+  route_type: RouteType;
 
+  @Column({ nullable: true, type: 'text' })
+  notes: string;
 
-    @Column({ nullable: true, type: 'text' })
-    notes: string;
+  @Column({ type: 'text', nullable: true })
+  polyline: string;
 
-    @Column({ type: 'text', nullable: true })
-    polyline: string;
+  @CreateDateColumn()
+  created_at: Date;
 
-    @CreateDateColumn()
-    created_at: Date;
+  @UpdateDateColumn()
+  updated_at: Date;
 
-    @UpdateDateColumn()
-    updated_at: Date;
-
-/*    // Relations
+  /*    // Relations
     @ManyToOne(() => Stint, (stint) => stint.legs)
     @JoinColumn({ name: 'stint_id' })
     stint: Stint;

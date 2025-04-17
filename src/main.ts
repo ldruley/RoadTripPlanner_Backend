@@ -1,5 +1,8 @@
 import { NestFactory } from '@nestjs/core';
-import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
+import {
+  FastifyAdapter,
+  NestFastifyApplication,
+} from '@nestjs/platform-fastify';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -9,27 +12,29 @@ declare const module: any;
 
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
-      AppModule,
-      new FastifyAdapter()
+    AppModule,
+    new FastifyAdapter(),
   );
 
   // Enable validation pipes globally
-  app.useGlobalPipes(new ValidationPipe({
-    whitelist: true,
-    transform: true,
-    forbidNonWhitelisted: true,
-  }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      transform: true,
+      forbidNonWhitelisted: true,
+    }),
+  );
 
   // Enable CORS
   app.enableCors();
 
   // Swagger documentation setup
   const config = new DocumentBuilder()
-      .setTitle('Road Trip Planner API')
-      .setDescription('API for planning and managing road trips')
-      .setVersion('0.1')
-      .addBearerAuth()
-      .build();
+    .setTitle('Road Trip Planner API')
+    .setDescription('API for planning and managing road trips')
+    .setVersion('0.1')
+    .addBearerAuth()
+    .build();
 
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);

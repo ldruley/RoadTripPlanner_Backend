@@ -4,6 +4,6 @@ import { LegsService } from './legs.service';
 
 @Module({
   controllers: [LegsController],
-  providers: [LegsService]
+  providers: [LegsService],
 })
 export class LegsModule {}
