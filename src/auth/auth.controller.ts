@@ -54,8 +54,9 @@ export class AuthController {
       return res.json({ access_token, user });
     }
 
-    return res.redirect(
-      `http://localhost:3000/login-success?token=${access_token}`,
-    );
+    // return res.redirect(
+    //   `http://localhost:3000/login-success?token=${access_token}`,
+    // );
+    res.json({ access_token, user });
   }
 }
