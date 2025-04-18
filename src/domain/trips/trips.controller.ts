@@ -16,7 +16,7 @@ import { CreateTripDto } from './dto/create-trip.dto';
 import { JwtAuthGuard } from '../../infrastructure/auth/guards/jwt-auth-guard';
 import { GetUser } from '../../infrastructure/auth/decorators/get-user-decorator';
 import { User } from '../users/entities/user.entity';
-import { StintsService } from '../Itinerary/services/stints.service';
+import { StintsService } from '../itinerary/services/stints.service';
 
 @Controller('trips')
 export class TripsController {

@@ -11,8 +11,8 @@ import {
   JoinTable,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
-import { Stint } from '../../Itinerary/entities/stint.entity';
-import { Stop } from '../../Itinerary/entities/stop.entity';
+import { Stint } from '../../itinerary/entities/stint.entity';
+import { Stop } from '../../itinerary/entities/stop.entity';
 import { Supply } from '../../supplies/entities/supply.entity';
 
 @Entity('trips')

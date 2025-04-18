@@ -8,11 +8,16 @@ import {
 import { TripsRepository } from './repository/trips.repository';
 import { UpdateTripDto } from './dto/update-trip-dto';
 import { Trip } from './entities/trip.entity';
-import { StintsService } from '../Itinerary/services/stints.service';
+import { StintsService } from '../itinerary/services/stints.service';
+
 
 @Injectable()
 export class TripsService {
-  constructor(private tripsRepository: TripsRepository) {}
+  constructor(
+    private tripsRepository: TripsRepository,
+    @Inject(forwardRef(() => StintsService))
+    private stintsService: StintsService,
+  ) {}
 
   async create(createTripDto: any): Promise<any> {
     const trip = this.tripsRepository.create(createTripDto);

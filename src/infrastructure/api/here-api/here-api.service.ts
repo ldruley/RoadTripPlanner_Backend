@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { StopsService } from '../../../domain/Itinerary/services/stops.service';
+import { StopsService } from '../../../domain/itinerary/services/stops.service';
 import axios from 'axios';
-import { Stop } from '../../../domain/Itinerary/entities/stop.entity';
+import { Stop } from '../../../domain/itinerary/entities/stop.entity';
 
 @Injectable()
 export class HereApiService {
