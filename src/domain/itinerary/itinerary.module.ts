@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 // Entities
@@ -15,16 +15,20 @@ import { LegsRepository } from './repositories/legs.repository';
 import { StintsService } from './services/stints.service';
 import { StopsService } from './services/stops.service';
 import { LegsService } from './services/legs.service';
-//TODO
-//import { ItineraryService } from './services/itinerary.service';
 
 // Controllers
 import { StintsController } from './controllers/stints.controller';
 import { StopsController } from './controllers/stops.controller';
 import { LegsController } from './controllers/legs.controller';
 
+// Import TripsModule with forwardRef to resolve circular dependency
+import { TripsModule } from '../trips/trips.module';
+
 @Module({
-  imports: [TypeOrmModule.forFeature([Stint, Stop, Leg])],
+  imports: [
+    TypeOrmModule.forFeature([Stint, Stop, Leg]),
+    forwardRef(() => TripsModule), // Add this line to resolve circular dependency
+  ],
   controllers: [StintsController, StopsController, LegsController],
   providers: [
     // Repositories
@@ -36,14 +40,12 @@ import { LegsController } from './controllers/legs.controller';
     StintsService,
     StopsService,
     LegsService,
-    //ItineraryService,
   ],
   exports: [
     // Export services for use in other modules
     StintsService,
     StopsService,
     LegsService,
-    //ItineraryService,
   ],
 })
 export class ItineraryModule {}

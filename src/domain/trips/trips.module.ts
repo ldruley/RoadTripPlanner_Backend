@@ -6,11 +6,10 @@ import { Trip } from './entities/trip.entity';
 import { TripsRepository } from './repository/trips.repository';
 import { ItineraryModule } from '../itinerary/itinerary.module';
 
-//TODO evaluate circular dependencies
 @Module({
   imports: [
     TypeOrmModule.forFeature([Trip]),
-    forwardRef(() => ItineraryModule),
+    forwardRef(() => ItineraryModule), // Use forwardRef for circular dependency
   ],
   controllers: [TripsController],
   providers: [TripsService, TripsRepository],
