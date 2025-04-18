@@ -15,11 +15,13 @@ import { LegsRepository } from './repositories/legs.repository';
 import { StintsService } from './services/stints.service';
 import { StopsService } from './services/stops.service';
 import { LegsService } from './services/legs.service';
+import { ItineraryService } from './services/itinerary.service';
 
 // Controllers
 import { StintsController } from './controllers/stints.controller';
 import { StopsController } from './controllers/stops.controller';
 import { LegsController } from './controllers/legs.controller';
+import { ItineraryController } from './controllers/itinerary.controller';
 
 // Import TripsModule with forwardRef to resolve circular dependency
 import { TripsModule } from '../trips/trips.module';
@@ -27,9 +29,14 @@ import { TripsModule } from '../trips/trips.module';
 @Module({
   imports: [
     TypeOrmModule.forFeature([Stint, Stop, Leg]),
-    forwardRef(() => TripsModule), // Add this line to resolve circular dependency
+    forwardRef(() => TripsModule), // resolve circular dependency
   ],
-  controllers: [StintsController, StopsController, LegsController],
+  controllers: [
+    StintsController,
+    StopsController,
+    LegsController,
+    ItineraryController,
+  ],
   providers: [
     // Repositories
     StintsRepository,
@@ -40,12 +47,14 @@ import { TripsModule } from '../trips/trips.module';
     StintsService,
     StopsService,
     LegsService,
+    ItineraryService,
   ],
   exports: [
     // Export services for use in other modules
     StintsService,
     StopsService,
     LegsService,
+    ItineraryService,
   ],
 })
 export class ItineraryModule {}

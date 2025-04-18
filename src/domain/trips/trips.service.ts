@@ -8,16 +8,10 @@ import {
 import { TripsRepository } from './repository/trips.repository';
 import { UpdateTripDto } from './dto/update-trip-dto';
 import { Trip } from './entities/trip.entity';
-import { StintsService } from '../itinerary/services/stints.service';
-
 
 @Injectable()
 export class TripsService {
-  constructor(
-    private tripsRepository: TripsRepository,
-    @Inject(forwardRef(() => StintsService))
-    private stintsService: StintsService,
-  ) {}
+  constructor(private tripsRepository: TripsRepository) {}
 
   async create(createTripDto: any): Promise<any> {
     const trip = this.tripsRepository.create(createTripDto);
@@ -70,6 +64,7 @@ export class TripsService {
     await this.tripsRepository.remove(trip);
   }
 
+  //TODO evaluate if below methods should be here or itinerary service
   //calculateTotalDistance
   //isUserInTrip
   //fullTripDetails

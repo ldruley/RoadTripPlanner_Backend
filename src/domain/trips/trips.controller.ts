@@ -16,13 +16,13 @@ import { CreateTripDto } from './dto/create-trip.dto';
 import { JwtAuthGuard } from '../../infrastructure/auth/guards/jwt-auth-guard';
 import { GetUser } from '../../infrastructure/auth/decorators/get-user-decorator';
 import { User } from '../users/entities/user.entity';
-import { StintsService } from '../itinerary/services/stints.service';
+import { ItineraryService } from '../itinerary/services/itinerary.service';
 
 @Controller('trips')
 export class TripsController {
   constructor(
     private readonly tripsService: TripsService,
-    private readonly stintsService: StintsService,
+    private readonly itineraryService: ItineraryService,
   ) {}
 
   @Post()
@@ -46,14 +46,14 @@ export class TripsController {
     return this.tripsService.findOne(id);
   }
 
-  @Get(':id/stints')
+  @Get(':id/timeline')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Get all stints for a trip' })
-  @ApiResponse({ status: 200, description: 'Returns stints for the trip' })
-  @ApiResponse({ status: 404, description: 'Trip not found or no stints' })
-  findTripStints(@Param('id', ParseIntPipe) id: number) {
-    return this.stintsService.findAllByTrip(id);
+  @ApiOperation({ summary: 'Get complete trip timeline with all details' })
+  @ApiResponse({ status: 200, description: 'Returns trip timeline' })
+  @ApiResponse({ status: 404, description: 'Trip not found or has no stints' })
+  getTimeline(@Param('id', ParseIntPipe) id: number, @GetUser() user: User) {
+    return this.itineraryService.getTripTimeline(id, user.user_id);
   }
 
   @Get('me')
