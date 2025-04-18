@@ -5,6 +5,7 @@ import {StintsService} from "../stints/stints.service";
 import {CreateStopDto} from "./dto/create-stop.dto";
 import {Stop} from "./entities/stop.entity";
 import {UpdateStopDto} from "./dto/update-stop.dto";
+import {EntityManager} from "typeorm";
 
 @Injectable()
 export class StopsService {
@@ -39,6 +40,13 @@ export class StopsService {
         //TODO: need to handle legs here
 
         return savedStop;
+    }
+
+    //using this method so we can ensure that the stop is created in same transaction
+    async createWithTransaction(stopData: Partial<Stop>, manager: EntityManager): Promise<Stop> {
+        const stopRepo = manager.getRepository(Stop);
+        const stop = stopRepo.create(stopData);
+        return stopRepo.save(stop);
     }
 
     async findOne(id: number): Promise<Stop> {

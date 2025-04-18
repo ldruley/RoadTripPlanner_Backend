@@ -45,10 +45,10 @@ export class Stint {
     @JoinColumn({ name: 'start_location_id' })
     start_location: Stop;
 
-    @Column({ nullable: true })
+    @Column()
     start_location_id: number;
 
-    @ManyToOne(() => Stop)
+    @ManyToOne(() => Stop, {nullable: true})
     @JoinColumn({ name: 'end_location_id' })
     end_location: Stop;
 

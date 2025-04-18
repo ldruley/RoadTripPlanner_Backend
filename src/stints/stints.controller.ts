@@ -5,6 +5,7 @@ import {CreateStintDto} from "./dto/create-stint-dto";
 import {GetUser} from "../auth/decorators/get-user-decorator";
 import {User} from "../users/entities/user.entity";
 import {StintsService} from "./stints.service";
+import {CreateStintWithStopDto} from "./dto/create-stint-with-stop.dto";
 
 @Controller('stints')
 export class StintsController {
@@ -17,6 +18,21 @@ export class StintsController {
     @ApiResponse({ status: 401, description: 'Unauthorized' })
     create(@Body() createStintDto: CreateStintDto) {
         return this.stintsService.create(createStintDto);
+    }
+
+    @Post('with-initial-stop')
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Create a new stint with initial stop' })
+    @ApiResponse({ status: 201, description: 'Stint with initial stop successfully created' })
+    @ApiResponse({ status: 400, description: 'Bad request - invalid input' })
+    @ApiResponse({ status: 401, description: 'Unauthorized' })
+    @ApiResponse({ status: 403, description: 'Forbidden - user doesn\'t have permission to create in this trip' })
+    createWithInitialStop(
+        @Body() createStintWithStopDto: CreateStintWithStopDto,
+        @GetUser() user: User
+    ) {
+        return this.stintsService.createWithInitialStop(createStintWithStopDto, user.user_id);
     }
 
     @Get(':id')
