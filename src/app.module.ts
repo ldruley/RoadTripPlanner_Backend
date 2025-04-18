@@ -1,20 +1,18 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import {TypeOrmModule, TypeOrmModuleOptions} from '@nestjs/typeorm';
+import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { UsersModule } from './users/users.module';
-import { TripsModule } from './trips/trips.module';
-import { StintsModule } from './stints/stints.module';
-import { StopsModule } from './stops/stops.module';
-import { LegsModule } from './legs/legs.module';
-import { VehiclesModule } from './vehicles/vehicles.module';
-import { SuppliesModule } from './supplies/supplies.module';
-import { AuthModule } from './auth/auth.module';
-import { HereApiModule } from './here-api/here-api.module';
+import { UsersModule } from './domain/users/users.module';
+import { TripsModule } from './domain/trips/trips.module';
+import { VehiclesModule } from './domain/vehicles/vehicles.module';
+import { SuppliesModule } from './domain/supplies/supplies.module';
+import { AuthModule } from './infrastructure/auth/auth.module';
+import { HereApiModule } from './infrastructure/api/here-api/here-api.module';
 
-import appConfig from './config/configuration';
-import databaseConfig from './config/database.config';
+import appConfig from './infrastructure/config/configuration';
+import databaseConfig from './infrastructure/config/database.config';
+import { ItineraryModule } from './domain/Itinerary/itinerary.module';
 
 @Module({
   imports: [
@@ -29,7 +27,7 @@ import databaseConfig from './config/database.config';
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) : TypeOrmModuleOptions => {
+      useFactory: (configService: ConfigService): TypeOrmModuleOptions => {
         const dbConfig = configService.get('database');
         return dbConfig as TypeOrmModuleOptions;
       },
@@ -38,9 +36,7 @@ import databaseConfig from './config/database.config';
     // Feature modules
     UsersModule,
     TripsModule,
-    StintsModule,
-    StopsModule,
-    LegsModule,
+    ItineraryModule,
     VehiclesModule,
     SuppliesModule,
     AuthModule,
