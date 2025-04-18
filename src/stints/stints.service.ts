@@ -1,4 +1,4 @@
-import {ForbiddenException, Injectable, NotFoundException} from '@nestjs/common';
+import {ForbiddenException, forwardRef, Inject, Injectable, NotFoundException} from '@nestjs/common';
 import {CreateStintDto} from "./dto/create-stint-dto";
 import {StintsRepository} from "./repository/stints.repository";
 import {Stint} from "./entities/stint.entity";
@@ -14,7 +14,9 @@ export class StintsService {
 
     constructor(
         private stintsRepository: StintsRepository,
+        @Inject(forwardRef(() => TripsService))
         private tripsService: TripsService,
+        @Inject(forwardRef(() => StopsService))
         private stopsService: StopsService,
         private dataSource: DataSource
     ) {}

@@ -1,4 +1,4 @@
-import {ForbiddenException, Injectable, NotFoundException} from '@nestjs/common';
+import {ForbiddenException, forwardRef, Inject, Injectable, NotFoundException} from '@nestjs/common';
 import {StopsRepository} from "./repository/stops.repository";
 import {TripsService} from "../trips/trips.service";
 import {StintsService} from "../stints/stints.service";
@@ -12,7 +12,9 @@ export class StopsService {
 
     constructor(
         private stopsRepository: StopsRepository,
+        @Inject(forwardRef(() => TripsService))
         private tripsService: TripsService,
+        @Inject(forwardRef(() => StintsService))
         private stintsService: StintsService
     ) {
     }

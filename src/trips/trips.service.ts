@@ -1,13 +1,16 @@
-import {ForbiddenException, Injectable, NotFoundException} from '@nestjs/common';
+import {ForbiddenException, forwardRef, Inject, Injectable, NotFoundException} from '@nestjs/common';
 import {TripsRepository} from "./repository/trips.repository";
 import {UpdateTripDto} from "./dto/update-trip-dto";
 import {Trip} from "./entities/trip.entity";
+import {StintsService} from "../stints/stints.service";
 
 @Injectable()
 export class TripsService {
 
     constructor(
         private tripsRepository: TripsRepository,
+        @Inject(forwardRef(() => StintsService))
+        private stintsService: StintsService,
     ) {}
 
     async create(createTripDto: any): Promise<any> {
