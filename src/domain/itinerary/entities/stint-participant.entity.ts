@@ -8,13 +8,7 @@ import {
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { Stint } from './stint.entity';
-
-export enum ParticipantRole {
-  CREATOR = 'creator',
-  MEMBER = 'member',
-  DRIVER = 'driver',
-  PLANNER = 'planner',
-}
+import { ParticipantRole } from '../../../common/enums';
 
 @Entity('stint_participants')
 export class StintParticipant {

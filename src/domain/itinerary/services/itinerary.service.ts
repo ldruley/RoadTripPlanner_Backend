@@ -42,6 +42,9 @@ export class ItineraryService {
 
   /**
    * Get a complete trip timeline including all stints, stops, and legs
+   * TODO: We need to interweave stops and legs in order
+   * TODO: We also need to incorporate stint/participants and vehicles. Likely sort out new user perms method first
+   * TODO: Also i didn't totally forget about TypeORM eager loading and we should definitely use that
    */
 
   async getTripTimeline(tripId: number, userId: number): Promise<TripTimeline> {
@@ -194,16 +197,21 @@ export class ItineraryService {
         throw new Error('Failed to save the new stop');
       }
 
-      // 2. Get existing stops to determine where to insert legs
-      const existingStops = await this.stopsRepository.findByStint(stintId);
-      existingStops.sort((a, b) => a.sequence_number - b.sequence_number);
+      // 2. Get all stops to determine where to insert legs
+      const allStops = await manager.getRepository(Stop).find({
+        where: { stint_id: stintId },
+        order: { sequence_number: 'ASC' },
+      });
+
+      console.log('All stops after saving:', allStops);
 
       // 3. Find the stops before and after the new stop based on sequence number
+      //TODO: consider better way to get adj stops
       const sequenceNumber = savedStop.sequence_number;
-      const prevStop = existingStops.find(
+      const prevStop = allStops.find(
         (s) => s.sequence_number === sequenceNumber - 1,
       );
-      const nextStop = existingStops.find(
+      const nextStop = allStops.find(
         (s) => s.sequence_number === sequenceNumber + 1,
       );
 
@@ -224,7 +232,7 @@ export class ItineraryService {
         }
 
         // Create new leg between prevStop and new stop
-        // TODO: In a real implementation, we will use an API to calculate distance and time
+        // TODO: In final implementation, we will use an API to calculate distance and time
         const prevToNewLeg = legRepo.create({
           stint_id: stintId,
           start_stop_id: prevStop.stop_id,
@@ -253,6 +261,7 @@ export class ItineraryService {
       }
 
       // 6. Update stint start/end location if needed
+      //TODO: maybe rework this
       if (
         sequenceNumber === 1 &&
         stint.start_location_id !== savedStop.stop_id
@@ -261,7 +270,7 @@ export class ItineraryService {
         await manager.getRepository(Stint).save(stint);
       }
 
-      const isLastStop = !existingStops.some(
+      const isLastStop = !allStops.some(
         (s) => s.sequence_number > sequenceNumber,
       );
       if (isLastStop && stint.end_location_id !== savedStop.stop_id) {
