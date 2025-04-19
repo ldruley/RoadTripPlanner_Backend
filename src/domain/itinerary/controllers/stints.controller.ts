@@ -22,7 +22,7 @@ export class StintsController {
   constructor(private readonly stintsService: StintsService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Create a new stint' })
+  @ApiOperation({ summary: '[FOR TESTING]: Create a new stint' })
   @ApiResponse({ status: 201, description: 'Stint successfully created' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   create(@Body() createStintDto: CreateStintDto) {
@@ -65,7 +65,7 @@ export class StintsController {
   @Put(':id')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: 'Update a stint' })
+  @ApiOperation({ summary: '[BASIC IMPLEMENTATION]: Update a stint' })
   @ApiResponse({ status: 200, description: 'Stint updated successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
@@ -81,7 +81,7 @@ export class StintsController {
   @Delete(':id')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: 'Delete a stint' })
+  @ApiOperation({ summary: '[BASIC IMPLEMENTATION]: Delete a stint' })
   @ApiResponse({ status: 200, description: 'Stint deleted successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })

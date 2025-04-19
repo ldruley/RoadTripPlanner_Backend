@@ -49,7 +49,10 @@ export class TripsController {
   @Get(':id/timeline')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Get complete trip timeline with all details' })
+  @ApiOperation({
+    summary:
+      '[BASIC IMPLEMENTATION]: Get complete trip timeline with all details',
+  })
   @ApiResponse({ status: 200, description: 'Returns trip timeline' })
   @ApiResponse({ status: 404, description: 'Trip not found or has no stints' })
   getTimeline(@Param('id', ParseIntPipe) id: number, @GetUser() user: User) {
@@ -70,7 +73,7 @@ export class TripsController {
   @Put(':id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Update a trip' })
+  @ApiOperation({ summary: '[BASIC IMPLEMENTATION]: Update a trip' })
   @ApiResponse({ status: 200, description: 'Trip updated successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })

@@ -23,6 +23,9 @@ import {
 } from '../../interfaces/itinerary';
 import { TripsService } from '../../trips/trips.service';
 
+//TODO: Implement TimelineLeg and TimelineStop interfaces
+//TODO: potentially a dto for timeline?
+
 @Injectable()
 export class ItineraryService {
   constructor(
@@ -221,8 +224,7 @@ export class ItineraryService {
         }
 
         // Create new leg between prevStop and new stop
-        // In a real implementation, you'd calculate distance and estimated_travel_time
-        // using a routing API like Google Maps or HERE Maps
+        // TODO: In a real implementation, we will use an API to calculate distance and time
         const prevToNewLeg = legRepo.create({
           stint_id: stintId,
           start_stop_id: prevStop.stop_id,
@@ -375,7 +377,7 @@ export class ItineraryService {
         const currentStop = orderedStops[i];
         const nextStop = orderedStops[i + 1];
 
-        // Create new leg (in a real implementation, you'd calculate distance and time)
+        // TODO: Create new leg (in real implementation we need to calculate distance and time)
         const newLeg = legRepo.create({
           stint_id: stintId,
           start_stop_id: currentStop.stop_id,

@@ -61,7 +61,7 @@ export class VehiclesController {
   @Put(':id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Update a vehicle' })
+  @ApiOperation({ summary: '[BASIC IMPLEMENTATION]: Update a vehicle' })
   @ApiResponse({ status: 200, description: 'Vehicle updated successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })

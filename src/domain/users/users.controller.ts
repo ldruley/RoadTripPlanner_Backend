@@ -23,7 +23,7 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Create a new user' })
+  @ApiOperation({ summary: '[BASIC IMPLEMENTATION]: Create a new user' })
   @ApiResponse({
     status: 201,
     description: 'User has been successfully created ',
@@ -35,7 +35,9 @@ export class UsersController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Find users with optional Filters' })
+  @ApiOperation({
+    summary: '[BASIC IMPLEMENTATION]: Find users with optional Filters',
+  })
   @ApiQuery({
     name: 'username',
     required: false,
@@ -90,7 +92,7 @@ export class UsersController {
   }
 
   @Put(':id')
-  @ApiOperation({ summary: 'Update a user' })
+  @ApiOperation({ summary: '[BASIC IMPLEMENTATION]: Update a user' })
   @ApiParam({ name: 'id', description: 'User ID' })
   @ApiResponse({
     status: 200,

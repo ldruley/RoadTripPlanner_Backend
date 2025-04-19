@@ -31,7 +31,7 @@ export class StopsController {
   @Post()
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Create a new stop' })
+  @ApiOperation({ summary: '[FOR TESTING]: Create a new stop' })
   @ApiResponse({ status: 201, description: 'Stop successfully created' })
   @ApiResponse({ status: 400, description: 'Bad request - invalid input' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
@@ -53,7 +53,7 @@ export class StopsController {
   }
 
   @Get('trip/:tripId')
-  @ApiOperation({ summary: 'Get all stops for a trip' })
+  @ApiOperation({ summary: '[FOR TESTING]: Get all stops for a trip' })
   @ApiParam({ name: 'tripId', description: 'Trip ID' })
   @ApiResponse({ status: 200, description: 'Returns stops for the trip' })
   @ApiResponse({ status: 404, description: 'No stops found for the trip' })
@@ -62,7 +62,7 @@ export class StopsController {
   }
 
   @Get('stint/:stintId')
-  @ApiOperation({ summary: 'Get all stops for a stint' })
+  @ApiOperation({ summary: '[FOR TESTING]: Get all stops for a stint' })
   @ApiParam({ name: 'stintId', description: 'Stint ID' })
   @ApiResponse({ status: 200, description: 'Returns stops for the stint' })
   @ApiResponse({ status: 404, description: 'No stops found for the stint' })
@@ -73,7 +73,7 @@ export class StopsController {
   @Put(':id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Update a stop' })
+  @ApiOperation({ summary: '[BASIC IMPLEMENTATION]: Update a stop' })
   @ApiParam({ name: 'id', description: 'Stop ID' })
   @ApiResponse({ status: 200, description: 'Stop updated successfully' })
   @ApiResponse({ status: 400, description: 'Bad request - invalid input' })
@@ -94,7 +94,7 @@ export class StopsController {
   @Delete(':id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Delete a stop' })
+  @ApiOperation({ summary: '[BASIC IMPLEMENTATION]: Delete a stop' })
   @ApiParam({ name: 'id', description: 'Stop ID' })
   @ApiResponse({ status: 200, description: 'Stop deleted successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })

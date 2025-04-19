@@ -38,7 +38,7 @@ export class LegsController {
   }
 
   @Get('stint/:stintId')
-  @ApiOperation({ summary: 'Get all legs for a stint' })
+  @ApiOperation({ summary: '[FOR TESTING]: Get all legs for a stint' })
   @ApiParam({ name: 'stintId', description: 'Stint ID' })
   @ApiResponse({ status: 200, description: 'Returns legs for the stint' })
   @ApiResponse({ status: 404, description: 'No legs found for the stint' })
@@ -47,7 +47,9 @@ export class LegsController {
   }
 
   @Get('stops/:startStopId/:endStopId')
-  @ApiOperation({ summary: 'Get a leg between two stops' })
+  @ApiOperation({
+    summary: '[BASIC IMPLEMENTATION]: Get a leg between two stops',
+  })
   @ApiParam({ name: 'startStopId', description: 'Start Stop ID' })
   @ApiParam({ name: 'endStopId', description: 'End Stop ID' })
   @ApiResponse({ status: 200, description: 'Leg found' })

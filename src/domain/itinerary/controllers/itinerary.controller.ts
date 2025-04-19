@@ -18,6 +18,8 @@ import { ItineraryService } from '../services/itinerary.service';
 import { JwtAuthGuard } from '../../../infrastructure/auth/guards/jwt-auth-guard';
 import { GetUser } from '../../../infrastructure/auth/decorators/get-user-decorator';
 import { User } from '../../users/entities/user.entity';
+import { CreateStopDto } from '../dto/create-stop.dto';
+import { StopType } from '../../../common/enums';
 
 //currently these endpoints are for testing. most of this functionality will be contained within the backend once we integrate with front end
 @ApiTags('Itinerary')
@@ -52,7 +54,8 @@ export class ItineraryController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
-    summary: 'Add a stop to a stint and automatically handle legs',
+    summary:
+      '[Half-working] Add a stop to a stint and automatically handle legs',
   })
   @ApiParam({ name: 'stintId', description: 'Stint ID' })
   @ApiResponse({ status: 201, description: 'Stop added successfully' })
@@ -63,7 +66,7 @@ export class ItineraryController {
   })
   addStopToStint(
     @Param('stintId', ParseIntPipe) stintId: number,
-    @Body() stopData: any,
+    @Body() stopData: CreateStopDto,
     @GetUser() user: User,
   ) {
     return this.itineraryService.addStopToStint(
