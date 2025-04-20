@@ -201,10 +201,13 @@ export class ItineraryService {
       );
     }
 
+    const maxSequence = await this.stopsRepository.findMaxSequenceNumber(
+      stint.stint_id,
+    );
+
     return this.dataSource.transaction(async (manager) => {
-      const maxSequence = await this.stopsRepository.findMaxSequenceNumber(
-        stint.stint_id,
-      );
+      const stopRepo = manager.getRepository(Stop);
+
       // Determine the sequence number if not provided, is 0, or is too high (max + 2)
       if (
         !createStopDto.sequence_number ||
@@ -224,12 +227,12 @@ export class ItineraryService {
 
         for (const stop of stopsToShift) {
           stop.sequence_number += 1;
-          await manager.getRepository(Stop).save(stop);
+          await stopRepo.save(stop);
         }
       }
 
       // Create the stop
-      const stopRepo = manager.getRepository(Stop);
+
       const stop = stopRepo.create(createStopDto);
       const savedStop = await stopRepo.save(stop);
 
@@ -241,7 +244,7 @@ export class ItineraryService {
       );
 
       // Update stint start/end locations if needed
-      await this.updateStintStartEndLocations(stint.stint_id, manager);
+      //await this.updateStintStartEndLocations(stint.stint_id, manager);
 
       return savedStop;
     });
@@ -270,7 +273,7 @@ export class ItineraryService {
       await stopRepo.remove(stop);
 
       // Update sequence numbers for stops after the removed one
-      const stopsToUpdate = await this.stopsRepository.find({
+      const stopsToUpdate = await stopRepo.find({
         where: {
           stint_id: stop.stint_id,
           sequence_number: MoreThan(stop.sequence_number),
@@ -285,7 +288,7 @@ export class ItineraryService {
 
       // Update legs and stint metadata
       await this.updateLegsAfterStopChanges(stop.stint_id, [stop], manager);
-      await this.updateStintStartEndLocations(stop.stint_id, manager);
+      //await this.updateStintStartEndLocations(stop.stint_id, manager);
     });
   }
 
@@ -346,42 +349,40 @@ export class ItineraryService {
     manager: EntityManager,
   ): Promise<void> {
     // Get all stops in the stint, ordered by sequence
-    const stopsRepository: StopsRepository = manager.withRepository(
-      this.stopsRepository,
-    );
-    const legsRepository: LegsRepository = manager.withRepository(
-      this.legsRepository,
-    );
-    const stops = await stopsRepository.findByStint(stintId);
+    const stops = await manager.getRepository(Stop).find({
+      where: { stint_id: stintId },
+      order: { sequence_number: 'ASC' },
+    });
 
     if (stops.length <= 1) {
       return; // No legs needed with 0 or 1 stops
     }
 
     // Get affected legs based on passed stops and remove them
-    const affectedLegs: Leg[] = await Promise.all(
-      stopsChanged.map((stop) =>
-        legsRepository.findLegsAffectedByStopChange(stop.stop_id),
-      ),
-    )
-      .then((results) => results.filter(Boolean))
-      .then((results) => results.flat());
-
-    if (affectedLegs.length > 0) {
-      await legsRepository.remove(affectedLegs);
+    let affectedLegs: Leg[] = [];
+    for (const stop of stopsChanged) {
+      const legs = await manager.getRepository(Leg).find({
+        where: [{ start_stop_id: stop.stop_id }, { end_stop_id: stop.stop_id }],
+      });
+      affectedLegs = [...affectedLegs, ...legs];
     }
 
+    if (affectedLegs.length > 0) {
+      await manager.getRepository(Leg).remove(affectedLegs);
+    }
     // Create new legs between consecutive stops
     for (let i = 0; i < stops.length - 1; i++) {
       const currentStop = stops[i];
       const nextStop = stops[i + 1];
 
-      const leg = await legsRepository.findLegBetweenStops(
-        currentStop.stop_id,
-        nextStop.stop_id,
-      );
+      const leg = await manager.getRepository(Leg).findOne({
+        where: {
+          start_stop_id: currentStop.stop_id,
+          end_stop_id: nextStop.stop_id,
+        },
+      });
       if (!leg) {
-        const newLeg = legsRepository.create({
+        const newLeg = manager.getRepository(Leg).create({
           stint_id: stintId,
           start_stop_id: currentStop.stop_id,
           end_stop_id: nextStop.stop_id,
@@ -390,7 +391,7 @@ export class ItineraryService {
           estimated_travel_time: 0, // This should be calculated based on distance
         });
 
-        await legsRepository.save(newLeg);
+        await manager.getRepository(Leg).save(newLeg);
       }
     }
   }
