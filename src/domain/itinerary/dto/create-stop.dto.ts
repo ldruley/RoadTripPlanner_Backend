@@ -89,12 +89,14 @@ export class CreateStopDto {
 
   @ApiProperty({
     example: 1,
-    description: 'Sequence number in the stint',
-    required: true,
+    description:
+      'Sequence number in the stint. If omitted or set to 0, the stop will be added to the end of the sequence.',
+    required: false,
   })
-  @IsNotEmpty()
+  @IsOptional()
   @IsNumber()
-  sequence_number: number;
+  @Min(0)
+  sequence_number?: number;
 
   @ApiProperty({
     example: 'Bring hiking shoes and camera',

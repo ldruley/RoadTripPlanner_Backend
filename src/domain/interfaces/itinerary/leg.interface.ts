@@ -10,4 +10,6 @@ export interface TimelineLeg {
   route_type?: RouteType;
   polyline?: string;
   notes?: string;
+  start_stop_name?: string;
+  end_stop_name?: string;
 }

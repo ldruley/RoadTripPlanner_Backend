@@ -23,6 +23,21 @@ export class StopsRepository extends Repository<Stop> {
     });
   }
 
+  /**
+   * Find the maximum sequence number for stops in a stint
+   * @param stint_id The stint ID
+   * @returns The maximum sequence number, or 0 if no stops exist
+   */
+  async findMaxSequenceNumber(stint_id: number): Promise<number> {
+    const result: { maxSequence: string | null } | undefined =
+      await this.createQueryBuilder('stop')
+        .select('MAX(stop.sequence_number)', 'maxSequence')
+        .where('stop.stint_id = :stint_id', { stint_id })
+        .getRawOne();
+
+    return result?.maxSequence ? Number(result.maxSequence) : 0;
+  }
+
   findAdjacentStops(
     stint_id: number,
     sequence_number: number,

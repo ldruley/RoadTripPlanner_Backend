@@ -50,30 +50,23 @@ export class ItineraryController {
     return this.itineraryService.getTripTimeline(tripId, user.user_id);
   }
 
-  @Post('stint/:stintId/stop')
+  @Post('stops')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
-    summary:
-      '[Half-working] Add a stop to a stint and automatically handle legs',
+    summary: 'Add a stop to a stint with simple sequence numbering',
+    description:
+      'If sequence_number is omitted or 0, the stop will be added to the end of the sequence',
   })
-  @ApiParam({ name: 'stintId', description: 'Stint ID' })
   @ApiResponse({ status: 201, description: 'Stop added successfully' })
+  @ApiResponse({ status: 400, description: 'Bad request' })
   @ApiResponse({ status: 404, description: 'Stint not found' })
   @ApiResponse({
     status: 403,
     description: 'Forbidden - user does not have permission',
   })
-  addStopToStint(
-    @Param('stintId', ParseIntPipe) stintId: number,
-    @Body() stopData: CreateStopDto,
-    @GetUser() user: User,
-  ) {
-    return this.itineraryService.addStopToStint(
-      stintId,
-      stopData,
-      user.user_id,
-    );
+  addStop(@Body() createStopDto: CreateStopDto, @GetUser() user: User) {
+    return this.itineraryService.addStop(createStopDto, user.user_id);
   }
 
   @Post('stint/:stintId/reorder-stops')

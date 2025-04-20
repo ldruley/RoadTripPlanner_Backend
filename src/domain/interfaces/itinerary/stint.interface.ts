@@ -13,6 +13,8 @@ export interface TimelineStint {
   notes?: string;
   start_date?: Date;
   end_date?: Date;
+  start_location_name?: string;
+  end_location_name?: string;
   stops: TimelineStop[];
   legs: TimelineLeg[];
 }
