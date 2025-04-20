@@ -5,7 +5,7 @@ import {
   Get,
   Param,
   ParseIntPipe,
-  Post,
+  //Post,
   Put,
   UseGuards,
 } from '@nestjs/common';
@@ -17,7 +17,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { StopsService } from '../services/stops.service';
-import { CreateStopDto } from '../dto/create-stop.dto';
+//import { CreateStopDto } from '../dto/create-stop.dto';
 import { UpdateStopDto } from '../dto/update-stop.dto';
 import { JwtAuthGuard } from '../../../infrastructure/auth/guards/jwt-auth-guard';
 import { GetUser } from '../../../infrastructure/auth/decorators/get-user-decorator';
@@ -28,7 +28,7 @@ import { User } from '../../users/entities/user.entity';
 export class StopsController {
   constructor(private readonly stopsService: StopsService) {}
 
-  @Post()
+  /*  @Post()
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: '[FOR TESTING]: Create a new stop' })
@@ -41,7 +41,7 @@ export class StopsController {
   })
   create(@Body() createStopDto: CreateStopDto, @GetUser() user: User) {
     return this.stopsService.create(createStopDto, user.user_id);
-  }
+  }*/
 
   @Get(':id')
   @ApiOperation({ summary: 'Get a stop by ID' })
@@ -73,7 +73,7 @@ export class StopsController {
   @Put(':id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: '[BASIC IMPLEMENTATION]: Update a stop' })
+  @ApiOperation({ summary: '[NOT UPDATED]: Update a stop' })
   @ApiParam({ name: 'id', description: 'Stop ID' })
   @ApiResponse({ status: 200, description: 'Stop updated successfully' })
   @ApiResponse({ status: 400, description: 'Bad request - invalid input' })
@@ -91,7 +91,7 @@ export class StopsController {
     return this.stopsService.update(id, updateStopDto, user.user_id);
   }
 
-  @Delete(':id')
+  /*@Delete(':id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: '[BASIC IMPLEMENTATION]: Delete a stop' })
@@ -105,5 +105,5 @@ export class StopsController {
   @ApiResponse({ status: 404, description: 'Stop not found' })
   remove(@Param('id', ParseIntPipe) id: number, @GetUser() user: User) {
     return this.stopsService.remove(id, user.user_id);
-  }
+  }*/
 }

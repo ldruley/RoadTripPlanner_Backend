@@ -5,7 +5,7 @@ import {
   forwardRef,
   Inject,
 } from '@nestjs/common';
-import { DataSource, EntityManager } from 'typeorm';
+import { DataSource, EntityManager, MoreThan } from 'typeorm';
 import { MoreThanOrEqual } from 'typeorm';
 import { StintsService } from './stints.service';
 import { StopsService } from './stops.service';
@@ -19,13 +19,13 @@ import { LegsRepository } from '../repositories/legs.repository';
 import {
   TripTimeline,
   TimelineStint,
-  TimelineStop,
-  TimelineLeg,
+  //TimelineStop,
+  //TimelineLeg,
 } from '../../interfaces/itinerary';
 import { TripsService } from '../../trips/trips.service';
 import { CreateStopDto } from '../dto/create-stop.dto';
 
-//TODO: Implement TimelineLeg and TimelineStop interfaces
+//TODO: Implement TimelineLeg and TimelineStop interfaces - or figure out a combiined approach to interweave them into the timeline
 //TODO: potentially a dto for timeline?
 
 @Injectable()
@@ -244,6 +244,92 @@ export class ItineraryService {
   }
 
   /**
+   * Remove a stop and update sequence numbers, legs, and stint metadata
+   */
+  async removeStop(stopId: number, userId: number): Promise<void> {
+    const stop = await this.stopsService.findOne(stopId);
+    if (!stop) {
+      throw new NotFoundException(`Stop with ID ${stopId} not found`);
+    }
+
+    const trip = await this.tripsService.findOne(stop.trip_id);
+    if (trip.creator_id !== userId) {
+      throw new ForbiddenException(
+        'You do not have permission to remove stops from this trip',
+      );
+    }
+
+    return this.dataSource.transaction(async (manager) => {
+      const stopRepo = manager.getRepository(Stop);
+
+      // Delete the stop
+      await stopRepo.remove(stop);
+
+      // Update sequence numbers for stops after the removed one
+      const stopsToUpdate = await this.stopsRepository.find({
+        where: {
+          stint_id: stop.stint_id,
+          sequence_number: MoreThan(stop.sequence_number),
+        },
+        order: { sequence_number: 'ASC' },
+      });
+
+      for (const remainingStop of stopsToUpdate) {
+        remainingStop.sequence_number -= 1;
+        await stopRepo.save(remainingStop);
+      }
+
+      // Update legs and stint metadata
+      await this.updateLegsAfterStopChange(stop.stint_id, manager);
+      await this.updateStintStartEndLocations(stop.stint_id, manager);
+    });
+  }
+
+  /**
+   * Reorder stops within a stint by specifying the new sequence for each stop
+   */
+  async reorderStops(
+    stintId: number,
+    stopOrder: { stop_id: number; sequence_number: number }[],
+    userId: number,
+  ): Promise<void> {
+    const stint = await this.stintsService.findOne(stintId);
+    if (!stint) {
+      throw new NotFoundException(`Stint with ID ${stintId} not found`);
+    }
+
+    // Check if user has permission
+    const trip = await this.tripsService.findOne(stint.trip_id);
+    if (trip.creator_id !== userId) {
+      throw new ForbiddenException(
+        'You do not have permission to modify this stint',
+      );
+    }
+
+    return this.dataSource.transaction(async (manager) => {
+      const stopRepo = manager.getRepository(Stop);
+
+      // Update sequence numbers for each stop
+      for (const item of stopOrder) {
+        const stop = await this.stopsService.findOne(item.stop_id);
+
+        if (stop.stint_id !== stintId) {
+          throw new ForbiddenException(
+            `Stop with ID ${stop.stop_id} does not belong to stint ${stintId}`,
+          );
+        }
+
+        stop.sequence_number = item.sequence_number;
+        await stopRepo.save(stop);
+      }
+
+      // Update legs and stint metadata
+      await this.updateLegsAfterStopChange(stintId, manager);
+      await this.updateStintStartEndLocations(stintId, manager);
+    });
+  }
+
+  /**
    * Update legs after stops have been added, removed, or resequenced
    * We are using manager to ensure that this is done in the same transaction
    * TODO: can we do this with dependency injection?
@@ -366,96 +452,5 @@ export class ItineraryService {
     if (updated) {
       await manager.getRepository(Stint).save(stint);
     }
-  }
-
-  /**
-   * Reorder stops within a stint and update legs accordingly
-   */
-  async reorderStops(
-    stintId: number,
-    stopOrder: number[],
-    userId: number,
-  ): Promise<void> {
-    const stint = await this.stintsService.findOne(stintId);
-    if (!stint) {
-      throw new NotFoundException(`Stint with ID ${stintId} not found`);
-    }
-
-    // Check if user has permission to modify this stint
-    const trip = await this.tripsService.findOne(stint.trip_id);
-    if (trip.creator_id !== userId) {
-      throw new ForbiddenException(
-        'You do not have permission to modify this stint',
-      );
-    }
-
-    // Get existing stops
-    const stops = await this.stopsRepository.findByStint(stintId);
-    if (stops.length !== stopOrder.length) {
-      throw new Error(
-        'The provided stop order does not match the number of stops in the stint',
-      );
-    }
-
-    // Start a transaction
-    await this.dataSource.transaction(async (manager) => {
-      // 1. Update sequence numbers
-      const stopRepo = manager.getRepository(Stop);
-
-      for (let i = 0; i < stopOrder.length; i++) {
-        const stopId = stopOrder[i];
-        const stop = stops.find((s) => s.stop_id === stopId);
-
-        if (!stop) {
-          throw new Error(
-            `Stop with ID ${stopId} not found in stint ${stintId}`,
-          );
-        }
-
-        // Update sequence number (adding 1 because sequence numbers typically start at 1)
-        stop.sequence_number = i + 1;
-        await stopRepo.save(stop);
-      }
-
-      // 2. Remove all existing legs
-      const legRepo = manager.getRepository(Leg);
-      const legs = await this.legsRepository.findByStint(stintId);
-      await legRepo.remove(legs);
-
-      // 3. Create new legs between adjacent stops in the new order
-      const orderedStops = [...stops].sort(
-        (a, b) => a.sequence_number - b.sequence_number,
-      );
-
-      for (let i = 0; i < orderedStops.length - 1; i++) {
-        const currentStop = orderedStops[i];
-        const nextStop = orderedStops[i + 1];
-
-        // TODO: Create new leg (in real implementation we need to calculate distance and time)
-        const newLeg = legRepo.create({
-          stint_id: stintId,
-          start_stop_id: currentStop.stop_id,
-          end_stop_id: nextStop.stop_id,
-          sequence_number: i + 1,
-          distance: 0, // Replace with API call
-          estimated_travel_time: 0, // Replace with API call
-        });
-
-        await legRepo.save(newLeg);
-      }
-
-      // 4. Update stint start and end locations if needed
-      const firstStop = orderedStops[0];
-      const lastStop = orderedStops[orderedStops.length - 1];
-
-      if (
-        stint.start_location_id !== firstStop.stop_id ||
-        stint.end_location_id !== lastStop.stop_id
-      ) {
-        stint.start_location_id = firstStop.stop_id;
-        stint.end_location_id = lastStop.stop_id;
-        await manager.getRepository(Stint).save(stint);
-      }
-    });
   }
 }
