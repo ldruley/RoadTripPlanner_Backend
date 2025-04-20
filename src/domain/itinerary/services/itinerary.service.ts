@@ -259,6 +259,8 @@ export class ItineraryService {
       );
     }
 
+    const stopRemoved = stop.sequence_number;
+
     return this.dataSource.transaction(async (manager) => {
       const stopRepo = manager.getRepository(Stop);
 
@@ -336,8 +338,9 @@ export class ItineraryService {
    * TODO: this is a jumbled mess but there's some important patterns at the start (handling custom repos in a transaction
    * TODO: need to consider all the updating required with stop changes and where we can potentially combined updates
    */
-  private async updateLegsAfterStopChange(
+  private async updateLegsAfterStopChanges(
     stintId: number,
+    stopsChanged: [Stop],
     manager: EntityManager,
   ): Promise<void> {
     // Get all stops in the stint, ordered by sequence
@@ -354,15 +357,19 @@ export class ItineraryService {
     }
 
     // This may not handle all legs affected as we need to consider source and destination
-    const affectedLegs =
-      await legsRepository.findLegsAffectedByStopChange(stintId);
+    const affectedLegs: Leg[] = await Promise.all(
+      stops.map((stop) =>
+        legsRepository.findLegsAffectedByStopChange(stop.stop_id),
+      ),
+    )
+      .then((results) => results.filter(Boolean))
+      .then((results) => results.flat());
 
     if (affectedLegs.length > 0) {
       await legsRepository.remove(affectedLegs);
     }
 
     // Create new legs between consecutive stops
-    const legRepo = manager.getRepository(LegsRepository);
     for (let i = 0; i < stops.length - 1; i++) {
       const currentStop = stops[i];
       const nextStop = stops[i + 1];
