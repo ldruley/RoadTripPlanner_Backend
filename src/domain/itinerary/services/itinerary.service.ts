@@ -234,7 +234,11 @@ export class ItineraryService {
       const savedStop = await stopRepo.save(stop);
 
       // Update legs
-      await this.updateLegsAfterStopChange(stint.stint_id, manager);
+      await this.updateLegsAfterStopChanges(
+        stint.stint_id,
+        [savedStop],
+        manager,
+      );
 
       // Update stint start/end locations if needed
       await this.updateStintStartEndLocations(stint.stint_id, manager);
@@ -259,8 +263,6 @@ export class ItineraryService {
       );
     }
 
-    const stopRemoved = stop.sequence_number;
-
     return this.dataSource.transaction(async (manager) => {
       const stopRepo = manager.getRepository(Stop);
 
@@ -282,7 +284,7 @@ export class ItineraryService {
       }
 
       // Update legs and stint metadata
-      await this.updateLegsAfterStopChange(stop.stint_id, manager);
+      await this.updateLegsAfterStopChanges(stop.stint_id, [stop], manager);
       await this.updateStintStartEndLocations(stop.stint_id, manager);
     });
   }
@@ -290,7 +292,7 @@ export class ItineraryService {
   /**
    * Reorder stops within a stint by specifying the new sequence for each stop
    */
-  async reorderStops(
+  /*async reorderStops(
     stintId: number,
     stopOrder: { stop_id: number; sequence_number: number }[],
     userId: number,
@@ -329,13 +331,13 @@ export class ItineraryService {
       await this.updateLegsAfterStopChange(stintId, manager);
       await this.updateStintStartEndLocations(stintId, manager);
     });
-  }
+  }*/
 
   /**
    * Update legs after stops have been added, removed, or resequenced
    * We are using manager to ensure that this is done in the same transaction
    * TODO: can we do this with dependency injection?
-   * TODO: this is a jumbled mess but there's some important patterns at the start (handling custom repos in a transaction
+   * TODO: this is inefficent as we are getting all the stops and then checking each leg if it exists
    * TODO: need to consider all the updating required with stop changes and where we can potentially combined updates
    */
   private async updateLegsAfterStopChanges(
@@ -356,9 +358,9 @@ export class ItineraryService {
       return; // No legs needed with 0 or 1 stops
     }
 
-    // This may not handle all legs affected as we need to consider source and destination
+    // Get affected legs based on passed stops and remove them
     const affectedLegs: Leg[] = await Promise.all(
-      stops.map((stop) =>
+      stopsChanged.map((stop) =>
         legsRepository.findLegsAffectedByStopChange(stop.stop_id),
       ),
     )
@@ -374,16 +376,22 @@ export class ItineraryService {
       const currentStop = stops[i];
       const nextStop = stops[i + 1];
 
-      const newLeg = legRepo.create({
-        stint_id: stintId,
-        start_stop_id: currentStop.stop_id,
-        end_stop_id: nextStop.stop_id,
-        sequence_number: i + 1,
-        distance: 0, // This should be calculated based on coordinates
-        estimated_travel_time: 0, // This should be calculated based on distance
-      });
+      const leg = await legsRepository.findLegBetweenStops(
+        currentStop.stop_id,
+        nextStop.stop_id,
+      );
+      if (!leg) {
+        const newLeg = legsRepository.create({
+          stint_id: stintId,
+          start_stop_id: currentStop.stop_id,
+          end_stop_id: nextStop.stop_id,
+          sequence_number: i + 1,
+          distance: 0, // This should be calculated based on coordinates
+          estimated_travel_time: 0, // This should be calculated based on distance
+        });
 
-      await legRepo.save(newLeg);
+        await legsRepository.save(newLeg);
+      }
     }
   }
 

@@ -71,7 +71,7 @@ export class ItineraryController {
     return this.itineraryService.addStop(createStopDto, user.user_id);
   }
 
-  @Put('stint/:stintId/reorder-stops')
+  /* @Put('stint/:stintId/reorder-stops')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
@@ -122,7 +122,7 @@ export class ItineraryController {
       data.stopOrder,
       user.user_id,
     );
-  }
+  }*/
 
   @Delete('stops/:stopId')
   @UseGuards(JwtAuthGuard)
