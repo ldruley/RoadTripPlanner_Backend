@@ -333,32 +333,36 @@ export class ItineraryService {
    * Update legs after stops have been added, removed, or resequenced
    * We are using manager to ensure that this is done in the same transaction
    * TODO: can we do this with dependency injection?
+   * TODO: this is a jumbled mess but there's some important patterns at the start (handling custom repos in a transaction
+   * TODO: need to consider all the updating required with stop changes and where we can potentially combined updates
    */
   private async updateLegsAfterStopChange(
     stintId: number,
     manager: EntityManager,
   ): Promise<void> {
     // Get all stops in the stint, ordered by sequence
-    const stops = await this.stopsRepository.find({
-      where: { stint_id: stintId },
-      order: { sequence_number: 'ASC' },
-    });
+    const stopsRepository: StopsRepository = manager.withRepository(
+      this.stopsRepository,
+    );
+    const legsRepository: LegsRepository = manager.withRepository(
+      this.legsRepository,
+    );
+    const stops = await stopsRepository.findByStint(stintId);
 
     if (stops.length <= 1) {
       return; // No legs needed with 0 or 1 stops
     }
 
-    // Delete all existing legs for this stint
-    const existingLegs = await this.legsRepository.find({
-      where: { stint_id: stintId },
-    });
+    // This may not handle all legs affected as we need to consider source and destination
+    const affectedLegs =
+      await legsRepository.findLegsAffectedByStopChange(stintId);
 
-    if (existingLegs.length > 0) {
-      await manager.getRepository(Leg).remove(existingLegs);
+    if (affectedLegs.length > 0) {
+      await legsRepository.remove(affectedLegs);
     }
 
     // Create new legs between consecutive stops
-    const legRepo = manager.getRepository(Leg);
+    const legRepo = manager.getRepository(LegsRepository);
     for (let i = 0; i < stops.length - 1; i++) {
       const currentStop = stops[i];
       const nextStop = stops[i + 1];

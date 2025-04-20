@@ -19,6 +19,12 @@ export class LegsRepository extends Repository<Leg> {
     });
   }
 
+  findLegsAffectedByStopChange(stop_id: number): Promise<Leg[]> {
+    return this.find({
+      where: [{ start_stop_id: stop_id }, { end_stop_id: stop_id }],
+    });
+  }
+
   findByStartStop(stop_id: number): Promise<Leg[]> {
     return this.find({ where: { start_stop_id: stop_id } });
   }
