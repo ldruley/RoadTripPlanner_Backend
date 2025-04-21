@@ -434,8 +434,14 @@ export class ItineraryService {
 
     const legRepo = manager.getRepository(Leg);
 
-    // No legs needed with 0 or 1 stops
+    // No legs needed with 0 or 1 stops - make sure we have no leftover legs.
     if (stops.length <= 1) {
+      const existingLegs = await legRepo.find({
+        where: { stint_id: stintId },
+      });
+      if (existingLegs.length > 0) {
+        await legRepo.remove(existingLegs);
+      }
       return;
     }
 
@@ -470,7 +476,7 @@ export class ItineraryService {
           stint_id: stintId,
           start_stop_id: currentStop.stop_id,
           end_stop_id: nextStop.stop_id,
-          sequence_number: i + 1,
+          sequence_number: currentStop.sequence_number,
           distance: 10, // This should be calculated based on api calls
           estimated_travel_time: 10, // This should be calculated based on api calls
         });
