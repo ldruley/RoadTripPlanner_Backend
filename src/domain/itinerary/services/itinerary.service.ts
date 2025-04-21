@@ -19,6 +19,7 @@ import { LegsRepository } from '../repositories/legs.repository';
 import {
   TripTimeline,
   TimelineStint,
+  TimelineItem,
   //TimelineStop,
   //TimelineLeg,
 } from '../../interfaces/itinerary';
@@ -96,8 +97,7 @@ export class ItineraryService {
         distance: stint.distance,
         estimated_duration: stint.estimated_duration,
         notes: stint.notes,
-        stops: [],
-        legs: [],
+        timeline: [],
       };
       if (stint.start_location) {
         stintTimeline.start_location_name = stint.start_location.name;
@@ -107,25 +107,34 @@ export class ItineraryService {
         stintTimeline.end_location_name = stint.end_location.name;
       }
 
-      // Add stops to the stint timeline
-      if (sortedStops.length > 0) {
-        stintTimeline.stops = sortedStops.map((stop) => ({
-          stop_id: stop.stop_id,
-          name: stop.name,
-          latitude: stop.latitude,
-          longitude: stop.longitude,
-          address: stop.address,
-          stop_type: stop.stop_type,
-          arrival_time: stop.arrival_time,
-          departure_time: stop.departure_time,
-          duration: stop.duration,
-          sequence_number: stop.sequence_number,
-          notes: stop.notes,
-        }));
+      const timelineItems: TimelineItem[] = [];
 
-        // Add legs to the stint timeline
-        if (sortedLegs.length > 0) {
-          stintTimeline.legs = sortedLegs.map((leg) => ({
+      sortedStops.forEach((stop) => {
+        timelineItems.push({
+          type: 'stop',
+          sequence_number: stop.sequence_number,
+          item: {
+            stop_id: stop.stop_id,
+            name: stop.name,
+            latitude: stop.latitude,
+            longitude: stop.longitude,
+            address: stop.address,
+            stop_type: stop.stop_type,
+            arrival_time: stop.arrival_time,
+            departure_time: stop.departure_time,
+            duration: stop.duration,
+            sequence_number: stop.sequence_number,
+            notes: stop.notes,
+          },
+        });
+      });
+
+      sortedLegs.forEach((leg) => {
+        timelineItems.push({
+          type: 'leg',
+          // Setting sequence number to n + 0.5 to interleave with stops
+          sequence_number: leg.sequence_number + 0.5,
+          item: {
             leg_id: leg.leg_id,
             distance: leg.distance,
             estimated_travel_time: leg.estimated_travel_time,
@@ -134,28 +143,32 @@ export class ItineraryService {
             notes: leg.notes,
             start_stop_name: leg.start_stop?.name,
             end_stop_name: leg.end_stop?.name,
-          }));
+          },
+        });
+      });
 
-          // Calculate total stint distance and duration as before
-          stintTimeline.distance = sortedLegs.reduce(
-            (total, leg) => total + leg.distance,
-            0,
-          );
-          stintTimeline.estimated_duration = sortedLegs.reduce(
-            (total, leg) => total + leg.estimated_travel_time,
-            0,
-          );
+      timelineItems.sort((a, b) => a.sequence_number - b.sequence_number);
 
-          // Add stop durations to total stint duration
-          if (stintTimeline.estimated_duration) {
-            sortedStops.forEach((stop) => {
-              if (stop.duration) {
-                stintTimeline.estimated_duration =
-                  (stintTimeline.estimated_duration ?? 0) + stop.duration;
-              }
-            });
+      stintTimeline.timeline = timelineItems;
+
+      // Calculate total stint distance and duration as before
+      stintTimeline.distance = sortedLegs.reduce(
+        (total, leg) => total + leg.distance,
+        0,
+      );
+      stintTimeline.estimated_duration = sortedLegs.reduce(
+        (total, leg) => total + leg.estimated_travel_time,
+        0,
+      );
+
+      // Add stop durations to total stint duration
+      if (stintTimeline.estimated_duration) {
+        sortedStops.forEach((stop) => {
+          if (stop.duration) {
+            stintTimeline.estimated_duration =
+              (stintTimeline.estimated_duration ?? 0) + stop.duration;
           }
-        }
+        });
       }
 
       // Add stint to trip timeline
@@ -172,6 +185,7 @@ export class ItineraryService {
           (timeline.total_duration || 0) + stintTimeline.estimated_duration;
       }
     }
+
     return timeline;
   }
 
