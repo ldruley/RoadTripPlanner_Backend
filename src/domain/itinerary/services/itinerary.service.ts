@@ -151,6 +151,7 @@ export class ItineraryService {
 
       stintTimeline.timeline = timelineItems;
 
+      // TODO: we shouldn't need to do this anymore, but let's check
       // Calculate total stint distance and duration as before
       stintTimeline.distance = sortedLegs.reduce(
         (total, leg) => total + leg.distance,
@@ -438,7 +439,7 @@ export class ItineraryService {
   /**
    * Update legs after stops have been added, removed, or resequenced
    * We are using manager to ensure that this is done in the same transaction
-   * TODO: this is inefficent as we are getting all the stops and then checking each leg if it exists
+   * TODO: this is inefficient as we are getting all the stops and then checking each leg if it exists
    * TODO: need to consider all the updating required with stop changes and where we can potentially combine updates
    */
   private async updateLegsAfterStopChanges(
@@ -459,7 +460,7 @@ export class ItineraryService {
 
     const legRepo = manager.getRepository(Leg);
 
-    // No legs needed with 0 or 1 stops - make sure we have no leftover legs.
+    // No legs needed with 0 or 1 stops - make sure we have no leftover legs in this case.
     if (stops.length <= 1) {
       const existingLegs = await legRepo.find({
         where: { stint_id: stintId },
@@ -498,7 +499,7 @@ export class ItineraryService {
       stopSequenceMap.set(stop.stop_id, stop.sequence_number);
     });
 
-    // Update sequence numbers of remaining legs based on their start stop's sequence
+    // Update sequence numbers of remaining legs based on their starting stop's sequence
     for (const leg of remainingLegs) {
       const startStopSequence = stopSequenceMap.get(leg.start_stop_id);
       if (

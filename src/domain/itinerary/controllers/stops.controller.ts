@@ -73,7 +73,7 @@ export class StopsController {
   @Put(':id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: '[NOT UPDATED]: Update a stop' })
+  @ApiOperation({ summary: '[TESTING ONLY]: Update a stop' })
   @ApiParam({ name: 'id', description: 'Stop ID' })
   @ApiResponse({ status: 200, description: 'Stop updated successfully' })
   @ApiResponse({ status: 400, description: 'Bad request - invalid input' })

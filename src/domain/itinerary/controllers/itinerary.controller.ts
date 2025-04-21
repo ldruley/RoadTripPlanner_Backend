@@ -23,7 +23,6 @@ import { GetUser } from '../../../infrastructure/auth/decorators/get-user-decora
 import { User } from '../../users/entities/user.entity';
 import { CreateStopDto } from '../dto/create-stop.dto';
 
-//currently these endpoints are for testing. most of this functionality will be contained within the backend once we integrate with front end
 @ApiTags('Itinerary')
 @Controller('itinerary')
 export class ItineraryController {
