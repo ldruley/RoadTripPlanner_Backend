@@ -68,7 +68,7 @@ export class LegsRepository extends Repository<Leg> {
   async sumEstimatedTravelDistance(stint_id: number): Promise<number> {
     const result: { total: string | null } | undefined =
       await this.createQueryBuilder('leg')
-        .select('SUM(leg.estimated_distance)', 'total')
+        .select('SUM(leg.distance)', 'total')
         .where('leg.stint_id = :stint_id', { stint_id })
         .getRawOne();
 
