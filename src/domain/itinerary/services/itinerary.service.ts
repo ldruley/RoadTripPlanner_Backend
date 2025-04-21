@@ -266,40 +266,53 @@ export class ItineraryService {
       );
     }
 
-    return this.dataSource.transaction(async (manager) => {
-      const stopRepo = manager.getRepository(Stop);
-      const legRepo = manager.getRepository(Leg);
+    return this.dataSource
+      .transaction(async (manager) => {
+        const stopRepo = manager.getRepository(Stop);
+        const legRepo = manager.getRepository(Leg);
 
-      // Legs need to be deleted prior to removing the stop
-      const relatedLegs = await legRepo.find({
-        where: [{ start_stop_id: stopId }, { end_stop_id: stopId }],
+        // Legs need to be deleted prior to removing the stop
+        const relatedLegs = await legRepo.find({
+          where: [{ start_stop_id: stopId }, { end_stop_id: stopId }],
+        });
+
+        if (relatedLegs.length > 0) {
+          await legRepo.remove(relatedLegs);
+        }
+
+        // Delete the stop
+        await stopRepo.remove(stop);
+
+        // Update sequence numbers for stops after the removed one
+        const stopsToUpdate = await stopRepo.find({
+          where: {
+            stint_id: stop.stint_id,
+            sequence_number: MoreThan(stop.sequence_number),
+          },
+          order: { sequence_number: 'ASC' },
+        });
+
+        for (const remainingStop of stopsToUpdate) {
+          remainingStop.sequence_number -= 1;
+          await stopRepo.save(remainingStop);
+        }
+
+        // Update legs and stint metadata
+        await this.updateLegsAfterStopChanges(stop.stint_id, [stop], manager);
+        //await this.updateStintStartEndLocations(stop.stint_id, manager);
+      })
+      .then(() => {
+        this.updateStintDuration(stop.stint_id).catch((error) => {
+          console.error(
+            `Failed to update stint duration for stint ID ${stop.stint_id}: ${error}`,
+          );
+        });
+        this.updateStintDistance(stop.stint_id).catch((error) => {
+          console.error(
+            `Failed to update stint distance for stint ID ${stop.stint_id}: ${error}`,
+          );
+        });
       });
-
-      if (relatedLegs.length > 0) {
-        await legRepo.remove(relatedLegs);
-      }
-
-      // Delete the stop
-      await stopRepo.remove(stop);
-
-      // Update sequence numbers for stops after the removed one
-      const stopsToUpdate = await stopRepo.find({
-        where: {
-          stint_id: stop.stint_id,
-          sequence_number: MoreThan(stop.sequence_number),
-        },
-        order: { sequence_number: 'ASC' },
-      });
-
-      for (const remainingStop of stopsToUpdate) {
-        remainingStop.sequence_number -= 1;
-        await stopRepo.save(remainingStop);
-      }
-
-      // Update legs and stint metadata
-      await this.updateLegsAfterStopChanges(stop.stint_id, [stop], manager);
-      //await this.updateStintStartEndLocations(stop.stint_id, manager);
-    });
   }
 
   /**
@@ -363,6 +376,8 @@ export class ItineraryService {
       order: { sequence_number: 'ASC' },
     });
 
+    const legRepo = manager.getRepository(Leg);
+
     if (stops.length <= 1) {
       return; // No legs needed with 0 or 1 stops
     }
@@ -370,28 +385,28 @@ export class ItineraryService {
     // Get affected legs based on passed stops and remove them
     let affectedLegs: Leg[] = [];
     for (const stop of stopsChanged) {
-      const legs = await manager.getRepository(Leg).find({
+      const legs = await legRepo.find({
         where: [{ start_stop_id: stop.stop_id }, { end_stop_id: stop.stop_id }],
       });
       affectedLegs = [...affectedLegs, ...legs];
     }
 
     if (affectedLegs.length > 0) {
-      await manager.getRepository(Leg).remove(affectedLegs);
+      await legRepo.remove(affectedLegs);
     }
     // Create new legs between consecutive stops
     for (let i = 0; i < stops.length - 1; i++) {
       const currentStop = stops[i];
       const nextStop = stops[i + 1];
 
-      const leg = await manager.getRepository(Leg).findOne({
+      const leg = await legRepo.findOne({
         where: {
           start_stop_id: currentStop.stop_id,
           end_stop_id: nextStop.stop_id,
         },
       });
       if (!leg) {
-        const newLeg = manager.getRepository(Leg).create({
+        const newLeg = legRepo.create({
           stint_id: stintId,
           start_stop_id: currentStop.stop_id,
           end_stop_id: nextStop.stop_id,
@@ -400,7 +415,7 @@ export class ItineraryService {
           estimated_travel_time: 0, // This should be calculated based on distance
         });
 
-        await manager.getRepository(Leg).save(newLeg);
+        await legRepo.save(newLeg);
       }
     }
   }
@@ -408,42 +423,27 @@ export class ItineraryService {
   /**
    * Calculate and update total distance for a stint
    */
-  async updateStintDistance(stintId: number): Promise<number> {
-    const legs = await this.legsRepository.findByStint(stintId);
-    if (!legs || legs.length === 0) {
-      return 0;
-    }
-
-    const totalDistance = legs.reduce((sum, leg) => sum + leg.distance, 0);
+  async updateStintDistance(stintId: number): Promise<void> {
+    const totalDistance =
+      await this.legsRepository.sumEstimatedTravelDistance(stintId);
 
     // Update the stint with the new distance
     const stint = await this.stintsService.findOne(stintId);
     stint.distance = totalDistance;
     await this.stintsRepository.save(stint);
-
-    return totalDistance;
   }
 
   /**
    * Calculate and update total duration for a stint
    */
-  async updateStintDuration(stintId: number): Promise<number> {
-    const legs = await this.legsRepository.findByStint(stintId);
-    if (!legs || legs.length === 0) {
-      return 0;
-    }
-
-    const totalDuration = legs.reduce(
-      (sum, leg) => sum + leg.estimated_travel_time,
-      0,
-    );
-
+  async updateStintDuration(stintId: number): Promise<void> {
+    const legDuration =
+      await this.legsRepository.sumEstimatedTravelTime(stintId);
+    const stopDuration = await this.stopsRepository.sumDuration(stintId);
     // Update the stint with the new duration
     const stint = await this.stintsService.findOne(stintId);
-    stint.estimated_duration = totalDuration;
+    stint.estimated_duration = legDuration + stopDuration;
     await this.stintsRepository.save(stint);
-
-    return totalDuration;
   }
 
   /**

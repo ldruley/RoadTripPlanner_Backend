@@ -49,4 +49,20 @@ export class StopsRepository extends Repository<Stop> {
       ],
     });
   }
+
+  /**
+   * Calculate the sum of duration for all stops in a stint
+   * @param stint_id The stint ID
+   * @returns The total duration in minutes, or 0 if no stops exist or durations are null
+   */
+  async sumDuration(stint_id: number): Promise<number> {
+    const result: { total: string | null } | undefined =
+      await this.createQueryBuilder('stop')
+        .select('SUM(stop.duration)', 'total')
+        .where('stop.stint_id = :stint_id', { stint_id })
+        .andWhere('stop.duration IS NOT NULL') // Only include stops with duration
+        .getRawOne();
+
+    return result?.total ? Number(result.total) : 0;
+  }
 }
