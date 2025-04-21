@@ -268,6 +268,16 @@ export class ItineraryService {
 
     return this.dataSource.transaction(async (manager) => {
       const stopRepo = manager.getRepository(Stop);
+      const legRepo = manager.getRepository(Leg);
+
+      // Legs need to be deleted prior to removing the stop
+      const relatedLegs = await legRepo.find({
+        where: [{ start_stop_id: stopId }, { end_stop_id: stopId }],
+      });
+
+      if (relatedLegs.length > 0) {
+        await legRepo.remove(relatedLegs);
+      }
 
       // Delete the stop
       await stopRepo.remove(stop);
@@ -339,7 +349,6 @@ export class ItineraryService {
   /**
    * Update legs after stops have been added, removed, or resequenced
    * We are using manager to ensure that this is done in the same transaction
-   * TODO: can we do this with dependency injection?
    * TODO: this is inefficent as we are getting all the stops and then checking each leg if it exists
    * TODO: need to consider all the updating required with stop changes and where we can potentially combined updates
    */
