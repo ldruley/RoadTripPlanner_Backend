@@ -296,6 +296,7 @@ export class ItineraryService {
       .transaction(async (manager) => {
         const stopRepo = manager.getRepository(Stop);
         const legRepo = manager.getRepository(Leg);
+        const stintRepo = manager.getRepository(Stint);
 
         // Legs need to be deleted prior to removing the stop
         const relatedLegs = await legRepo.find({
@@ -304,6 +305,30 @@ export class ItineraryService {
 
         if (relatedLegs.length > 0) {
           await legRepo.remove(relatedLegs);
+        }
+
+        // If this is the first stop in the stint we need to update
+        if (stop.sequence_number === 1) {
+          const stint = await stintRepo.findOne({
+            where: { stint_id: stop.stint_id },
+          });
+          if (!stint) {
+            throw new NotFoundException(
+              `Stint with ID ${stop.stint_id} not found`,
+            );
+          }
+          const stops = await stopRepo.find({
+            where: { stint_id: stop.stint_id },
+            order: { sequence_number: 'ASC' },
+            take: 2,
+          });
+          if (!stops || stops.length === 0) {
+            throw new NotFoundException(
+              `No stops found or this is the only stop for stint with ID ${stop.stint_id}`,
+            );
+          }
+          stint.start_location_id = stops[1].stop_id;
+          await stintRepo.save(stint);
         }
 
         // Delete the stop
@@ -459,6 +484,32 @@ export class ItineraryService {
     if (affectedLegs.length > 0) {
       await legRepo.remove(affectedLegs);
     }
+
+    // Get all remaining legs to update their sequence numbers if needed
+    // Approach is different that stops as it's more complex to determine
+    const remainingLegs = await legRepo.find({
+      where: { stint_id: stintId },
+      order: { sequence_number: 'ASC' },
+    });
+
+    // Create a map of stop_id to sequence_number for quick lookup
+    const stopSequenceMap = new Map<number, number>();
+    stops.forEach((stop) => {
+      stopSequenceMap.set(stop.stop_id, stop.sequence_number);
+    });
+
+    // Update sequence numbers of remaining legs based on their start stop's sequence
+    for (const leg of remainingLegs) {
+      const startStopSequence = stopSequenceMap.get(leg.start_stop_id);
+      if (
+        startStopSequence !== undefined &&
+        leg.sequence_number !== startStopSequence
+      ) {
+        leg.sequence_number = startStopSequence;
+        await legRepo.save(leg);
+      }
+    }
+
     // Create new legs between consecutive stops
     for (let i = 0; i < stops.length - 1; i++) {
       const currentStop = stops[i];
