@@ -288,7 +288,7 @@ export class ItineraryService {
     const lastStop = await this.stopsRepository.findOne({
       where: {
         stint_id: prevStint.stint_id,
-        sequence_number: prevStint.stops.length,
+        sequence_number: prevStint.end_location_id,
       },
     });
 
