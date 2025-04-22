@@ -91,13 +91,15 @@ export class CreateStintWithOptionalStopDto {
 
   @ApiProperty({
     example: 1,
-    description: 'Order of the stint within the trip',
-    required: true,
+    description:
+      'Order of the stint within the trip - adds to end if not specified',
+    required: false,
     minimum: 1,
   })
+  @IsOptional()
   @IsNumber()
   @Min(1)
-  sequence_number: number;
+  sequence_number?: number;
 
   @ApiProperty({
     example: 1,

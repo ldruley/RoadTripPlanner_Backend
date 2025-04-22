@@ -7,7 +7,7 @@ import { TimelineLeg } from './leg.interface';
  * */
 
 export interface TimelineItem {
-  type: 'stop' | 'leg';
+  type: 'stop' | 'leg' | 'departure';
   sequence_number: number;
   item: TimelineStop | TimelineLeg;
 }

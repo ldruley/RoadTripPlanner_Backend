@@ -15,4 +15,14 @@ export class StintsRepository extends Repository<Stint> {
   findAllByTrip(trip_id: number): Promise<Stint[]> {
     return this.find({ where: { trip_id } });
   }
+
+  async findMaxSequenceNumber(trip_id: number) {
+    const result: { maxSequence: string | null } | undefined =
+      await this.createQueryBuilder('stint')
+        .select('MAX(stint.sequence_number)', 'maxSequence')
+        .where('stint.trip_id = :trip_id', { trip_id })
+        .getRawOne();
+
+    return result?.maxSequence ? Number(result.maxSequence) : 0;
+  }
 }

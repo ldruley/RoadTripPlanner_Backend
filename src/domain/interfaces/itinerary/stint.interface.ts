@@ -1,4 +1,5 @@
 import { TimelineItem } from './item.interface';
+import { TimelineStop } from './stop.interface';
 
 /**
  * Interface representing a stint in the trip timeline
@@ -14,5 +15,7 @@ export interface TimelineStint {
   end_date?: Date;
   start_location_name?: string;
   end_location_name?: string;
+  continues_from_previous?: boolean;
+  departure_stop?: TimelineStop;
   timeline: TimelineItem[];
 }
