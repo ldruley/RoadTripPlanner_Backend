@@ -47,6 +47,7 @@ describe('StintsService', () => {
       save: jest.fn(),
       findById: jest.fn(),
       findAllByTrip: jest.fn(),
+      findMaxSequenceNumber: jest.fn(),
       remove: jest.fn(),
     };
 
@@ -140,7 +141,9 @@ describe('StintsService', () => {
       };
 
       dataSource.transaction.mockImplementation(async (cb) => {
-        return cb(mockManager);
+        // @ts-expect-error because typescript is annoying
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+        return await cb(mockManager);
       });
 
       stopsService.createWithTransaction.mockResolvedValue(mockStop);
@@ -222,9 +225,12 @@ describe('StintsService', () => {
     });
 
     it('should throw ForbiddenException when user is not creator', async () => {
-      stintsRepository.findById.mockResolvedValue(mockStint);
+      stintsRepository.findById.mockResolvedValue({
+        ...mockStint,
+        trip: { ...mockTrip, creator_id: 2 },
+      } as Stint);
 
-      await expect(service.update(1, updateStintDto, 999)).rejects.toThrow(
+      await expect(service.update(1, updateStintDto, 1)).rejects.toThrow(
         ForbiddenException,
       );
     });
@@ -241,9 +247,12 @@ describe('StintsService', () => {
     });
 
     it('should throw ForbiddenException when user is not creator', async () => {
-      stintsRepository.findById.mockResolvedValue(mockStint);
+      stintsRepository.findById.mockResolvedValue({
+        ...mockStint,
+        trip: { ...mockTrip, creator_id: 2 },
+      } as Stint);
 
-      await expect(service.remove(1, 999)).rejects.toThrow(ForbiddenException);
+      await expect(service.remove(1, 1)).rejects.toThrow(ForbiddenException);
     });
   });
 });

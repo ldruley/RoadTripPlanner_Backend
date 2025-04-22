@@ -6,6 +6,7 @@ import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { User } from '../../users/entities/user.entity';
 import { StopType } from '../../../common/enums';
 import { Stop } from '../entities/stop.entity';
+import { ItineraryService } from '../services/itinerary.service';
 
 describe('StopsController', () => {
   let controller: StopsController;

@@ -1,8 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { StintsController } from './stints.controller';
 import { StintsService } from '../services/stints.service';
+import { ItineraryService } from '../services/itinerary.service';
 import { CreateStintDto } from '../dto/create-stint-dto';
 import { CreateStintWithStopDto } from '../dto/create-stint-with-stop.dto';
+import { CreateStintWithOptionalStopDto } from '../dto/create-sprint-with-optional-stop.dto';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { User } from '../../users/entities/user.entity';
 import { StopType } from '../../../common/enums';
@@ -11,7 +13,8 @@ import { Trip } from '../../trips/entities/trip.entity';
 
 describe('StintsController', () => {
   let controller: StintsController;
-  let service: jest.Mocked<StintsService>;
+  let stintsService: jest.Mocked<StintsService>;
+  let itineraryService: jest.Mocked<ItineraryService>;
 
   const mockUser: User = {
     user_id: 1,
@@ -33,6 +36,9 @@ describe('StintsController', () => {
     is_public: false,
     created_at: new Date(),
     updated_at: new Date(),
+    start_date: new Date('2025-05-01T00:00:00Z'),
+    end_date: new Date('2025-05-10T00:00:00Z'),
+    total_distance: 500,
     stints: [],
     stops: [],
     creator: mockUser,
@@ -59,11 +65,15 @@ describe('StintsController', () => {
 
   beforeEach(async () => {
     const mockStintsService = {
-      create: jest.fn(),
-      createWithInitialStop: jest.fn(),
       findOne: jest.fn(),
       update: jest.fn(),
       remove: jest.fn(),
+      createWithInitialStop: jest.fn(),
+    };
+
+    const mockItineraryService = {
+      createStint: jest.fn(),
+      getTripTimeline: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -73,11 +83,18 @@ describe('StintsController', () => {
           provide: StintsService,
           useValue: mockStintsService,
         },
+        {
+          provide: ItineraryService,
+          useValue: mockItineraryService,
+        },
       ],
     }).compile();
 
     controller = module.get<StintsController>(StintsController);
-    service = module.get(StintsService) as jest.Mocked<StintsService>;
+    stintsService = module.get(StintsService) as jest.Mocked<StintsService>;
+    itineraryService = module.get(
+      ItineraryService,
+    ) as jest.Mocked<ItineraryService>;
   });
 
   it('should be defined', () => {
@@ -85,23 +102,40 @@ describe('StintsController', () => {
   });
 
   describe('create', () => {
-    const createStintDto: CreateStintDto = {
+    const createStintDto: CreateStintWithOptionalStopDto = {
       name: 'California Coast Drive',
       sequence_number: 1,
       trip_id: 1,
-      start_location_id: 1,
-      distance: 350.5,
-      estimated_duration: 420,
+      initialStop: {
+        name: 'San Francisco',
+        latitude: 37.7749,
+        longitude: -122.4194,
+        address: '123 Main St, San Francisco, CA',
+        stopType: StopType.PITSTOP,
+        notes: 'Our journey begins here',
+      },
       notes: 'Scenic coastal route',
+      start_time: new Date('2025-05-15T08:00:00Z'),
     };
 
-    it('should create a new stint successfully', async () => {
-      service.create.mockResolvedValue(mockStint);
+    it('should create a stint successfully', async () => {
+      itineraryService.createStint.mockResolvedValue(mockStint);
 
-      const result = await controller.create(createStintDto);
+      const result = await controller.create(createStintDto, mockUser);
 
-      expect(service.create).toHaveBeenCalledWith(createStintDto);
+      expect(itineraryService.createStint).toHaveBeenCalledWith(
+        createStintDto,
+        mockUser.user_id,
+      );
       expect(result).toBe(mockStint);
+    });
+
+    it('should throw ForbiddenException when user lacks permission', async () => {
+      itineraryService.createStint.mockRejectedValue(new ForbiddenException());
+
+      await expect(controller.create(createStintDto, mockUser)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 
@@ -122,14 +156,14 @@ describe('StintsController', () => {
     };
 
     it('should create a stint with initial stop successfully', async () => {
-      service.createWithInitialStop.mockResolvedValue(mockStint);
+      stintsService.createWithInitialStop.mockResolvedValue(mockStint);
 
       const result = await controller.createWithInitialStop(
         createStintWithStopDto,
         mockUser,
       );
 
-      expect(service.createWithInitialStop).toHaveBeenCalledWith(
+      expect(stintsService.createWithInitialStop).toHaveBeenCalledWith(
         createStintWithStopDto,
         mockUser.user_id,
       );
@@ -137,7 +171,9 @@ describe('StintsController', () => {
     });
 
     it('should throw ForbiddenException when user lacks permission', async () => {
-      service.createWithInitialStop.mockRejectedValue(new ForbiddenException());
+      stintsService.createWithInitialStop.mockRejectedValue(
+        new ForbiddenException(),
+      );
 
       await expect(
         controller.createWithInitialStop(createStintWithStopDto, mockUser),
@@ -147,16 +183,16 @@ describe('StintsController', () => {
 
   describe('findOne', () => {
     it('should return a stint by ID', async () => {
-      service.findOne.mockResolvedValue(mockStint);
+      stintsService.findOne.mockResolvedValue(mockStint);
 
       const result = await controller.findOne(1);
 
-      expect(service.findOne).toHaveBeenCalledWith(1);
+      expect(stintsService.findOne).toHaveBeenCalledWith(1);
       expect(result).toBe(mockStint);
     });
 
     it('should throw NotFoundException when stint not found', async () => {
-      service.findOne.mockRejectedValue(new NotFoundException());
+      stintsService.findOne.mockRejectedValue(new NotFoundException());
 
       await expect(controller.findOne(999)).rejects.toThrow(NotFoundException);
     });
@@ -172,11 +208,11 @@ describe('StintsController', () => {
 
     it('should update a stint successfully', async () => {
       const updatedStint = { ...mockStint, ...updateStintDto };
-      service.update.mockResolvedValue(updatedStint);
+      stintsService.update.mockResolvedValue(updatedStint);
 
       const result = await controller.update(1, updateStintDto, mockUser);
 
-      expect(service.update).toHaveBeenCalledWith(
+      expect(stintsService.update).toHaveBeenCalledWith(
         1,
         updateStintDto,
         mockUser.user_id,
@@ -185,7 +221,7 @@ describe('StintsController', () => {
     });
 
     it('should throw ForbiddenException when user is not authorized', async () => {
-      service.update.mockRejectedValue(new ForbiddenException());
+      stintsService.update.mockRejectedValue(new ForbiddenException());
 
       await expect(
         controller.update(1, updateStintDto, mockUser),
@@ -195,15 +231,15 @@ describe('StintsController', () => {
 
   describe('remove', () => {
     it('should remove a stint successfully', async () => {
-      service.remove.mockResolvedValue(undefined);
+      stintsService.remove.mockResolvedValue(undefined);
 
       await controller.remove(1, mockUser);
 
-      expect(service.remove).toHaveBeenCalledWith(1, mockUser.user_id);
+      expect(stintsService.remove).toHaveBeenCalledWith(1, mockUser.user_id);
     });
 
     it('should throw ForbiddenException when user is not authorized', async () => {
-      service.remove.mockRejectedValue(new ForbiddenException());
+      stintsService.remove.mockRejectedValue(new ForbiddenException());
 
       await expect(controller.remove(1, mockUser)).rejects.toThrow(
         ForbiddenException,

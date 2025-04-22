@@ -6,7 +6,8 @@ import { StintsService } from './stints.service';
 import { CreateStopDto } from '../dto/create-stop.dto';
 import { UpdateStopDto } from '../dto/update-stop.dto';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
-import { Stop, StopType } from '../entities/stop.entity';
+import { Stop } from '../entities/stop.entity';
+import { StopType } from '../../../common/enums';
 import { Trip } from '../../trips/entities/trip.entity';
 import { Stint } from '../entities/stint.entity';
 import { EntityManager } from 'typeorm';
@@ -57,6 +58,9 @@ describe('StopsService', () => {
       findAllByTrip: jest.fn(),
       findByStint: jest.fn(),
       remove: jest.fn(),
+      findMaxSequenceNumber: jest.fn(),
+      findOne: jest.fn(),
+      count: jest.fn(),
     };
 
     const mockTripsService = {
@@ -186,6 +190,7 @@ describe('StopsService', () => {
 
       const result = await service.createWithTransaction(stopData, mockManager);
 
+      expect(mockManager.getRepository).toHaveBeenCalled();
       expect(result).toBe(mockStop);
     });
   });
@@ -286,11 +291,30 @@ describe('StopsService', () => {
         stint_id: 2,
         trip_id: 1,
       } as Stint);
-      stopsRepository.save.mockResolvedValue(mockStop);
+      stopsRepository.save.mockResolvedValue({
+        ...mockStop,
+        ...updateWithNewStint,
+      });
 
       await service.update(1, updateWithNewStint, 1);
 
       expect(stintsService.findOne).toHaveBeenCalledWith(2);
+      expect(stopsRepository.save).toHaveBeenCalled();
+    });
+
+    it('should throw ForbiddenException when new stint does not belong to the same trip', async () => {
+      const updateWithNewStint = { ...updateStopDto, stint_id: 2 };
+      stopsRepository.findById.mockResolvedValue(mockStop);
+      tripsService.findOne.mockResolvedValue(mockTrip);
+      stintsService.findOne.mockResolvedValue({
+        ...mockStint,
+        stint_id: 2,
+        trip_id: 999, // Different trip ID
+      } as Stint);
+
+      await expect(service.update(1, updateWithNewStint, 1)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 
@@ -313,6 +337,12 @@ describe('StopsService', () => {
       } as Trip);
 
       await expect(service.remove(1, 1)).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should throw NotFoundException when stop not found', async () => {
+      stopsRepository.findById.mockResolvedValue(null);
+
+      await expect(service.remove(999, 1)).rejects.toThrow(NotFoundException);
     });
   });
 });
