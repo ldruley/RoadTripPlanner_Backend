@@ -13,7 +13,8 @@ import { CreateStintWithStopDto } from '../dto/create-stint-with-stop.dto';
 import { TripsService } from '../../trips/trips.service';
 import { StopsService } from './stops.service';
 import { DataSource } from 'typeorm';
-import { Stop, StopType } from '../entities/stop.entity';
+import { Stop } from '../entities/stop.entity';
+import { StopType } from '../../../common/enums';
 
 @Injectable()
 export class StintsService {

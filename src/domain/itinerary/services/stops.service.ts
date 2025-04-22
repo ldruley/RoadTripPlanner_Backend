@@ -9,9 +9,10 @@ import { StopsRepository } from '../repositories/stops.repository';
 import { TripsService } from '../../trips/trips.service';
 import { StintsService } from './stints.service';
 import { CreateStopDto } from '../dto/create-stop.dto';
-import { Stop, StopType } from '../entities/stop.entity';
+import { Stop } from '../entities/stop.entity';
 import { UpdateStopDto } from '../dto/update-stop.dto';
 import { EntityManager } from 'typeorm';
+import { StopType } from '../../../common/enums';
 
 @Injectable()
 export class StopsService {

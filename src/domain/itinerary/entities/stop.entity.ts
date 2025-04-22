@@ -9,15 +9,7 @@ import {
 } from 'typeorm';
 import { Trip } from '../../trips/entities/trip.entity';
 import { Stint } from './stint.entity';
-
-export enum StopType {
-  PITSTOP = 'pitstop',
-  OVERNIGHT = 'overnight',
-  GAS = 'gas',
-  FOOD = 'food',
-  ATTRACTION = 'attraction',
-  OTHER = 'other',
-}
+import { StopType } from '../../../common/enums';
 
 @Entity('stops')
 export class Stop {

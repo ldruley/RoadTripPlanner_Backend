@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
+  IsDate,
   IsNotEmpty,
   IsNumber,
   IsOptional,
@@ -65,6 +66,17 @@ class InitialStopDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @ApiProperty({
+    example: 30,
+    description:
+      'Estimated duration at the stop in minutes - optional if this is just departure location/start of trip',
+    required: false,
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  duration?: number;
 }
 
 export class CreateStintWithOptionalStopDto {
@@ -115,4 +127,15 @@ export class CreateStintWithOptionalStopDto {
   @IsString()
   @IsOptional()
   notes?: string;
+
+  @ApiProperty({
+    example: '2025-05-15T08:00:00Z',
+    description:
+      'Start time for the stint - used if we are creating the first stint',
+    required: false,
+  })
+  @IsOptional()
+  @IsDate()
+  @Type(() => Date)
+  start_time?: Date;
 }

@@ -12,7 +12,7 @@ import { StintsService } from './stints.service';
 import { StopsService } from './stops.service';
 import { LegsService } from './legs.service';
 import { Stint } from '../entities/stint.entity';
-import { Stop, StopType } from '../entities/stop.entity';
+import { Stop } from '../entities/stop.entity';
 import { Leg } from '../entities/leg.entity';
 import { StopsRepository } from '../repositories/stops.repository';
 import { StintsRepository } from '../repositories/stints.repository';
@@ -29,6 +29,8 @@ import { CreateStopDto } from '../dto/create-stop.dto';
 import { CreateStintDto } from '../dto/create-stint-dto';
 import { CreateStintWithStopDto } from '../dto/create-stint-with-stop.dto';
 import { CreateStintWithOptionalStopDto } from '../dto/create-sprint-with-optional-stop.dto';
+import { DateUtils } from '../../../common/utils';
+import { StopType } from '../../../common/enums';
 
 //TODO: Implement TimelineLeg and TimelineStop interfaces - or figure out a combiined approach to interweave them into the timeline
 //TODO: potentially a dto for timeline?
@@ -253,7 +255,7 @@ export class ItineraryService {
 
       const savedStint = await stintRepo.save(stint);
 
-      // addtl logic to handle the transition
+      // addtl logic to handle the transition maybe
 
       return savedStint;
     });
@@ -275,17 +277,29 @@ export class ItineraryService {
         );
       }
 
+      //TODO: maybe some other way to handle this
+      if (!createStintWithStopDto.start_time) {
+        throw new BadRequestException(
+          'Start time is required since this is a new stint',
+        );
+      }
+
       // Create the initial stop first
       const stopToCreate = {
         name: createStintWithStopDto.initialStop.name,
         latitude: createStintWithStopDto.initialStop.latitude,
         longitude: createStintWithStopDto.initialStop.longitude,
         address: createStintWithStopDto.initialStop.address,
-        stop_type:
-          createStintWithStopDto.initialStop.stopType || StopType.PITSTOP,
+        stop_type: StopType.DEPARTURE,
         sequence_number: 1, // First stop in the stint
         notes: createStintWithStopDto.initialStop.notes,
         trip_id: createStintWithStopDto.trip_id,
+        arrival_time: createStintWithStopDto.start_time,
+        departure_time: DateUtils.addMinutes(
+          createStintWithStopDto.start_time,
+          createStintWithStopDto.initialStop.duration || 0,
+        ),
+        duration: createStintWithStopDto.initialStop.duration,
         stint_id: null, // We'll update this after creating the stint
       };
 
@@ -300,7 +314,8 @@ export class ItineraryService {
         sequence_number: createStintWithStopDto.sequence_number,
         trip_id: createStintWithStopDto.trip_id,
         notes: createStintWithStopDto.notes,
-        start_location_id: stop.stop_id, // Use the new stop's ID
+        start_location_id: stop.stop_id,
+        start_time: createStintWithStopDto.start_time,
       };
 
       const stintRepo = manager.getRepository(Stint);
