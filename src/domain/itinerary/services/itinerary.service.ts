@@ -51,8 +51,7 @@ export class ItineraryService {
 
   /**
    * Get a complete trip timeline including all stints, stops, and legs
-   * TODO: We need to interweave stops and legs in order
-   * TODO: We also need to incorporate stint/participants and vehicles. Likely sort out new user perms method first
+   * TODO: We need to incorporate stint/participants and vehicles. Likely sort out new user perms method first
    */
 
   async getTripTimeline(tripId: number, userId: number): Promise<TripTimeline> {
@@ -427,7 +426,7 @@ export class ItineraryService {
               stint_id: stint.stint_id,
               sequence_number: MoreThanOrEqual(createStopDto.sequence_number),
             },
-            order: { sequence_number: 'DESC' },
+            order: { sequence_number: 'ASC' },
           });
 
           for (const stop of stopsToShift) {
@@ -448,6 +447,7 @@ export class ItineraryService {
           manager,
         );
         await this.updateStintStartEndLocations(stint.stint_id, manager);
+        await this.updateStintTimings(stint.stint_id, manager);
 
         return savedStop;
       })
@@ -749,6 +749,15 @@ export class ItineraryService {
       return;
     }
 
+    const stint = await manager.getRepository(Stint).findOne({
+      where: { stint_id: stintId },
+      relations: ['start_location'],
+    });
+
+    if (!stint) {
+      throw new NotFoundException(`Stint with ID ${stintId} not found`);
+    }
+
     const stops = await manager.getRepository(Stop).find({
       where: { stint_id: stintId },
       order: { sequence_number: 'ASC' },
@@ -784,23 +793,45 @@ export class ItineraryService {
       await legRepo.save(leg);
     }
 
-    // If there's a departure stop (sequence 0) and at least one regular stop,
-    // create a leg from departure to first regular stop
-    const departureStop = stops.find((stop) => stop.sequence_number === 0);
-    if (departureStop && regularStops.length > 0) {
+    //TODO: CLEAN THIS SHIT UP
+    // Handle the departure leg based on whether it's a continuation stint
+    if (
+      stint.continues_from_previous &&
+      stint.start_location_id &&
+      regularStops.length > 0
+    ) {
+      // For subsequent stints, create a leg from the reference to previous stint's end stop
       const firstRegularStop = regularStops[0];
 
       const departureLeg = legRepo.create({
         stint_id: stintId,
-        start_stop_id: departureStop.stop_id,
+        start_stop_id: stint.start_location_id, // This references the previous stint's end stop
         end_stop_id: firstRegularStop.stop_id,
-        sequence_number: 0, // Special sequence number for departure leg
+        sequence_number: 0,
         distance: 10, // This should be calculated based on API calls
         estimated_travel_time: 10, // This should be calculated based on API calls
-        notes: 'Departure leg',
+        notes: 'Transition leg from previous stint',
       });
 
       await legRepo.save(departureLeg);
+    } else {
+      // For the first stint, handle it as before
+      const departureStop = stops.find((stop) => stop.sequence_number === 0);
+      if (departureStop && regularStops.length > 0) {
+        const firstRegularStop = regularStops[0];
+
+        const departureLeg = legRepo.create({
+          stint_id: stintId,
+          start_stop_id: departureStop.stop_id,
+          end_stop_id: firstRegularStop.stop_id,
+          sequence_number: 0,
+          distance: 10, // This should be calculated based on API calls
+          estimated_travel_time: 10, // This should be calculated based on API calls
+          notes: 'Departure leg',
+        });
+
+        await legRepo.save(departureLeg);
+      }
     }
   }
 
@@ -835,6 +866,7 @@ export class ItineraryService {
   /**
    * Update all arrival and departure times for a stint based on legs and stop durations
    * This should be called after any stop changes or leg updates
+   * TODO: Investigate combining some of these post-processing methods
    */
   private async updateStintTimings(
     stintId: number,
