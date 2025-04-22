@@ -34,6 +34,19 @@ export class Stint {
   @Column({ type: 'integer', nullable: true })
   estimated_duration: number;
 
+  @Column({ type: 'timestamp', nullable: true })
+  start_time: Date;
+
+  @Column({ type: 'timestamp', nullable: true })
+  end_time: Date;
+
+  @Column({ nullable: true })
+  continues_from_previous: boolean;
+
+  // Time spent at the transition stop - only relevant if the stint is a transition stint
+  @Column({ nullable: true })
+  transition_duration: number;
+
   @Column({ nullable: true, type: 'text' })
   notes: string;
 

@@ -11,7 +11,12 @@ import {
 } from '@nestjs/common';
 import { TripsService } from './trips.service';
 import { UpdateTripDto } from './dto/update-trip-dto';
-import { ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { CreateTripDto } from './dto/create-trip.dto';
 import { JwtAuthGuard } from '../../infrastructure/auth/guards/jwt-auth-guard';
 import { GetUser } from '../../infrastructure/auth/decorators/get-user-decorator';
@@ -51,10 +56,18 @@ export class TripsController {
   @ApiBearerAuth()
   @ApiOperation({
     summary:
-      '[BASIC IMPLEMENTATION]: Get complete trip timeline with all details',
+      '[IN PROGRESS - MOSTLY WORKING]: Get complete trip timeline with all details',
+    description:
+      'This still needs a few updates, but implementation is mostly in place',
   })
-  @ApiResponse({ status: 200, description: 'Returns trip timeline' })
-  @ApiResponse({ status: 404, description: 'Trip not found or has no stints' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns the complete trip timeline',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Trip not found or no stints found',
+  })
   getTimeline(@Param('id', ParseIntPipe) id: number, @GetUser() user: User) {
     return this.itineraryService.getTripTimeline(id, user.user_id);
   }
@@ -73,7 +86,11 @@ export class TripsController {
   @Put(':id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: '[BASIC IMPLEMENTATION]: Update a trip' })
+  @ApiOperation({
+    summary: '[IN PROGRESS - NEEDS UPDATING]: Update a trip',
+    description:
+      'This is only for updating Trip metadata - name, description, start_date, public, etc',
+  })
   @ApiResponse({ status: 200, description: 'Trip updated successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
@@ -89,7 +106,7 @@ export class TripsController {
   @Delete(':id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Delete a trip' })
+  @ApiOperation({ summary: '[IN PROGRESS - NEEDS UPDATING] Delete a trip' })
   @ApiResponse({ status: 200, description: 'Trip deleted successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })

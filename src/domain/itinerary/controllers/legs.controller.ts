@@ -23,12 +23,13 @@ import { JwtAuthGuard } from '../../../infrastructure/auth/guards/jwt-auth-guard
 import { GetUser } from '../../../infrastructure/auth/decorators/get-user-decorator';
 import { User } from '../../users/entities/user.entity';
 
-@ApiTags('Legs')
+@ApiTags('Legs [TESTING]')
 @Controller('legs')
 export class LegsController {
   constructor(private readonly legsService: LegsService) {}
 
   @Get(':id')
+  @ApiOperation({ summary: 'Get a leg by ID' })
   @ApiOperation({ summary: 'Get a leg by ID' })
   @ApiParam({ name: 'id', description: 'Leg ID' })
   @ApiResponse({ status: 200, description: 'Leg found' })

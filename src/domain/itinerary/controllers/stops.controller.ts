@@ -5,43 +5,53 @@ import {
   Get,
   Param,
   ParseIntPipe,
+  Post,
   //Post,
   Put,
   UseGuards,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiBody,
   ApiOperation,
   ApiParam,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
 import { StopsService } from '../services/stops.service';
-//import { CreateStopDto } from '../dto/create-stop.dto';
+import { ItineraryService } from '../services/itinerary.service';
 import { UpdateStopDto } from '../dto/update-stop.dto';
 import { JwtAuthGuard } from '../../../infrastructure/auth/guards/jwt-auth-guard';
 import { GetUser } from '../../../infrastructure/auth/decorators/get-user-decorator';
 import { User } from '../../users/entities/user.entity';
+import { CreateStopDto } from '../dto/create-stop.dto';
 
 @ApiTags('Stops')
 @Controller('stops')
 export class StopsController {
-  constructor(private readonly stopsService: StopsService) {}
+  constructor(
+    private readonly stopsService: StopsService,
+    private readonly itineraryService: ItineraryService,
+  ) {}
 
-  /*  @Post()
+  @Post()
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: '[FOR TESTING]: Create a new stop' })
-  @ApiResponse({ status: 201, description: 'Stop successfully created' })
-  @ApiResponse({ status: 400, description: 'Bad request - invalid input' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiOperation({
+    summary: 'Add a stop to a stint with simple sequence numbering',
+    description:
+      'If sequence_number is omitted or 0, the stop will be added to the end of the sequence',
+  })
+  @ApiResponse({ status: 201, description: 'Stop added successfully' })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({ status: 404, description: 'Stint not found' })
   @ApiResponse({
     status: 403,
     description: 'Forbidden - user does not have permission',
   })
-  create(@Body() createStopDto: CreateStopDto, @GetUser() user: User) {
-    return this.stopsService.create(createStopDto, user.user_id);
-  }*/
+  addStop(@Body() createStopDto: CreateStopDto, @GetUser() user: User) {
+    return this.itineraryService.addStop(createStopDto, user.user_id);
+  }
 
   @Get(':id')
   @ApiOperation({ summary: 'Get a stop by ID' })
@@ -53,7 +63,7 @@ export class StopsController {
   }
 
   @Get('trip/:tripId')
-  @ApiOperation({ summary: '[FOR TESTING]: Get all stops for a trip' })
+  @ApiOperation({ summary: '[TESTING ONLY]: Get all stops for a trip' })
   @ApiParam({ name: 'tripId', description: 'Trip ID' })
   @ApiResponse({ status: 200, description: 'Returns stops for the trip' })
   @ApiResponse({ status: 404, description: 'No stops found for the trip' })
@@ -62,7 +72,7 @@ export class StopsController {
   }
 
   @Get('stint/:stintId')
-  @ApiOperation({ summary: '[FOR TESTING]: Get all stops for a stint' })
+  @ApiOperation({ summary: '[TESTING ONLY]: Get all stops for a stint' })
   @ApiParam({ name: 'stintId', description: 'Stint ID' })
   @ApiResponse({ status: 200, description: 'Returns stops for the stint' })
   @ApiResponse({ status: 404, description: 'No stops found for the stint' })
@@ -73,7 +83,10 @@ export class StopsController {
   @Put(':id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: '[TESTING ONLY]: Update a stop' })
+  @ApiOperation({
+    summary: '[IN PROGRESS]: Update a stop',
+    description: 'For updating stop metadata, not the sequence number',
+  })
   @ApiParam({ name: 'id', description: 'Stop ID' })
   @ApiResponse({ status: 200, description: 'Stop updated successfully' })
   @ApiResponse({ status: 400, description: 'Bad request - invalid input' })
@@ -91,19 +104,76 @@ export class StopsController {
     return this.stopsService.update(id, updateStopDto, user.user_id);
   }
 
-  /*@Delete(':id')
+  @Put('stint/:stintId/reorder-stops')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: '[BASIC IMPLEMENTATION]: Delete a stop' })
-  @ApiParam({ name: 'id', description: 'Stop ID' })
-  @ApiResponse({ status: 200, description: 'Stop deleted successfully' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiOperation({
+    summary: 'Reorder stops within a stint',
+    description:
+      'Updates the sequence numbers of stops in a stint and reconstructs legs accordingly',
+  })
+  @ApiParam({ name: 'stintId', description: 'Stint ID' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['stopOrder'],
+      properties: {
+        stopOrder: {
+          type: 'array',
+          items: {
+            type: 'object',
+            required: ['stop_id', 'sequence_number'],
+            properties: {
+              stop_id: {
+                type: 'number',
+                description: 'ID of the stop',
+              },
+              sequence_number: {
+                type: 'number',
+                description: 'New sequence number for the stop',
+              },
+            },
+          },
+          description: 'Array of stops with their new sequence numbers',
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 200, description: 'Stops reordered successfully' })
+  @ApiResponse({ status: 404, description: 'Stint not found' })
   @ApiResponse({
     status: 403,
     description: 'Forbidden - user does not have permission',
   })
+  reorderStops(
+    @Param('stintId', ParseIntPipe) stintId: number,
+    @Body() data: { stopOrder: { stop_id: number; sequence_number: number }[] },
+    @GetUser() user: User,
+  ) {
+    return this.itineraryService.reorderStops(
+      stintId,
+      data.stopOrder,
+      user.user_id,
+    );
+  }
+
+  @Delete(':stopId')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Remove a stop and update sequence numbers',
+  })
+  @ApiParam({ name: 'stopId', description: 'Stop ID' })
+  @ApiResponse({ status: 200, description: 'Stop removed successfully' })
   @ApiResponse({ status: 404, description: 'Stop not found' })
-  remove(@Param('id', ParseIntPipe) id: number, @GetUser() user: User) {
-    return this.stopsService.remove(id, user.user_id);
-  }*/
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - user does not have permission',
+  })
+  removeStop(
+    @Param('stopId', ParseIntPipe) stopId: number,
+    @GetUser() user: User,
+  ) {
+    return this.itineraryService.removeStop(stopId, user.user_id);
+  }
 }

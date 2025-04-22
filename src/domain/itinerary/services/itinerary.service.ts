@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   forwardRef,
   Inject,
+  BadRequestException,
 } from '@nestjs/common';
 import { DataSource, EntityManager, MoreThan } from 'typeorm';
 import { MoreThanOrEqual } from 'typeorm';
@@ -11,7 +12,7 @@ import { StintsService } from './stints.service';
 import { StopsService } from './stops.service';
 import { LegsService } from './legs.service';
 import { Stint } from '../entities/stint.entity';
-import { Stop } from '../entities/stop.entity';
+import { Stop, StopType } from '../entities/stop.entity';
 import { Leg } from '../entities/leg.entity';
 import { StopsRepository } from '../repositories/stops.repository';
 import { StintsRepository } from '../repositories/stints.repository';
@@ -25,6 +26,9 @@ import {
 } from '../../interfaces/itinerary';
 import { TripsService } from '../../trips/trips.service';
 import { CreateStopDto } from '../dto/create-stop.dto';
+import { CreateStintDto } from '../dto/create-stint-dto';
+import { CreateStintWithStopDto } from '../dto/create-stint-with-stop.dto';
+import { CreateStintWithOptionalStopDto } from '../dto/create-sprint-with-optional-stop.dto';
 
 //TODO: Implement TimelineLeg and TimelineStop interfaces - or figure out a combiined approach to interweave them into the timeline
 //TODO: potentially a dto for timeline?
@@ -188,6 +192,127 @@ export class ItineraryService {
     }
 
     return timeline;
+  }
+
+  /**
+   * Create a new stint with an optional initial stop
+   * This method is called when creating a new stint
+   * It checks if the stint is the first in a trip or if it continues from a previous stint
+   */
+  async createStint(
+    createStintWithOptionalStopDto: CreateStintWithOptionalStopDto,
+    userId: number,
+  ): Promise<Stint> {
+    const trip = await this.tripsService.findOne(
+      createStintWithOptionalStopDto.trip_id,
+    );
+    if (trip.creator_id !== userId) {
+      throw new ForbiddenException(
+        'You do not have permission to create stints in this trip',
+      );
+    }
+
+    // Find previous stint
+    const prevStint = await this.stintsRepository.findOne({
+      where: {
+        trip_id: createStintWithOptionalStopDto.trip_id,
+        sequence_number: createStintWithOptionalStopDto.sequence_number - 1,
+      },
+      relations: ['stops'],
+    });
+
+    if (!prevStint) {
+      // If no previous stint, use regular creation logic
+      return this.createStintWithInitialStop(
+        createStintWithOptionalStopDto,
+        userId,
+      );
+    }
+
+    // Get the last stop of the previous stint
+    const lastStop = await this.stopsRepository.findOne({
+      where: {
+        stint_id: prevStint.stint_id,
+        sequence_number: prevStint.stops.length,
+      },
+    });
+
+    if (!lastStop) {
+      throw new Error('Previous stint has no stops');
+    }
+
+    return this.dataSource.transaction(async (manager) => {
+      const stintRepo = manager.getRepository(Stint);
+
+      const stint = stintRepo.create({
+        ...createStintWithOptionalStopDto,
+        start_time: lastStop.departure_time || lastStop.arrival_time,
+        start_location_id: lastStop.stop_id,
+        continues_from_previous: true,
+      });
+
+      const savedStint = await stintRepo.save(stint);
+
+      // addtl logic to handle the transition
+
+      return savedStint;
+    });
+  }
+
+  /**
+   * Create a new stint with an initial stop
+   * This method is called when creating a the first stint in a trip
+   */
+  async createStintWithInitialStop(
+    createStintWithStopDto: CreateStintWithOptionalStopDto,
+    userId: number,
+  ): Promise<Stint> {
+    // Use transaction to ensure both stop and stint are created or neither is
+    return this.dataSource.transaction(async (manager) => {
+      if (!createStintWithStopDto.initialStop) {
+        throw new BadRequestException(
+          'Initial stop is required since this is a new stint',
+        );
+      }
+
+      // Create the initial stop first
+      const stopToCreate = {
+        name: createStintWithStopDto.initialStop.name,
+        latitude: createStintWithStopDto.initialStop.latitude,
+        longitude: createStintWithStopDto.initialStop.longitude,
+        address: createStintWithStopDto.initialStop.address,
+        stop_type:
+          createStintWithStopDto.initialStop.stopType || StopType.PITSTOP,
+        sequence_number: 1, // First stop in the stint
+        notes: createStintWithStopDto.initialStop.notes,
+        trip_id: createStintWithStopDto.trip_id,
+        stint_id: null, // We'll update this after creating the stint
+      };
+
+      const stop = await this.stopsService.createWithTransaction(
+        stopToCreate,
+        manager,
+      );
+
+      // Create the stint with the stop_id already available
+      const stintToCreate = {
+        name: createStintWithStopDto.name,
+        sequence_number: createStintWithStopDto.sequence_number,
+        trip_id: createStintWithStopDto.trip_id,
+        notes: createStintWithStopDto.notes,
+        start_location_id: stop.stop_id, // Use the new stop's ID
+      };
+
+      const stintRepo = manager.getRepository(Stint);
+      const stint = stintRepo.create(stintToCreate);
+      const savedStint = await stintRepo.save(stint);
+
+      // Update the stop with the stint_id
+      stop.stint_id = savedStint.stint_id;
+      await manager.getRepository(Stop).save(stop);
+
+      return savedStint;
+    });
   }
 
   /**
