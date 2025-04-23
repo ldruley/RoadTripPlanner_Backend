@@ -243,11 +243,136 @@ export class ItineraryService {
   }
 
   /**
+   * Create a new stint with optional initial stop
+   */
+  async createStint(
+    dto: CreateStintWithOptionalStopDto,
+    userId: number,
+  ): Promise<Stint> {
+    // Validate trip access
+    const trip = await this.tripsService.findOne(dto.trip_id);
+    if (trip.creator_id !== userId) {
+      throw new ForbiddenException(
+        'You do not have permission to create stints in this trip',
+      );
+    }
+
+    // Determine sequence number if not provided
+    if (!dto.sequence_number) {
+      dto.sequence_number = await this.stintsService.getNextSequenceNumber(
+        dto.trip_id,
+      );
+    }
+
+    return this.dataSource.transaction(async (manager) => {
+      let stint: Stint;
+      let continues_from_previous = false;
+      let start_location_id: number | null = null;
+      let start_time: Date | undefined = dto.start_time;
+      if (!dto.sequence_number) dto.sequence_number = 1;
+      // Check if this is continuing from a previous stint
+      if (dto.sequence_number > 1) {
+        const prevStint = await manager.getRepository(Stint).findOne({
+          where: {
+            trip_id: dto.trip_id,
+            sequence_number: dto.sequence_number - 1,
+          },
+          relations: ['stops'],
+        });
+
+        // If previous stint exists, use its last stop as start location
+        if (prevStint) {
+          const lastStop = await manager.getRepository(Stop).findOne({
+            where: {
+              stint_id: prevStint.stint_id,
+            },
+          });
+
+          if (lastStop) {
+            start_location_id = lastStop.stop_id;
+            continues_from_previous = true;
+            start_time = lastStop.departure_time || lastStop.arrival_time;
+          }
+        }
+      }
+
+      // Create the stint
+      stint = await this.stintsService.createStint(
+        {
+          name: dto.name,
+          sequence_number: dto.sequence_number,
+          trip_id: dto.trip_id,
+          notes: dto.notes,
+          continues_from_previous: continues_from_previous,
+          start_time: start_time,
+        },
+        manager,
+      );
+
+      // If we need to create an initial stop
+      if (dto.initialStop) {
+        // If we already have a start location from previous stint, warn that we're ignoring it
+        if (start_location_id) {
+          console.warn(
+            `Initial stop provided for stint ${stint.stint_id} which continues from a previous stint. Using provided stop.`,
+          );
+        }
+
+        if (!dto.start_time) {
+          dto.start_time = new Date();
+          console.warn('Start time not provided, using current time');
+        }
+
+        // Create the initial stop
+        const createStopDto: CreateStopDto = {
+          name: dto.initialStop.name,
+          latitude: dto.initialStop.latitude,
+          longitude: dto.initialStop.longitude,
+          address: dto.initialStop.address,
+          stop_type: StopType.DEPARTURE,
+          sequence_number: 0,
+          notes: dto.initialStop.notes,
+          trip_id: dto.trip_id,
+          stint_id: stint.stint_id,
+          arrival_time: start_time,
+          departure_time: DateUtils.addMinutes(
+            start_time ?? new Date(),
+            dto.initialStop.duration || 0,
+          ),
+          duration: dto.initialStop.duration,
+        };
+
+        const savedStop = await this.stopsService.addStopToStint(
+          createStopDto,
+          userId,
+          manager,
+        );
+
+        stint = await this.stintsService.updateLocationReferences(
+          stint,
+          { start_location_id: savedStop.stop_id },
+          manager,
+        );
+      }
+      // If we have a start location from previous stint
+      else if (start_location_id) {
+        stint = await this.stintsService.updateLocationReferences(
+          stint,
+          { start_location_id: start_location_id },
+          manager,
+        );
+      }
+
+      return stint;
+    });
+  }
+
+  /**
    * Create a new stint with an optional initial stop
    * This method is called when creating a new stint
    * It checks if the stint is the first in a trip or if it continues from a previous stint
    */
-  async createStint(
+  async createStintOld(
     createStintWithOptionalStopDto: CreateStintWithOptionalStopDto,
     userId: number,
   ): Promise<Stint> {
@@ -311,7 +436,7 @@ export class ItineraryService {
 
   /**
    * Create a new stint with an initial stop
-   * This method is called when creating a the first stint in a trip
+   * This method is called when creating the first stint in a trip
    */
   async createStintWithInitialStop(
     createStintWithStopDto: CreateStintWithOptionalStopDto,
@@ -404,64 +529,33 @@ export class ItineraryService {
       );
     }
 
-    const maxSequence = await this.stopsRepository.findMaxSequenceNumber(
-      stint.stint_id,
-    );
-
     return this.dataSource
       .transaction(async (manager) => {
-        const stopRepo = manager.getRepository(Stop);
-
-        // Determine the sequence number if not provided, is 0, or is too high (max + 2)
-        if (
-          !createStopDto.sequence_number ||
-          createStopDto.sequence_number === 0 ||
-          createStopDto.sequence_number > maxSequence + 1
-        ) {
-          createStopDto.sequence_number = maxSequence + 1;
-        } else {
-          // If inserting at a specific position, shift existing stops
-          const stopsToShift = await this.stopsRepository.find({
-            where: {
-              stint_id: stint.stint_id,
-              sequence_number: MoreThanOrEqual(createStopDto.sequence_number),
-            },
-            order: { sequence_number: 'ASC' },
-          });
-
-          for (const stop of stopsToShift) {
-            stop.sequence_number += 1;
-            await stopRepo.save(stop);
-          }
-        }
-
-        // Create the stop
-
-        const stop = stopRepo.create(createStopDto);
-        const savedStop = await stopRepo.save(stop);
-
-        // Update legs and stint metadata
-        await this.updateLegsAfterStopChanges(
-          savedStop.stint_id,
-          [savedStop],
+        // Use the refactored StopsService method
+        const stop = await this.stopsService.addStopToStint(
+          createStopDto,
+          userId,
           manager,
         );
-        await this.updateStintStartEndLocations(stint.stint_id, manager);
-        await this.updateStintTimings(stint.stint_id, manager);
 
-        return savedStop;
+        // Coordination logic
+        await this.updateLegsAfterStopChanges(stop.stint_id, [stop], manager);
+        await this.updateStintStartEndLocations(stop.stint_id, manager);
+        await this.updateStintTimings(stop.stint_id, manager);
+
+        return stop;
       })
       .then((savedStop) => {
-        this.updateStintDuration(savedStop.stint_id).catch((error) => {
+        this.updateStintDuration(savedStop.stint_id).catch((error) =>
           console.error(
             `Failed to update stint duration for stint ID ${savedStop.stint_id}: ${error}`,
-          );
-        });
-        this.updateStintDistance(savedStop.stint_id).catch((error) => {
+          ),
+        );
+        this.updateStintDistance(savedStop.stint_id).catch((error) =>
           console.error(
             `Failed to update stint distance for stint ID ${savedStop.stint_id}: ${error}`,
-          );
-        });
+          ),
+        );
         return savedStop;
       });
   }
@@ -482,7 +576,7 @@ export class ItineraryService {
         'You do not have permission to remove stops from this trip',
       );
     }
-
+    let stint: Stint | null;
     if (stop.sequence_number === 0) {
       const stopCount = await this.stopsRepository.count({
         where: { stint_id: stop.stint_id },
@@ -493,35 +587,23 @@ export class ItineraryService {
           'Cannot remove the departure stop when it is the only stop in the stint',
         );
       }
+
+      stint = await this.stintsRepository.findById(stop.stint_id);
     }
 
     return this.dataSource
       .transaction(async (manager) => {
         const stopRepo = manager.getRepository(Stop);
-        const legRepo = manager.getRepository(Leg);
         const stintRepo = manager.getRepository(Stint);
 
-        // Legs need to be deleted prior to removing the stop
-        // TODO: maybe not now actually
-        const relatedLegs = await legRepo.find({
-          where: [{ start_stop_id: stopId }, { end_stop_id: stopId }],
-        });
-
-        if (relatedLegs.length > 0) {
-          await legRepo.remove(relatedLegs);
-        }
-
+        // TODO: consider moving this functionality to stintsService.
         // If this is the first stop in the stint we need to update
         if (stop.sequence_number === 0) {
-          const stint = await stintRepo.findOne({
-            where: { stint_id: stop.stint_id },
-          });
           if (!stint) {
             throw new NotFoundException(
               `Stint with ID ${stop.stint_id} not found`,
             );
           }
-
           // Find the next stop to become the new start location
           const nextStop = await stopRepo.findOne({
             where: { stint_id: stop.stint_id, sequence_number: 1 },
@@ -534,23 +616,10 @@ export class ItineraryService {
         }
 
         // Delete the stop
-        await stopRepo.remove(stop);
+        await this.stopsService.removeStopFromStint(stopId, userId, manager);
 
-        // Update sequence numbers for stops after the removed one
-        const stopsToUpdate = await stopRepo.find({
-          where: {
-            stint_id: stop.stint_id,
-            sequence_number: MoreThan(stop.sequence_number),
-          },
-          order: { sequence_number: 'ASC' },
-        });
-
-        for (const remainingStop of stopsToUpdate) {
-          remainingStop.sequence_number -= 1;
-          await stopRepo.save(remainingStop);
-        }
-
-        //Get previous stop to send for updating legs
+        // Get previous stop to send for updating legs
+        // TODO: Evaluate if we still need this
         const previousStop = await stopRepo.findOne({
           where: {
             stint_id: stop.stint_id,
@@ -740,6 +809,7 @@ export class ItineraryService {
     }
   }*/
 
+  //TODO: this needs updating, left in a wierd state after refactors/changes
   private async updateLegsAfterStopChanges(
     stintId: number,
     stopsChanged: Stop[] | undefined,

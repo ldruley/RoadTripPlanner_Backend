@@ -113,63 +113,6 @@ describe('StintsService', () => {
     });
   });
 
-  describe('createWithInitialStop', () => {
-    const createStintWithStopDto: CreateStintWithStopDto = {
-      name: 'Test Stint',
-      sequence_number: 1,
-      trip_id: 1,
-      initialStop: {
-        name: 'Test Stop',
-        latitude: 37.7749,
-        longitude: -122.4194,
-        address: '123 Test St',
-        stopType: StopType.PITSTOP,
-        notes: 'Test notes',
-      },
-      notes: 'Test stint notes',
-    };
-
-    it('should create a stint with initial stop successfully', async () => {
-      tripsService.findOne.mockResolvedValue(mockTrip);
-
-      // Mock transaction
-      const mockManager = {
-        getRepository: jest.fn().mockReturnValue({
-          create: jest.fn().mockReturnValue(mockStint),
-          save: jest.fn().mockResolvedValue(mockStint),
-        }),
-      };
-
-      dataSource.transaction.mockImplementation(async (cb) => {
-        // @ts-expect-error because typescript is annoying
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-        return await cb(mockManager);
-      });
-
-      stopsService.createWithTransaction.mockResolvedValue(mockStop);
-
-      const result = await service.createWithInitialStop(
-        createStintWithStopDto,
-        1,
-      );
-
-      expect(tripsService.findOne).toHaveBeenCalledWith(1);
-      expect(stopsService.createWithTransaction).toHaveBeenCalled();
-      expect(result).toBeDefined();
-    });
-
-    it('should throw ForbiddenException when user is not trip creator', async () => {
-      tripsService.findOne.mockResolvedValue({
-        ...mockTrip,
-        creator_id: 2,
-      } as Trip);
-
-      await expect(
-        service.createWithInitialStop(createStintWithStopDto, 1),
-      ).rejects.toThrow(ForbiddenException);
-    });
-  });
-
   describe('findOne', () => {
     it('should return a stint when found', async () => {
       stintsRepository.findById.mockResolvedValue(mockStint);

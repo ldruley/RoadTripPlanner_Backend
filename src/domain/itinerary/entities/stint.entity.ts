@@ -69,7 +69,7 @@ export class Stint {
   @JoinColumn({ name: 'start_location_id' })
   start_location: Stop;
 
-  @Column()
+  @Column({ nullable: true })
   start_location_id: number;
 
   @ManyToOne(() => Stop, { nullable: true })

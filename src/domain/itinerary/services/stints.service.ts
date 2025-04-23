@@ -1,7 +1,5 @@
 import {
   ForbiddenException,
-  forwardRef,
-  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -9,83 +7,18 @@ import { CreateStintDto } from '../dto/create-stint-dto';
 import { StintsRepository } from '../repositories/stints.repository';
 import { Stint } from '../entities/stint.entity';
 import { UpdateStintDto } from '../dto/update-sprint-dto';
-import { CreateStintWithStopDto } from '../dto/create-stint-with-stop.dto';
-import { TripsService } from '../../trips/trips.service';
-import { StopsService } from './stops.service';
-import { DataSource } from 'typeorm';
-import { Stop } from '../entities/stop.entity';
-import { StopType } from '../../../common/enums';
+import { DataSource, EntityManager } from 'typeorm';
 
 @Injectable()
 export class StintsService {
   constructor(
     private stintsRepository: StintsRepository,
-    @Inject(forwardRef(() => TripsService))
-    private tripsService: TripsService,
-    @Inject(forwardRef(() => StopsService))
-    private stopsService: StopsService,
     private dataSource: DataSource,
   ) {}
 
   async create(createStintDto: CreateStintDto): Promise<any> {
     const stint = this.stintsRepository.create(createStintDto);
     return this.stintsRepository.save(stint);
-  }
-
-  async createWithInitialStop(
-    createStintWithStopDto: CreateStintWithStopDto,
-    userId: number,
-  ): Promise<Stint> {
-    // Verify permissions
-    const trip = await this.tripsService.findOne(
-      createStintWithStopDto.trip_id,
-    );
-    if (trip.creator_id !== userId) {
-      throw new ForbiddenException(
-        'You do not have permission to create stints in this trip',
-      );
-    }
-
-    // Use transaction to ensure both stop and stint are created or neither is
-    return this.dataSource.transaction(async (manager) => {
-      // 1. Create the initial stop first
-      const stopToCreate = {
-        name: createStintWithStopDto.initialStop.name,
-        latitude: createStintWithStopDto.initialStop.latitude,
-        longitude: createStintWithStopDto.initialStop.longitude,
-        address: createStintWithStopDto.initialStop.address,
-        stop_type:
-          createStintWithStopDto.initialStop.stopType || StopType.PITSTOP,
-        sequence_number: 1, // First stop in the stint
-        notes: createStintWithStopDto.initialStop.notes,
-        trip_id: createStintWithStopDto.trip_id,
-        stint_id: null, // We'll update this after creating the stint
-      };
-
-      const stop = await this.stopsService.createWithTransaction(
-        stopToCreate,
-        manager,
-      );
-
-      // 2. Now create the stint with the stop_id already available
-      const stintToCreate = {
-        name: createStintWithStopDto.name,
-        sequence_number: createStintWithStopDto.sequence_number,
-        trip_id: createStintWithStopDto.trip_id,
-        notes: createStintWithStopDto.notes,
-        start_location_id: stop.stop_id, // Use the new stop's ID
-      };
-
-      const stintRepo = manager.getRepository(Stint);
-      const stint = stintRepo.create(stintToCreate);
-      const savedStint = await stintRepo.save(stint);
-
-      // 3. Update the stop with the stint_id
-      stop.stint_id = savedStint.stint_id;
-      await manager.getRepository(Stop).save(stop);
-
-      return savedStint;
-    });
   }
 
   async findOne(id: number): Promise<Stint> {
@@ -106,6 +39,28 @@ export class StintsService {
     return stints;
   }
 
+  /**
+   * Create a new stint with basic metadata
+   */
+  async createStint(
+    createStintDto: CreateStintDto,
+    manager?: EntityManager,
+  ): Promise<Stint> {
+    const repo = manager ? manager.getRepository(Stint) : this.stintsRepository;
+    const stint = repo.create(createStintDto);
+    return repo.save(stint);
+  }
+
+  /**
+   * Calculate the next available sequence number for a stint in a trip
+   */
+  async getNextSequenceNumber(tripId: number): Promise<number> {
+    const maxSequence =
+      await this.stintsRepository.findMaxSequenceNumber(tripId);
+    return maxSequence + 1;
+  }
+
+  //TODO: rework/eliminate
   async update(
     id: number,
     updateStintDto: UpdateStintDto,
@@ -123,6 +78,7 @@ export class StintsService {
     return this.stintsRepository.save(stint);
   }
 
+  //TODO: update
   async remove(id: number, userId: number): Promise<void> {
     const stint = await this.findOne(id);
     if (stint.trip.creator_id !== userId) {
@@ -132,5 +88,73 @@ export class StintsService {
     }
 
     await this.stintsRepository.remove(stint);
+  }
+
+  /**
+   * Update the continuation flag for a stint
+   */
+  async setContinuesFromPrevious(
+    stint: Stint,
+    continuesFromPrevious: boolean,
+    manager?: EntityManager,
+  ): Promise<Stint> {
+    const repo = manager ? manager.getRepository(Stint) : this.stintsRepository;
+    stint.continues_from_previous = continuesFromPrevious;
+    return repo.save(stint);
+  }
+
+  /**
+   * Set stint timing properties
+   */
+  async updateTiming(
+    stint: Stint,
+    timing: { start_time?: Date; end_time?: Date },
+    manager?: EntityManager,
+  ): Promise<Stint> {
+    const repo = manager ? manager.getRepository(Stint) : this.stintsRepository;
+
+    if (timing.start_time !== undefined) {
+      stint.start_time = timing.start_time;
+    }
+
+    if (timing.end_time !== undefined) {
+      stint.end_time = timing.end_time;
+    }
+
+    return repo.save(stint);
+  }
+
+  /**
+   * Update stint metadata
+   * */
+  async updateStintMetadata(
+    stint: Stint,
+    updateData: Partial<Stint>,
+    manager?: EntityManager,
+  ): Promise<Stint> {
+    const repo = manager ? manager.getRepository(Stint) : this.stintsRepository;
+    Object.assign(stint, updateData);
+    return repo.save(stint);
+  }
+
+  /**
+   * Update the start and end location references for a stint
+   * */
+  async updateLocationReferences(
+    stint: Stint,
+    updates: { start_location_id?: number; end_location_id?: number },
+    manager?: EntityManager,
+  ): Promise<Stint> {
+    const repo = manager ? manager.getRepository(Stint) : this.stintsRepository;
+
+    if (updates.start_location_id) {
+      stint.start_location_id = updates.start_location_id;
+    }
+
+    if (updates.end_location_id) {
+      stint.end_location_id = updates.end_location_id;
+    }
+
+    return repo.save(stint);
   }
 }

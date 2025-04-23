@@ -11,7 +11,7 @@ import { StintsService } from './stints.service';
 import { CreateStopDto } from '../dto/create-stop.dto';
 import { Stop } from '../entities/stop.entity';
 import { UpdateStopDto } from '../dto/update-stop.dto';
-import { EntityManager } from 'typeorm';
+import { EntityManager, MoreThanOrEqual } from 'typeorm';
 import { StopType } from '../../../common/enums';
 
 @Injectable()
@@ -78,6 +78,99 @@ export class StopsService {
     // @ts-expect-error we testing
     return stopRepo.save(stop);
   } //TODO fix typescript errors
+
+  /**
+   * Shift all stops in a stint with sequence numbers >= startSequence by offset
+   */
+  async shiftStopSequences(
+    stintId: number,
+    startSequence: number,
+    offset: number,
+    manager?: EntityManager,
+  ): Promise<void> {
+    const repo = manager ? manager.getRepository(Stop) : this.stopsRepository;
+
+    const stopsToShift = await repo.find({
+      where: {
+        stint_id: stintId,
+        sequence_number: MoreThanOrEqual(startSequence),
+      },
+      order: { sequence_number: 'ASC' },
+    });
+
+    for (const stop of stopsToShift) {
+      stop.sequence_number += offset;
+      await repo.save(stop);
+    }
+  }
+
+  /**
+   * Add a stop with sequence handling
+   * Validation and other handling must be done in itinerary service
+   */
+  async addStopToStint(
+    createStopDto: CreateStopDto,
+    userId: number,
+    manager?: EntityManager,
+  ): Promise<Stop> {
+    // Domain validation
+    //TODO: ensure validation in itinerary
+    //await this.validateStopAddition(createStopDto, userId);
+
+    const repo = manager ? manager.getRepository(Stop) : this.stopsRepository;
+    const maxSequence = await this.stopsRepository.findMaxSequenceNumber(
+      createStopDto.stint_id,
+    );
+
+    // Sequence logic
+    if (
+      !createStopDto.sequence_number ||
+      createStopDto.sequence_number === 0 ||
+      createStopDto.sequence_number > maxSequence + 1
+    ) {
+      createStopDto.sequence_number = maxSequence + 1;
+    } else {
+      // Shift existing stops if necessary
+      await this.shiftStopSequences(
+        createStopDto.stint_id,
+        createStopDto.sequence_number,
+        1,
+        manager,
+      );
+    }
+
+    // Create the stop
+    const stop = repo.create(createStopDto);
+    return repo.save(stop);
+  }
+
+  /**
+   * Remove a stop with sequence handling
+   * Validation and other handling must be done in itinerary service
+   */
+  async removeStopFromStint(
+    stopId: number,
+    userId: number,
+    manager?: EntityManager,
+  ): Promise<Stop> {
+    // Domain validation...
+
+    const repo = manager ? manager.getRepository(Stop) : this.stopsRepository;
+    const stop = await this.findOne(stopId);
+
+    // Remove the stop
+    const removedStop = await repo.remove(stop);
+
+    // Shift sequence numbers down
+    await this.shiftStopSequences(
+      stop.stint_id,
+      stop.sequence_number + 1,
+      -1,
+      manager,
+    );
+
+    return removedStop;
+  }
 
   async findOne(id: number): Promise<Stop> {
     const stop = await this.stopsRepository.findById(id);

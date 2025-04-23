@@ -139,48 +139,6 @@ describe('StintsController', () => {
     });
   });
 
-  describe('createWithInitialStop', () => {
-    const createStintWithStopDto: CreateStintWithStopDto = {
-      name: 'California Coast Drive',
-      sequence_number: 1,
-      trip_id: 1,
-      initialStop: {
-        name: 'San Francisco',
-        latitude: 37.7749,
-        longitude: -122.4194,
-        address: '123 Main St, San Francisco, CA',
-        stopType: StopType.PITSTOP,
-        notes: 'Our journey begins here',
-      },
-      notes: 'Scenic coastal route',
-    };
-
-    it('should create a stint with initial stop successfully', async () => {
-      stintsService.createWithInitialStop.mockResolvedValue(mockStint);
-
-      const result = await controller.createWithInitialStop(
-        createStintWithStopDto,
-        mockUser,
-      );
-
-      expect(stintsService.createWithInitialStop).toHaveBeenCalledWith(
-        createStintWithStopDto,
-        mockUser.user_id,
-      );
-      expect(result).toBe(mockStint);
-    });
-
-    it('should throw ForbiddenException when user lacks permission', async () => {
-      stintsService.createWithInitialStop.mockRejectedValue(
-        new ForbiddenException(),
-      );
-
-      await expect(
-        controller.createWithInitialStop(createStintWithStopDto, mockUser),
-      ).rejects.toThrow(ForbiddenException);
-    });
-  });
-
   describe('findOne', () => {
     it('should return a stint by ID', async () => {
       stintsService.findOne.mockResolvedValue(mockStint);

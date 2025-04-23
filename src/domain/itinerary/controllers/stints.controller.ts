@@ -45,33 +45,6 @@ export class StintsController {
     );
   }
 
-  @Post('with-initial-stop')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @ApiOperation({
-    summary: '[LEGACY] Create a new stint with initial stop',
-  })
-  @ApiResponse({
-    status: 201,
-    description: 'Stint with initial stop successfully created',
-  })
-  @ApiResponse({ status: 400, description: 'Bad request - invalid input' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({
-    status: 403,
-    description:
-      "Forbidden - user doesn't have permission to create in this trip",
-  })
-  createWithInitialStop(
-    @Body() createStintWithStopDto: CreateStintWithStopDto,
-    @GetUser() user: User,
-  ) {
-    return this.stintsService.createWithInitialStop(
-      createStintWithStopDto,
-      user.user_id,
-    );
-  }
-
   @Get(':id')
   @ApiOperation({ summary: 'Get a stint by ID' })
   @ApiResponse({ status: 200, description: 'Stint found' })
