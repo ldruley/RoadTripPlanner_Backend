@@ -57,6 +57,11 @@ export class AuthController {
     // return res.redirect(
     //   `http://localhost:3000/login-success?token=${access_token}`,
     // );
-    res.json({ access_token, user });
+    // res.json({ access_token, user });
+
+    // Web: redirect to frontend
+    return res.redirect(
+      `http://localhost:8081/(auth)/google-web-redirect?token=${access_token}`,
+    );
   }
 }
