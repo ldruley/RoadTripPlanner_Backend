@@ -1,0 +1,194 @@
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { StopsRepository } from '../repositories/stops.repository';
+import { CreateStopDto } from '../dto/create-stop.dto';
+import { Stop } from '../entities/stop.entity';
+import { EntityManager, MoreThanOrEqual, Repository } from 'typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
+
+@Injectable()
+export class StopsService {
+  constructor(
+    @InjectRepository(Stop)
+    private stopRepository: Repository<Stop>,
+  ) {}
+
+  /**
+   * Find a stop by its ID
+   * @param stop_id
+   * @returns The stop if found, or null if not found
+   */
+  async findOne(stop_id: number): Promise<Stop | null> {
+    return this.stopRepository.findOne({ where: { stop_id } });
+  }
+
+  /**
+   * Find all stops in a trip
+   * @param trip_id
+   * @returns An array of stops in the specified trip or null if not found
+   */
+  async findAllByTrip(trip_id: number): Promise<Stop[] | null> {
+    return this.stopRepository.find({ where: { trip_id } });
+  }
+
+  /**
+   * Find all stops in a stint
+   * @param stint_id
+   * @returns An array of stops in the specified stint or null if not found
+   */
+  async findAllByStint(stint_id: number): Promise<Stop[] | null> {
+    return this.stopRepository.find({
+      where: { stint_id },
+      order: { sequence_number: 'ASC' },
+    });
+  }
+
+  /**
+   * Shift all stops in a stint with sequence numbers >= startSequence by offset
+   * @param stintId The stint ID
+   * @param startSequence The starting sequence number
+   * @param offset The offset to shift by (positive or negative)
+   * @param manager Optional EntityManager for transaction handling
+   */
+  async shiftStopSequences(
+    stintId: number,
+    startSequence: number,
+    offset: number,
+    manager?: EntityManager,
+  ): Promise<void> {
+    const repo = manager ? manager.getRepository(Stop) : this.stopRepository;
+
+    const stopsToShift = await repo.find({
+      where: {
+        stint_id: stintId,
+        sequence_number: MoreThanOrEqual(startSequence),
+      },
+      order: { sequence_number: 'ASC' },
+    });
+
+    for (const stop of stopsToShift) {
+      stop.sequence_number += offset;
+      await repo.save(stop);
+    }
+  }
+
+  /**
+   * Add a stop with sequence handling
+   * Validation and other handling must be done in itinerary service
+   * @param createStopDto The DTO containing stop data
+   * @param userId The ID of the user creating the stop
+   * @param manager Optional EntityManager for transaction handling
+   * @returns The created stop
+   */
+  async create(
+    createStopDto: CreateStopDto,
+    userId: number,
+    manager?: EntityManager,
+  ): Promise<Stop> {
+    // Domain validation
+    //TODO: ensure validation in itinerary
+    //await this.validateStopAddition(createStopDto, userId);
+
+    const repo = manager ? manager.getRepository(Stop) : this.stopRepository;
+    const maxSequence = await this.findMaxSequenceNumber(
+      createStopDto.stint_id,
+    );
+
+    // Sequence logic
+    if (
+      !createStopDto.sequence_number ||
+      createStopDto.sequence_number > maxSequence + 1
+    ) {
+      createStopDto.sequence_number = maxSequence + 1;
+    } else {
+      // Shift existing stops if necessary
+      await this.shiftStopSequences(
+        createStopDto.stint_id,
+        createStopDto.sequence_number,
+        1,
+        manager,
+      );
+    }
+
+    // Create the stop
+    const stop = repo.create(createStopDto);
+    return repo.save(stop);
+  }
+
+  /**
+   * Remove a stop with sequence handling
+   * Validation and other handling must be done in itinerary service
+   */
+  async delete(
+    stopId: number,
+    userId: number,
+    manager?: EntityManager,
+  ): Promise<Stop> {
+    // Domain validation...
+
+    const repo = manager ? manager.getRepository(Stop) : this.stopRepository;
+    const stop = await this.findOne(stopId);
+
+    // Remove the stop
+    const removedStop = await repo.remove(stop);
+
+    // Shift sequence numbers down
+    await this.shiftStopSequences(
+      stop.stint_id,
+      stop.sequence_number + 1,
+      -1,
+      manager,
+    );
+
+    return removedStop;
+  }
+
+  /**
+   * Find the maximum sequence number for stops in a stint
+   * @param stint_id The stint ID
+   * @returns The maximum sequence number, or 0 if no stops exist
+   */
+  async findMaxSequenceNumber(stint_id: number): Promise<number> {
+    const result: { maxSequence: string | null } | undefined =
+      await this.stopRepository
+        .createQueryBuilder('stop')
+        .select('MAX(stop.sequence_number)', 'maxSequence')
+        .where('stop.stint_id = :stint_id', { stint_id })
+        .getRawOne();
+
+    return result?.maxSequence ? Number(result.maxSequence) : 0;
+  }
+
+  /**
+   * Get the start and end location IDs for a stint
+   */
+  async getStintEdges(
+    stintId: number,
+    manager?: EntityManager,
+  ): Promise<{
+    start_location_id: number | undefined;
+    end_location_id: number | undefined;
+  }> {
+    const repo = manager ? manager.getRepository(Stop) : this.stopRepository;
+
+    const startStop = await repo
+      .createQueryBuilder('stop')
+      .select('stop_id', 'id')
+      .where('stint_id = :stintId', { stintId })
+      .orderBy('sequence_number', 'ASC')
+      .limit(1)
+      .getRawOne<{ id: number }>();
+
+    const endStop = await repo
+      .createQueryBuilder('stop')
+      .select('stop_id', 'id')
+      .where('stint_id = :stintId', { stintId })
+      .orderBy('sequence_number', 'DESC')
+      .limit(1)
+      .getRawOne<{ id: number }>();
+
+    return {
+      start_location_id: startStop?.id ?? undefined,
+      end_location_id: endStop?.id ?? undefined,
+    };
+  }
+}
