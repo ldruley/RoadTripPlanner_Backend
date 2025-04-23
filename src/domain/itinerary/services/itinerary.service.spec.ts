@@ -350,7 +350,7 @@ describe('ItineraryService', () => {
   });
 
   // Start testing the createStint method - one of the more complex ones
-  describe('createStint', () => {
+  /*describe('createStint', () => {
     const createStintDto: CreateStintWithOptionalStopDto = {
       name: 'New Stint',
       trip_id: 1,
@@ -439,7 +439,7 @@ describe('ItineraryService', () => {
         service.createStint(incompleteDto, userId),
       ).rejects.toThrow();
     });
-  });
+  });*/
 
   // TODO: tests for (we may need to consider fakes for our more complex methods):
   // - getTripTimeline

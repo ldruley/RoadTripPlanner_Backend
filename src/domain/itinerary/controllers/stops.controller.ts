@@ -80,7 +80,7 @@ export class StopsController {
     return this.stopsService.findAllByStint(stintId);
   }
 
-  @Put(':id')
+  /*  @Put(':id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
@@ -102,7 +102,7 @@ export class StopsController {
     @GetUser() user: User,
   ) {
     return this.stopsService.update(id, updateStopDto, user.user_id);
-  }
+  }*/
 
   @Put('stint/:stintId/reorder-stops')
   @UseGuards(JwtAuthGuard)
