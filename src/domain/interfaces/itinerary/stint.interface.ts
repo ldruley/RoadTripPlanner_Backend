@@ -11,8 +11,8 @@ export interface TimelineStint {
   distance?: number;
   estimated_duration?: number;
   notes?: string;
-  start_date?: Date;
-  end_date?: Date;
+  start_time?: Date;
+  end_time?: Date;
   start_location_name?: string;
   end_location_name?: string;
   continues_from_previous?: boolean;

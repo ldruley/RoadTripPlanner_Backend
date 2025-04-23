@@ -67,8 +67,6 @@ export class ItineraryService {
       order: { sequence_number: 'ASC' },
     });
 
-    console.log(stints);
-
     // Build the timeline
     const timeline: TripTimeline = {
       trip_id: tripId,
@@ -103,7 +101,11 @@ export class ItineraryService {
         estimated_duration: stint.estimated_duration,
         notes: stint.notes,
         timeline: [],
+        continues_from_previous: stint.continues_from_previous,
+        start_time: stint.start_time,
+        end_time: stint.end_time,
       };
+
       if (stint.start_location) {
         stintTimeline.start_location_name = stint.start_location.name;
       }
@@ -114,30 +116,35 @@ export class ItineraryService {
 
       const timelineItems: TimelineItem[] = [];
 
+      // Handle departure stop
       if (stint.continues_from_previous && stint.start_location) {
+        // For continuation stints, add a reference to the previous stint's end location
+        // Be careful not to duplicate this later
+        const referencedStopId = stint.start_location.stop_id;
+
         timelineItems.push({
           type: 'stop',
           sequence_number: 0,
           item: {
-            stop_id: stint.start_location.stop_id,
+            stop_id: referencedStopId,
             name: stint.start_location.name,
             latitude: stint.start_location.latitude,
             longitude: stint.start_location.longitude,
             address: stint.start_location.address,
             stop_type: StopType.DEPARTURE,
-            arrival_time: stint.start_location.arrival_time,
-            departure_time:
-              stint.start_location.departure_time || stint.start_time,
-            duration: stint.start_location.duration,
+            arrival_time: stint.start_time, // Use stint start time
+            departure_time: stint.start_time, // Use stint start time
+            duration: 0, // No wait at transition point
             sequence_number: 0,
             notes: `Departure from ${stint.start_location.name}`,
           },
         });
       } else {
-        // For the first stint, check if there's a departure stop (sequence 0)
+        // For the first stint or non-continuation stints
         const departureStop = sortedStops.find(
           (stop) => stop.sequence_number === 0,
         );
+
         if (departureStop) {
           timelineItems.push({
             type: 'stop',
@@ -148,19 +155,30 @@ export class ItineraryService {
               latitude: departureStop.latitude,
               longitude: departureStop.longitude,
               address: departureStop.address,
-              stop_type: departureStop.stop_type,
+              stop_type: departureStop.stop_type || StopType.DEPARTURE, // Ensure it has the right type
               arrival_time: departureStop.arrival_time,
               departure_time: departureStop.departure_time,
               duration: departureStop.duration,
-              sequence_number: departureStop.sequence_number,
+              sequence_number: 0, // Explicitly set to 0
               notes: departureStop.notes,
             },
           });
         }
       }
 
+      // Get IDs of stops already added to avoid duplicates
+      const addedStopIds = new Set(
+        timelineItems
+          .filter((item) => item.type === 'stop')
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          .map((item) => (item.item as any).stop_id),
+      );
+
+      // Add regular stops (sequence_number > 0) that haven't been added yet
       sortedStops
-        .filter((stop) => stop.sequence_number > 0)
+        .filter(
+          (stop) => stop.sequence_number > 0 && !addedStopIds.has(stop.stop_id),
+        )
         .forEach((stop) => {
           timelineItems.push({
             type: 'stop',
@@ -181,6 +199,7 @@ export class ItineraryService {
           });
         });
 
+      // Add the legs between stops
       sortedLegs.forEach((leg) => {
         timelineItems.push({
           type: 'leg',
@@ -199,29 +218,32 @@ export class ItineraryService {
         });
       });
 
+      // Sort timeline items by sequence number
       timelineItems.sort((a, b) => a.sequence_number - b.sequence_number);
 
       stintTimeline.timeline = timelineItems;
 
-      // TODO: we shouldn't need to do this anymore, but let's check
-      // Calculate total stint distance and duration as before
-      stintTimeline.distance = sortedLegs.reduce(
-        (total, leg) => total + leg.distance,
-        0,
-      );
-      stintTimeline.estimated_duration = sortedLegs.reduce(
-        (total, leg) => total + leg.estimated_travel_time,
-        0,
-      );
+      // Calculate stint totals from database values, not by recomputing
+      if (!stintTimeline.distance) {
+        stintTimeline.distance = sortedLegs.reduce(
+          (total, leg) => total + (leg.distance || 0),
+          0,
+        );
+      }
 
-      // Add stop durations to total stint duration
-      if (stintTimeline.estimated_duration) {
-        sortedStops.forEach((stop) => {
-          if (stop.duration) {
-            stintTimeline.estimated_duration =
-              (stintTimeline.estimated_duration ?? 0) + stop.duration;
-          }
-        });
+      if (!stintTimeline.estimated_duration) {
+        // Calculate from legs and stop durations
+        const legDuration = sortedLegs.reduce(
+          (total, leg) => total + (leg.estimated_travel_time || 0),
+          0,
+        );
+
+        const stopDuration = sortedStops.reduce(
+          (total, stop) => total + (stop.duration || 0),
+          0,
+        );
+
+        stintTimeline.estimated_duration = legDuration + stopDuration;
       }
 
       // Add stint to trip timeline
@@ -818,6 +840,20 @@ export class ItineraryService {
     if (!stint) {
       throw new NotFoundException(`Stint with ID ${stintId} not found`);
     }
+    let currentTime = stint.start_time;
+    if (stint.continues_from_previous && stint.start_location_id) {
+      const previousStintEndLocation = await manager
+        .getRepository(Stop)
+        .findOne({
+          where: { stop_id: stint.start_location_id },
+        });
+
+      if (previousStintEndLocation && previousStintEndLocation.departure_time) {
+        currentTime = previousStintEndLocation.departure_time;
+        stint.start_time = currentTime;
+        await manager.getRepository(Stint).save(stint);
+      }
+    }
 
     const stops = await manager.getRepository(Stop).find({
       where: { stint_id: stintId },
@@ -833,7 +869,6 @@ export class ItineraryService {
       return;
     }
 
-    let currentTime = stint.start_time;
     if (!currentTime) {
       // If no start_time is set, we can't calculate timings
       return;

@@ -80,7 +80,6 @@ export class StopsService {
     // Sequence logic
     if (
       !createStopDto.sequence_number ||
-      createStopDto.sequence_number === 0 ||
       createStopDto.sequence_number > maxSequence + 1
     ) {
       createStopDto.sequence_number = maxSequence + 1;
