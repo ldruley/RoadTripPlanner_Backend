@@ -16,7 +16,6 @@ import { Stop } from '../entities/stop.entity';
 import { Leg } from '../entities/leg.entity';
 import { StopsRepository } from '../repositories/stops.repository';
 import { StintsRepository } from '../repositories/stints.repository';
-import { LegsRepository } from '../repositories/legs.repository';
 import {
   TripTimeline,
   TimelineStint,
@@ -45,7 +44,6 @@ export class ItineraryService {
     private legsService: LegsService,
     private stopsRepository: StopsRepository,
     private stintsRepository: StintsRepository,
-    private legsRepository: LegsRepository,
     private dataSource: DataSource,
   ) {}
 
@@ -753,7 +751,7 @@ export class ItineraryService {
       await legRepo.save(leg);
     }
 
-    //TODO: CLEAN THIS SHIT UP
+    // TODO: CLEAN THIS SHIT UP
     // Handle the departure leg based on whether it's a continuation stint
     if (
       stint.continues_from_previous &&

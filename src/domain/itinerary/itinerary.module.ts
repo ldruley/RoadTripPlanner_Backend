@@ -9,7 +9,6 @@ import { Leg } from './entities/leg.entity';
 // Repositories
 import { StintsRepository } from './repositories/stints.repository';
 import { StopsRepository } from './repositories/stops.repository';
-import { LegsRepository } from './repositories/legs.repository';
 
 // Services
 import { StintsService } from './services/stints.service';
@@ -41,7 +40,6 @@ import { TripsModule } from '../trips/trips.module';
     // Repositories
     StintsRepository,
     StopsRepository,
-    LegsRepository,
 
     // Services
     StintsService,

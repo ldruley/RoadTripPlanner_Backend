@@ -4,38 +4,58 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
-import { UsersRepository } from './repository/users.repository';
 import { User } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user-dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class UsersService {
-  constructor(private usersRepository: UsersRepository) {}
+  constructor(
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
+  ) {}
 
+  //TODO: we still need to check username uniqueness
+  /**
+   * Create a new user
+   * @param createUserDto
+   * @returns The created user
+   */
   async create(createUserDto: CreateUserDto): Promise<User> {
-    const existingUser = await this.usersRepository.findByEmail(
-      createUserDto.email,
-    );
+    const existingUser = await this.userRepository.findOne({
+      where: { email: createUserDto.email },
+    });
+
     if (existingUser) {
       throw new ConflictException('Email already in use');
     }
 
     const passwordHash = await bcrypt.hash(createUserDto.password, 10);
 
-    const user = this.usersRepository.create({
+    const user = this.userRepository.create({
       ...createUserDto,
       password_hash: passwordHash,
     });
 
-    return this.usersRepository.save(user);
+    return this.userRepository.save(user);
   }
 
+  /**
+   * Find all users
+   * @returns An array of users
+   */
   async findAll(): Promise<User[]> {
-    return this.usersRepository.find();
+    return this.userRepository.find();
   }
 
+  /**
+   * Find a user by ID
+   * @param id The user ID
+   * @returns The user if found, or null if not found
+   */
   async findOne(id: number): Promise<User> {
-    const user = await this.usersRepository.findOne({
+    const user = await this.userRepository.findOne({
       where: { user_id: id },
     });
 
@@ -46,13 +66,34 @@ export class UsersService {
     return user;
   }
 
+  /**
+   * Find a user by email
+   * @param email The user email
+   * @returns The user if found, or null if not found
+   */
   async findByEmail(email: string): Promise<User | null> {
-    return this.usersRepository.findByEmail(email);
+    return await this.userRepository.findOne({
+      where: { email },
+    });
   }
 
+  /**
+   * Find a user by username
+   * @param username The user username
+   * @returns The user if found, or null if not found
+   */
   async findByUsername(username: string): Promise<User | null> {
-    return this.usersRepository.findByUsername(username);
+    return await this.userRepository.findOne({
+      where: { username },
+    });
   }
+
+  /**
+   * Update a user
+   * @param id The user ID
+   * @param updateUserDto The user data to update
+   * @returns The updated user
+   */
   async update(id: number, updateUserDto: Partial<User>): Promise<User> {
     const user = await this.findOne(id);
     const updates: Partial<User> = {};
@@ -71,11 +112,15 @@ export class UsersService {
     }
 
     Object.assign(user, updates);
-    return this.usersRepository.save(user);
+    return this.userRepository.save(user);
   }
 
+  /**
+   * Remove a user
+   * @param id The user ID
+   */
   async remove(id: number): Promise<void> {
     const user = await this.findOne(id);
-    await this.usersRepository.remove(user);
+    await this.userRepository.remove(user);
   }
 }

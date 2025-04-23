@@ -1,6 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { LegsService } from './legs.service';
-import { LegsRepository } from '../repositories/legs.repository';
 import { NotFoundException } from '@nestjs/common';
 import { CreateLegDto } from '../dto/create-leg.dto';
 import { Leg, RouteType } from '../entities/leg.entity';

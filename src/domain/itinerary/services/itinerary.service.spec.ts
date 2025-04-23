@@ -5,7 +5,6 @@ import { StopsService } from './stops.service';
 import { LegsService } from './legs.service';
 import { StopsRepository } from '../repositories/stops.repository';
 import { StintsRepository } from '../repositories/stints.repository';
-import { LegsRepository } from '../repositories/legs.repository';
 import { TripsService } from '../../trips/trips.service';
 import { DataSource, EntityManager } from 'typeorm';
 import { CreateStopDto } from '../dto/create-stop.dto';
