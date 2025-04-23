@@ -404,7 +404,11 @@ export class ItineraryService {
 
         // Coordination logic
         await this.updateLegsAfterStopChanges(stop.stint_id, [stop], manager);
-        await this.updateStintStartEndLocations(stop.stint_id, manager);
+        await this.stintsService.updateLocationReferences(
+          stint,
+          await this.stopsService.getStintEdges(stop.stint_id, manager),
+          manager,
+        );
         await this.updateStintTimings(stop.stint_id, manager);
 
         return stop;

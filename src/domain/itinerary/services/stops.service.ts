@@ -126,4 +126,38 @@ export class StopsService {
 
     return removedStop;
   }
+
+  /**
+   * Get the start and end location IDs for a stint
+   */
+  async getStintEdges(
+    stintId: number,
+    manager?: EntityManager,
+  ): Promise<{
+    start_location_id: number | undefined;
+    end_location_id: number | undefined;
+  }> {
+    const repo = manager ? manager.getRepository(Stop) : this.stopsRepository;
+
+    const startStop = await repo
+      .createQueryBuilder('stop')
+      .select('stop_id', 'id')
+      .where('stint_id = :stintId', { stintId })
+      .orderBy('sequence_number', 'ASC')
+      .limit(1)
+      .getRawOne<{ id: number }>();
+
+    const endStop = await repo
+      .createQueryBuilder('stop')
+      .select('stop_id', 'id')
+      .where('stint_id = :stintId', { stintId })
+      .orderBy('sequence_number', 'DESC')
+      .limit(1)
+      .getRawOne<{ id: number }>();
+
+    return {
+      start_location_id: startStop?.id ?? undefined,
+      end_location_id: endStop?.id ?? undefined,
+    };
+  }
 }
