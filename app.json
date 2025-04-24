@@ -1,0 +1,41 @@
+{
+  "name": "road-trip-planner-api",
+  "description": "Road Trip Planner API built with NestJS (Development Mode)",
+  "repository": "https://github.com/yourusername/road-trip-planner",
+  "logo": "https://node-js-sample.herokuapp.com/node.png",
+  "keywords": ["node", "nestjs", "typescript", "postgres", "development"],
+  "addons": [
+    {
+      "plan": "heroku-postgresql:hobby-dev"
+    }
+  ],
+  "env": {
+    "NODE_ENV": {
+      "description": "Environment for the application",
+      "value": "development"
+    },
+    "JWT_SECRET": {
+      "description": "Secret key for JWT token generation",
+      "generator": "secret"
+    },
+    "JWT_EXPIRES_IN": {
+      "description": "JWT token expiration time",
+      "value": "1d"
+    },
+    "HERE_API_KEY": {
+      "description": "HERE Maps API Key",
+      "required": true
+    }
+  },
+  "buildpacks": [
+    {
+      "url": "heroku/nodejs"
+    }
+  ],
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "basic"
+    }
+  }
+}
