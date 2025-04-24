@@ -1,3 +1,4 @@
+/*
 //TODO: We need to ensure that a creator can not be removed from a trip + cannot have role changed
 // and is set by default as creator
 
@@ -128,3 +129,4 @@ export class StintParticipantService {
     await this.stintParticipantRepository.remove(participant);
   }
 }
+*/
