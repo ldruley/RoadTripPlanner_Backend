@@ -59,7 +59,7 @@ export class StopsController {
   @ApiResponse({ status: 200, description: 'Stop found' })
   @ApiResponse({ status: 404, description: 'Stop not found' })
   findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.stopsService.findOne(id);
+    return this.stopsService.findById(id);
   }
 
   @Get('trip/:tripId')

@@ -6,10 +6,6 @@ import { Stint } from './entities/stint.entity';
 import { Stop } from './entities/stop.entity';
 import { Leg } from './entities/leg.entity';
 
-// Repositories
-import { StintsRepository } from './repositories/stints.repository';
-import { StopsRepository } from './repositories/stops.repository';
-
 // Services
 import { StintsService } from './services/stints.service';
 import { StopsService } from './services/stops.service';
@@ -37,10 +33,6 @@ import { TripsModule } from '../trips/trips.module';
     ItineraryController,
   ],
   providers: [
-    // Repositories
-    StintsRepository,
-    StopsRepository,
-
     // Services
     StintsService,
     StopsService,

@@ -35,7 +35,7 @@ export class LegsController {
   @ApiResponse({ status: 200, description: 'Leg found' })
   @ApiResponse({ status: 404, description: 'Leg not found' })
   findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.legsService.findOne(id);
+    return this.legsService.findById(id);
   }
 
   @Get('stint/:stintId')

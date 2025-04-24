@@ -27,7 +27,7 @@ export class StintVehicleService {
     requesterId: number,
   ): Promise<StintVehicle> {
     // Check if the stint exists
-    const stint = await this.stintsService.findOne(
+    const stint = await this.stintsService.findById(
       createStintVehicleDto.stint_id,
     );
 
@@ -127,7 +127,7 @@ export class StintVehicleService {
     requesterId: number,
   ): Promise<void> {
     // Check if the stint exists
-    const stint = await this.stintsService.findOne(stintId);
+    const stint = await this.stintsService.findById(stintId);
     if (!stint) {
       throw new NotFoundException('Stint not found');
     }

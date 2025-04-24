@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateLegDto } from '../dto/create-leg.dto';
 import { Leg } from '../entities/leg.entity';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { EntityManager, Repository } from 'typeorm';
 
 @Injectable()
 export class LegsService {
@@ -89,8 +89,12 @@ export class LegsService {
    * @param stintId The stint ID
    * @returns The total estimated travel time in minutes, or 0 if no legs exist
    */
-  async sumEstimatedTravelTime(stintId: number): Promise<number> {
-    const result: { total: number } | undefined = await this.legRepository
+  async sumEstimatedTravelTime(
+    stintId: number,
+    manager?: EntityManager,
+  ): Promise<number> {
+    const repo = manager ? manager.getRepository(Leg) : this.legRepository;
+    const result: { total: number } | undefined = await repo
       .createQueryBuilder('leg')
       .select('SUM(leg.estimated_travel_time)', 'total')
       .where('leg.stint_id = :stint_id', { stint_id: stintId })
@@ -104,8 +108,12 @@ export class LegsService {
    * @param stintId The stint ID
    * @returns The total estimated distance in miles, or 0 if no legs exist
    */
-  async sumEstimatedTravelDistance(stintId: number): Promise<number> {
-    const result: { total: number } | undefined = await this.legRepository
+  async sumEstimatedTravelDistance(
+    stintId: number,
+    manager?: EntityManager,
+  ): Promise<number> {
+    const repo = manager ? manager.getRepository(Leg) : this.legRepository;
+    const result: { total: number } | undefined = await repo
       .createQueryBuilder('leg')
       .select('SUM(leg.distance)', 'total')
       .where('leg.stint_id = :stint_id', { stint_id: stintId })

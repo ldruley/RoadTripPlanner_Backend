@@ -50,7 +50,7 @@ export class StintsController {
   @ApiResponse({ status: 200, description: 'Stint found' })
   @ApiResponse({ status: 404, description: 'Stint not found' })
   findOne(@Param('id') id: number) {
-    return this.stintsService.findOne(id);
+    return this.stintsService.findById(id);
   }
 
   @Put(':id')

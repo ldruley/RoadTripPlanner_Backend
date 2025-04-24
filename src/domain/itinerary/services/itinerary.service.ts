@@ -4,18 +4,14 @@ import {
   ForbiddenException,
   forwardRef,
   Inject,
-  BadRequestException,
 } from '@nestjs/common';
-import { DataSource, EntityManager, MoreThan } from 'typeorm';
-import { MoreThanOrEqual } from 'typeorm';
+import { DataSource, EntityManager, Repository } from 'typeorm';
 import { StintsService } from './stints.service';
 import { StopsService } from './stops.service';
 import { LegsService } from './legs.service';
 import { Stint } from '../entities/stint.entity';
 import { Stop } from '../entities/stop.entity';
 import { Leg } from '../entities/leg.entity';
-import { StopsRepository } from '../repositories/stops.repository';
-import { StintsRepository } from '../repositories/stints.repository';
 import {
   TripTimeline,
   TimelineStint,
@@ -30,6 +26,7 @@ import { CreateStintWithStopDto } from '../dto/create-stint-with-stop.dto';
 import { CreateStintWithOptionalStopDto } from '../dto/create-sprint-with-optional-stop.dto';
 import { DateUtils } from '../../../common/utils';
 import { StopType } from '../../../common/enums';
+import { InjectRepository } from '@nestjs/typeorm';
 
 //TODO: Implement TimelineLeg and TimelineStop interfaces - or figure out a combiined approach to interweave them into the timeline
 //TODO: potentially a dto for timeline?
@@ -37,13 +34,14 @@ import { StopType } from '../../../common/enums';
 @Injectable()
 export class ItineraryService {
   constructor(
+    @InjectRepository(Stint)
+    private stintRepository: Repository<Stint>,
+
     @Inject(forwardRef(() => TripsService))
     private tripsService: TripsService,
     private stintsService: StintsService,
     private stopsService: StopsService,
     private legsService: LegsService,
-    private stopsRepository: StopsRepository,
-    private stintsRepository: StintsRepository,
     private dataSource: DataSource,
   ) {}
 
@@ -55,15 +53,14 @@ export class ItineraryService {
   async getTripTimeline(tripId: number, userId: number): Promise<TripTimeline> {
     // First verify the trip exists and the user has access
     const trip = await this.tripsService.findOne(tripId);
+    if (!trip) {
+      throw new NotFoundException(`Trip with ID ${tripId} not found`);
+    }
 
     //TODO: We need to check if they have access to the trip, currently passed userId but we also need to check if they are a participant
 
     // Get all stints for the trip
-    const stints = await this.stintsRepository.find({
-      where: { trip_id: tripId },
-      relations: ['stops', 'legs', 'start_location', 'end_location'],
-      order: { sequence_number: 'ASC' },
-    });
+    const stints = await this.stintsService.findAllByTripWithRelations(tripId);
 
     // Build the timeline
     const timeline: TripTimeline = {
@@ -271,6 +268,9 @@ export class ItineraryService {
   ): Promise<Stint> {
     // Validate trip access
     const trip = await this.tripsService.findOne(dto.trip_id);
+    if (!trip) {
+      throw new NotFoundException(`Trip with ID ${dto.trip_id} not found`);
+    }
     if (trip.creator_id !== userId) {
       throw new ForbiddenException(
         'You do not have permission to create stints in this trip',
@@ -317,7 +317,7 @@ export class ItineraryService {
       }
 
       // Create the stint
-      stint = await this.stintsService.createStint(
+      stint = await this.stintsService.create(
         {
           name: dto.name,
           sequence_number: dto.sequence_number,
@@ -391,7 +391,7 @@ export class ItineraryService {
    * Add a new stop to a stint, handle potential re-ordering and update legs automatically
    */
   async addStop(createStopDto: CreateStopDto, userId: number): Promise<Stop> {
-    const stint = await this.stintsService.findOne(createStopDto.stint_id);
+    const stint = await this.stintsService.findById(createStopDto.stint_id);
     if (!stint) {
       throw new NotFoundException(
         `Stint with ID ${createStopDto.stint_id} not found`,
@@ -400,6 +400,9 @@ export class ItineraryService {
 
     // Check if user has permission to modify this stint
     const trip = await this.tripsService.findOne(stint.trip_id);
+    if (!trip) {
+      throw new NotFoundException(`Trip with ID ${stint.trip_id} not found`);
+    }
     if (trip.creator_id !== userId) {
       throw new ForbiddenException(
         'You do not have permission to add stops to this trip',
@@ -453,54 +456,37 @@ export class ItineraryService {
    * TODO: Handle if this is the last stop in the stint since it's connected to departure stop for the next stint
    */
   async removeStop(stopId: number, userId: number): Promise<void> {
-    const stop = await this.stopsService.findOne(stopId);
+    const stop = await this.stopsService.findById(stopId);
     if (!stop) {
       throw new NotFoundException(`Stop with ID ${stopId} not found`);
     }
 
-    const trip = await this.tripsService.findOne(stop.trip_id);
-    if (trip.creator_id !== userId) {
-      throw new ForbiddenException(
-        'You do not have permission to remove stops from this trip',
-      );
-    }
-    let stint: Stint | null;
-    if (stop.sequence_number === 0) {
-      const stopCount = await this.stopsRepository.count({
-        where: { stint_id: stop.stint_id },
-      });
+    await this.tripsService.checkUserInTrip(stop.trip_id, userId);
 
-      if (stopCount === 1) {
+    let nextStop: Stop | null;
+    if (stop.sequence_number === 0) {
+      nextStop = await this.stopsService.getStopWithOffset(
+        stop.stint_id,
+        stop.sequence_number,
+        1,
+      );
+      if (!nextStop) {
         throw new ForbiddenException(
           'Cannot remove the departure stop when it is the only stop in the stint',
         );
       }
-
-      stint = await this.stintsRepository.findById(stop.stint_id);
     }
 
     return this.dataSource
       .transaction(async (manager) => {
-        const stopRepo = manager.getRepository(Stop);
         const stintRepo = manager.getRepository(Stint);
 
         // TODO: consider moving this functionality to stintsService.
         // If this is the first stop in the stint we need to update
-        if (stop.sequence_number === 0) {
-          if (!stint) {
-            throw new NotFoundException(
-              `Stint with ID ${stop.stint_id} not found`,
-            );
-          }
-          // Find the next stop to become the new start location
-          const nextStop = await stopRepo.findOne({
-            where: { stint_id: stop.stint_id, sequence_number: 1 },
-          });
-
-          if (nextStop) {
-            stint.start_location_id = nextStop.stop_id;
-            await stintRepo.save(stint);
-          }
+        if (stop.sequence_number === 0 && nextStop) {
+          const stint = await this.stintsService.findById(stop.stint_id);
+          stint.start_location_id = nextStop.stop_id;
+          await stintRepo.save(stint);
         }
 
         // Delete the stop
@@ -508,12 +494,11 @@ export class ItineraryService {
 
         // Get previous stop to send for updating legs
         // TODO: Evaluate if we still need this
-        const previousStop = await stopRepo.findOne({
-          where: {
-            stint_id: stop.stint_id,
-            sequence_number: stop.sequence_number - 1,
-          },
-        });
+        const previousStop = await this.stopsService.getStopWithOffset(
+          stop.stint_id,
+          stop.sequence_number,
+          -1,
+        );
 
         // Update legs and stint metadata
         await this.updateLegsAfterStopChanges(
@@ -546,7 +531,7 @@ export class ItineraryService {
     stopOrder: { stop_id: number; sequence_number: number }[],
     userId: number,
   ): Promise<void> {
-    const stint = await this.stintsService.findOne(stintId);
+    const stint = await this.stintsService.findById(stintId);
     if (!stint) {
       throw new NotFoundException(`Stint with ID ${stintId} not found`);
     }
@@ -565,8 +550,7 @@ export class ItineraryService {
         const savedStops: Stop[] = [];
         // Update sequence numbers for each stop
         for (const item of stopOrder) {
-          const stop = await this.stopsService.findOne(item.stop_id);
-
+          const stop = await this.stopsService.findById(item.stop_id);
           if (stop.stint_id !== stintId) {
             throw new ForbiddenException(
               `Stop with ID ${stop.stop_id} does not belong to stint ${stintId}`,
@@ -797,28 +781,39 @@ export class ItineraryService {
    * Calculate and update total distance for a stint
    * This is not critical, so we can call this outside a transaction
    */
-  async updateStintDistance(stintId: number): Promise<void> {
-    const totalDistance =
-      await this.legsRepository.sumEstimatedTravelDistance(stintId);
-
+  async updateStintDistance(
+    stintId: number,
+    manager?: EntityManager,
+  ): Promise<void> {
+    const totalDistance = await this.legsService.sumEstimatedTravelDistance(
+      stintId,
+      manager,
+    );
+    const repo = manager ? manager.getRepository(Stint) : this.stintRepository;
     // Update the stint with the new distance
-    const stint = await this.stintsService.findOne(stintId);
+    const stint = await this.stintsService.findById(stintId);
     stint.distance = totalDistance;
-    await this.stintsRepository.save(stint);
+    await repo.save(stint);
   }
 
   /**
    * Calculate and update total duration for a stint
    * This is not critical, so we can call this outside a transaction
    */
-  async updateStintDuration(stintId: number): Promise<void> {
-    const legDuration =
-      await this.legsRepository.sumEstimatedTravelTime(stintId);
-    const stopDuration = await this.stopsRepository.sumDuration(stintId);
+  async updateStintDuration(
+    stintId: number,
+    manager?: EntityManager,
+  ): Promise<void> {
+    const repo = manager ? manager.getRepository(Stint) : this.stintRepository;
+    const legDuration = await this.legsService.sumEstimatedTravelTime(
+      stintId,
+      manager,
+    );
+    const stopDuration = await this.stopsService.sumDuration(stintId, manager);
     // Update the stint with the new duration
-    const stint = await this.stintsService.findOne(stintId);
+    const stint = await this.stintsService.findById(stintId);
     stint.estimated_duration = legDuration + stopDuration;
-    await this.stintsRepository.save(stint);
+    await repo.save(stint);
   }
 
   /**
