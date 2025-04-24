@@ -101,7 +101,7 @@ export class Stint {
   participants: User[];
 
   // Many-to-many relation with vehicles
-  @ManyToMany(() => Vehicle)
+  /* @ManyToMany(() => Vehicle)
   @JoinTable({
     name: 'stint_vehicles',
     joinColumn: {
@@ -113,7 +113,7 @@ export class Stint {
       referencedColumnName: 'vehicle_id',
     },
   })
-  vehicles: Vehicle[];
+  vehicles: Vehicle[];*/
   /*
               // Many-to-many relation with supplies
               @ManyToMany(() => Supply)

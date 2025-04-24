@@ -1,3 +1,4 @@
+/*
 import {
   Entity,
   Column,
@@ -39,3 +40,4 @@ export class StintVehicle {
   @CreateDateColumn()
   created_at: Date;
 }
+*/

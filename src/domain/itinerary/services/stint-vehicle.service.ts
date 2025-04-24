@@ -1,3 +1,4 @@
+/*
 import {
   Injectable,
   NotFoundException,
@@ -79,7 +80,7 @@ export class StintVehicleService {
   //TODO: Use a DTO for this if we can
   //TODO: This is scuffed, I'm tired, disabling
   //TODO: completely forgot what I was doing, we need to properly search for old vehicle and then assign new values
-  /*async updateDriver(
+  /!*async updateDriver(
     updateStintVehicleDto: UpdateStintVehicleDto,
     requesterId: number,
   ): Promise<StintVehicle> {
@@ -119,7 +120,7 @@ export class StintVehicleService {
     // Update driver
     stintVehicle.driver_id = newDriverId;
     return this.stintVehicleRepository.save(stintVehicle);
-  }*/
+  }*!/
 
   async removeVehicle(
     stintId: number,
@@ -150,3 +151,4 @@ export class StintVehicleService {
     await this.stintVehicleRepository.remove(stintVehicle);
   }
 }
+*/
