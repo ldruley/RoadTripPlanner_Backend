@@ -75,7 +75,7 @@ export class HereApiService {
       }
 
       // Get previous stop coordinates
-      const prevStop = await this.stopsService.findOne(prevStopId);
+      const prevStop = await this.stopsService.findById(prevStopId);
 
       const params = {
         apiKey: this.apiKey,

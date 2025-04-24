@@ -74,16 +74,16 @@ describe('StopsController', () => {
 
   describe('findOne', () => {
     it('should return a stop by ID', async () => {
-      service.findOne.mockResolvedValue(mockStop);
+      service.findById.mockResolvedValue(mockStop);
 
       const result = await controller.findOne(1);
 
-      expect(service.findOne).toHaveBeenCalledWith(1);
+      expect(service.findById).toHaveBeenCalledWith(1);
       expect(result).toBe(mockStop);
     });
 
     it('should throw NotFoundException when stop not found', async () => {
-      service.findOne.mockRejectedValue(new NotFoundException());
+      service.findById.mockRejectedValue(new NotFoundException());
 
       await expect(controller.findOne(999)).rejects.toThrow(NotFoundException);
     });

@@ -27,7 +27,7 @@ export class StintParticipantService {
     requesterId: number,
   ): Promise<StintParticipant> {
     // Check if the stint exists
-    const stint = await this.stintsService.findOne(
+    const stint = await this.stintsService.findById(
       createStintParticipantDto.stint_id,
     );
 
@@ -82,7 +82,7 @@ export class StintParticipantService {
     requesterId: number,
   ): Promise<StintParticipant> {
     // Check if the stint exists
-    const stint = await this.stintsService.findOne(stintId);
+    const stint = await this.stintsService.findById(stintId);
 
     // Check if requester has permission
     if (stint.trip.creator_id !== requesterId) {
@@ -109,7 +109,7 @@ export class StintParticipantService {
     requesterId: number,
   ): Promise<void> {
     // Check if the stint exists
-    const stint = await this.stintsService.findOne(stintId);
+    const stint = await this.stintsService.findById(stintId);
 
     // Check if requester has permission or is removing themselves
     if (stint.trip.creator_id !== requesterId && userId !== requesterId) {

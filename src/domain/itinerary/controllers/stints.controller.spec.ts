@@ -141,16 +141,16 @@ describe('StintsController', () => {
 
   describe('findOne', () => {
     it('should return a stint by ID', async () => {
-      stintsService.findOne.mockResolvedValue(mockStint);
+      stintsService.findById.mockResolvedValue(mockStint);
 
       const result = await controller.findOne(1);
 
-      expect(stintsService.findOne).toHaveBeenCalledWith(1);
+      expect(stintsService.findById).toHaveBeenCalledWith(1);
       expect(result).toBe(mockStint);
     });
 
     it('should throw NotFoundException when stint not found', async () => {
-      stintsService.findOne.mockRejectedValue(new NotFoundException());
+      stintsService.findById.mockRejectedValue(new NotFoundException());
 
       await expect(controller.findOne(999)).rejects.toThrow(NotFoundException);
     });
