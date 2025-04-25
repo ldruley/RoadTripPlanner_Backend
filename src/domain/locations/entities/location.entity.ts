@@ -8,10 +8,13 @@ import {
   JoinColumn,
   OneToMany,
   Index,
+  ManyToMany,
+  JoinTable,
 } from 'typeorm';
 import { Point } from 'geojson';
 import { User } from '../../users/entities/user.entity';
 import { Stop } from '../../itinerary/entities/stop.entity';
+import { LocationCategory } from './location-category.entity';
 
 export enum LocationType {
   RESTAURANT = 'restaurant',
@@ -115,9 +118,19 @@ export class Location {
   @Column({ nullable: true })
   created_by_id: number;
 
-  /* // One-to-many relationship with stops
+  // One-to-many relationship with stops
   @OneToMany(() => Stop, (stop) => stop.location)
-  stops: Stop[];*/
+  stops: Stop[];
+
+  @ManyToMany(() => LocationCategory, (category) => category.locations, {
+    cascade: true,
+  })
+  @JoinTable({
+    name: 'location_categories',
+    joinColumn: { name: 'location_id', referencedColumnName: 'id' },
+    inverseJoinColumn: { name: 'category_id', referencedColumnName: 'id' },
+  })
+  categories: LocationCategory[];
 
   // Helper method to create a GeoJSON Point
   static createPoint(latitude: number, longitude: number): Point {

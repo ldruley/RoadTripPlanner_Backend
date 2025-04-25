@@ -25,9 +25,6 @@ export class Stop {
   @Column({ type: 'float' })
   longitude: number;
 
-  @Column({ nullable: true })
-  address: string;
-
   @Column({
     type: 'enum',
     enum: StopType,
@@ -70,4 +67,11 @@ export class Stop {
 
   @Column({ nullable: true })
   stint_id: number;
+
+  @ManyToOne(() => Location, { nullable: true })
+  @JoinColumn({ name: 'location_id' })
+  location: Location;
+
+  @Column({ nullable: true })
+  location_id: number;
 }

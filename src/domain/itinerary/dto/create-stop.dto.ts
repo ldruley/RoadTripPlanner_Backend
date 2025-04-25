@@ -124,4 +124,49 @@ export class CreateStopDto {
   @IsNotEmpty()
   @IsNumber()
   stint_id: number;
+
+  @ApiProperty({
+    example: 'San Francisco',
+    description: 'City of the stop',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  city?: string;
+
+  @ApiProperty({
+    example: 'CA',
+    description: 'State of the stop',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  state?: string;
+
+  @ApiProperty({
+    example: '94117',
+    description: 'Postal code of the stop',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  postal_code?: string;
+
+  @ApiProperty({
+    example: 'USA',
+    description: 'Country of the stop',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  country?: string;
+
+  @ApiProperty({
+    example: '42',
+    description: 'ID of the location this stop belongs to',
+    required: false,
+  })
+  @IsOptional()
+  @IsNumber()
+  location_id?: number;
 }

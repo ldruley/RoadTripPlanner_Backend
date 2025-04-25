@@ -64,6 +64,24 @@ export class LocationsService {
     return location;
   }
 
+  async findByCoordinates(
+    lat: number,
+    long: number,
+    manager?: EntityManager,
+  ): Promise<Location | null> {
+    const repo = manager
+      ? manager.getRepository(Location)
+      : this.locationRepository;
+    const location = await repo.findOne({
+      where: {
+        latitude: lat,
+        longitude: long,
+      },
+    });
+
+    return location;
+  }
+
   /**
    * Find locations near a point
    * @param latitude Latitude of the center point

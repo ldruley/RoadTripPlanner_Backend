@@ -27,6 +27,7 @@ import { CreateStintWithOptionalStopDto } from '../dto/create-sprint-with-option
 import { DateUtils } from '../../../common/utils';
 import { StopType } from '../../../common/enums';
 import { InjectRepository } from '@nestjs/typeorm';
+import { LocationsService } from '../../locations/locations.service';
 
 //TODO: Implement TimelineLeg and TimelineStop interfaces - or figure out a combiined approach to interweave them into the timeline
 //TODO: potentially a dto for timeline?
@@ -42,6 +43,7 @@ export class ItineraryService {
     private stintsService: StintsService,
     private stopsService: StopsService,
     private legsService: LegsService,
+    private locationsService: LocationsService,
     private dataSource: DataSource,
   ) {}
 
