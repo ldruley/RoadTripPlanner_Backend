@@ -52,7 +52,7 @@ export class ItineraryService {
    * TODO: We need to incorporate stint/participants and vehicles. Likely sort out new user perms method first
    */
 
-  async getTripTimeline(tripId: number, userId: number): Promise<TripTimeline> {
+  /*  async getTripTimeline(tripId: number, userId: number): Promise<TripTimeline> {
     // First verify the trip exists and the user has access
     const trip = await this.tripsService.findOne(tripId);
     if (!trip) {
@@ -259,7 +259,7 @@ export class ItineraryService {
     }
 
     return timeline;
-  }
+  }*/
 
   /**
    * Create a new stint with optional initial stop

@@ -27,6 +27,7 @@ import { LocationsModule } from '../locations/locations.module';
   imports: [
     TypeOrmModule.forFeature([Stint, Stop, Leg]),
     forwardRef(() => TripsModule),
+    LocationsModule,
   ],
   controllers: [
     StintsController,

@@ -1,4 +1,4 @@
-import { LocationCategoryCode } from '../../common/enums/location-categories.enum';
+import { LocationCategoryCode } from '../../common/enums';
 
 export const HERE_CATEGORY_MAP: Record<
   LocationCategoryCode,
@@ -104,5 +104,9 @@ export const HERE_CATEGORY_MAP: Record<
   [LocationCategoryCode.FERRY_TERMINAL]: {
     name: 'Ferry Terminal',
     here_id: '400-4100-0044',
+  },
+  [LocationCategoryCode.OTHER]: {
+    name: 'Subway Station',
+    here_id: '0000-0000-0000', //placeholder
   },
 };

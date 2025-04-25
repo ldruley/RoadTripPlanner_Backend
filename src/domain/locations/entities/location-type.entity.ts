@@ -9,7 +9,7 @@ import {
 import { Location } from './location.entity';
 
 @Entity()
-export class LocationCategory {
+export class LocationType {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -26,11 +26,11 @@ export class LocationCategory {
   locations: Location[];
 
   // If we want hierarchical categories, we can add a parent-child relationship
-  @ManyToOne(() => LocationCategory, (category) => category.children, {
+  @ManyToOne(() => LocationType, (category) => category.children, {
     nullable: true,
   })
-  parent: LocationCategory;
+  parent: LocationType;
 
-  @OneToMany(() => LocationCategory, (category) => category.parent)
-  children: LocationCategory[];
+  @OneToMany(() => LocationType, (category) => category.parent)
+  children: LocationType[];
 }

@@ -10,6 +10,7 @@ import {
 import { Trip } from '../../trips/entities/trip.entity';
 import { Stint } from './stint.entity';
 import { StopType } from '../../../common/enums';
+import { Location } from '../../locations/entities/location.entity';
 
 @Entity('stops')
 export class Stop {

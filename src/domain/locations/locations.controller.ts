@@ -24,7 +24,7 @@ import { UpdateLocationDto } from './dto/update-location.dto';
 import { GetUser } from '../../infrastructure/auth/decorators/get-user-decorator';
 import { User } from '../users/entities/user.entity';
 import { JwtAuthGuard } from '../../infrastructure/auth/guards/jwt-auth-guard';
-import { LocationType } from './entities/location.entity';
+import { LocationCategoryCode } from '../../common/enums';
 
 @ApiTags('Locations')
 @Controller('locations')
@@ -62,7 +62,7 @@ export class LocationsController {
   @ApiQuery({
     name: 'type',
     description: 'Location type filter',
-    enum: LocationType,
+    enum: LocationCategoryCode,
     required: false,
   })
   @ApiResponse({ status: 200, description: 'Returns nearby locations' })
@@ -71,7 +71,7 @@ export class LocationsController {
     @Query('lng', ParseFloatPipe) longitude: number,
     @Query('radius') radius?: number,
     @Query('limit') limit?: number,
-    @Query('type') locationType?: LocationType,
+    @Query('type') locationType?: LocationCategoryCode,
   ) {
     return this.locationsService.findNearby(
       latitude,

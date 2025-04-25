@@ -37,4 +37,5 @@ export enum LocationCategoryCode {
   TRAIN_STATION = 'TRAIN_STATION',
   AIRPORT = 'AIRPORT',
   FERRY_TERMINAL = 'FERRY_TERMINAL',
+  OTHER = 'OTHER',
 }

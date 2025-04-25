@@ -2,9 +2,10 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, EntityManager, DataSource } from 'typeorm';
 import { Point } from 'geojson';
-import { Location, LocationType } from './entities/location.entity';
+import { Location } from './entities/location.entity';
 import { CreateLocationDto } from './dto/create-location.dto';
 import { UpdateLocationDto } from './dto/update-location.dto';
+import { LocationCategoryCode } from '../../common/enums';
 
 @Injectable()
 export class LocationsService {
@@ -97,7 +98,7 @@ export class LocationsService {
     longitude: number,
     radiusInMeters: number = 5000,
     limit: number = 10,
-    locationType?: LocationType,
+    locationType?: LocationCategoryCode,
     manager?: EntityManager,
   ): Promise<{ location: Location; distance: number }[]> {
     const repo = manager
@@ -173,7 +174,7 @@ export class LocationsService {
    * @param manager Optional EntityManager for transaction handling
    * @returns Array of locations along the route
    */
-  async findAlongRoute(
+  /* async findAlongRoute(
     polyline: string,
     bufferInMeters: number = 1000,
     limit: number = 20,
@@ -186,7 +187,7 @@ export class LocationsService {
 
     // For now, return an empty array
     return [];
-  }
+  }*/
 
   /**
    * Search for locations by name or address
@@ -223,7 +224,7 @@ export class LocationsService {
    * @param manager Optional EntityManager for transaction handling
    * @returns The existing or newly created location
    */
-  async getOrCreateFromExternal(
+  /* async getOrCreateFromExternal(
     externalId: string,
     source: string,
     data: any,
@@ -279,7 +280,7 @@ export class LocationsService {
     };
 
     return this.create(createLocationDto, userId, manager);
-  }
+  }*/
 
   /**
    * Increment the usage count for a location
@@ -393,7 +394,7 @@ export class LocationsService {
    * @param source Source of the external data
    * @returns Mapped LocationType
    */
-  private mapExternalCategoriesToLocationType(
+  /*private mapExternalCategoriesToLocationType(
     categories: any[],
     source: string,
   ): LocationType {
@@ -419,5 +420,5 @@ export class LocationsService {
     }
 
     return LocationType.OTHER;
-  }
+  }*/
 }

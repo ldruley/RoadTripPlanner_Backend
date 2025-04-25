@@ -8,7 +8,7 @@ import {
   Max,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { LocationType } from '../entities/location.entity';
+import { LocationCategoryCode } from '../../../common/enums';
 
 export class CreateLocationDto {
   @ApiProperty({
@@ -88,15 +88,15 @@ export class CreateLocationDto {
   longitude: number;
 
   @ApiProperty({
-    enum: LocationType,
-    example: LocationType.ATTRACTION,
+    enum: LocationCategoryCode,
+    example: LocationCategoryCode.GAS_STATION,
     description: 'Type of location',
     required: false,
-    default: LocationType.OTHER,
+    default: LocationCategoryCode.OTHER,
   })
   @IsOptional()
-  @IsEnum(LocationType)
-  location_type?: LocationType = LocationType.OTHER;
+  @IsEnum(LocationCategoryCode)
+  location_type?: LocationCategoryCode = LocationCategoryCode.GAS_STATION;
 
   @ApiProperty({
     example: 'here-123456',

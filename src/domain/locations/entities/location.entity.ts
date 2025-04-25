@@ -14,22 +14,8 @@ import {
 import { Point } from 'geojson';
 import { User } from '../../users/entities/user.entity';
 import { Stop } from '../../itinerary/entities/stop.entity';
-import { LocationCategory } from './location-category.entity';
-
-export enum LocationType {
-  RESTAURANT = 'restaurant',
-  GAS_STATION = 'gas_station',
-  LODGING = 'lodging',
-  ATTRACTION = 'attraction',
-  REST_AREA = 'rest_area',
-  PARKING = 'parking',
-  VIEWPOINT = 'viewpoint',
-  HIKING_TRAIL = 'hiking_trail',
-  PARK = 'park',
-  SHOPPING = 'shopping',
-  HOSPITAL = 'hospital',
-  OTHER = 'other',
-}
+import { LocationCategoryCode } from '../../../common/enums';
+import { LocationType } from './location-type.entity';
 
 @Entity('locations')
 export class Location {
@@ -76,8 +62,8 @@ export class Location {
 
   @Column({
     type: 'enum',
-    enum: LocationType,
-    default: LocationType.OTHER,
+    enum: LocationCategoryCode,
+    default: LocationCategoryCode.OTHER,
   })
   location_type: LocationType;
 
@@ -122,7 +108,7 @@ export class Location {
   @OneToMany(() => Stop, (stop) => stop.location)
   stops: Stop[];
 
-  @ManyToMany(() => LocationCategory, (category) => category.locations, {
+  @ManyToMany(() => LocationType, (category) => category.locations, {
     cascade: true,
   })
   @JoinTable({
@@ -130,7 +116,7 @@ export class Location {
     joinColumn: { name: 'location_id', referencedColumnName: 'id' },
     inverseJoinColumn: { name: 'category_id', referencedColumnName: 'id' },
   })
-  categories: LocationCategory[];
+  categories: LocationType[];
 
   // Helper method to create a GeoJSON Point
   static createPoint(latitude: number, longitude: number): Point {

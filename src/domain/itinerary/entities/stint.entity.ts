@@ -16,6 +16,7 @@ import { Leg } from './leg.entity';
 import { Vehicle } from '../../vehicles/entities/vehicle.entity';
 import { Supply } from '../../supplies/entities/supply.entity';
 import { User } from '../../users/entities/user.entity';
+import { Location } from '../../locations/entities/location.entity';
 
 @Entity('stints')
 export class Stint {
