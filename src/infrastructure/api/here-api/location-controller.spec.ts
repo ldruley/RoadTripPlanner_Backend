@@ -35,7 +35,7 @@ describe('LocationController', () => {
     }).compile();
 
     controller = module.get<LocationController>(LocationController);
-    service = module.get(HereApiService) as jest.Mocked<HereApiService>;
+    service = module.get(HereApiService);
   });
 
   it('should be defined', () => {

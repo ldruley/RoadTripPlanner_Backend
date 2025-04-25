@@ -37,7 +37,7 @@ describe('ItineraryController', () => {
     }).compile();
 
     controller = module.get<ItineraryController>(ItineraryController);
-    service = module.get(ItineraryService) as jest.Mocked<ItineraryService>;
+    service = module.get(ItineraryService);
   });
 
   it('should be defined', () => {

@@ -1,0 +1,129 @@
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
+  OneToMany,
+  Index,
+} from 'typeorm';
+import { Point } from 'geojson';
+import { User } from '../../users/entities/user.entity';
+import { Stop } from '../../itinerary/entities/stop.entity';
+
+export enum LocationType {
+  RESTAURANT = 'restaurant',
+  GAS_STATION = 'gas_station',
+  LODGING = 'lodging',
+  ATTRACTION = 'attraction',
+  REST_AREA = 'rest_area',
+  PARKING = 'parking',
+  VIEWPOINT = 'viewpoint',
+  HIKING_TRAIL = 'hiking_trail',
+  PARK = 'park',
+  SHOPPING = 'shopping',
+  HOSPITAL = 'hospital',
+  OTHER = 'other',
+}
+
+@Entity('locations')
+export class Location {
+  @PrimaryGeneratedColumn()
+  location_id: number;
+
+  @Column()
+  name: string;
+
+  @Column({ nullable: true, type: 'text' })
+  description: string;
+
+  @Column({ nullable: true })
+  address: string;
+
+  @Column({ nullable: true })
+  city: string;
+
+  @Column({ nullable: true })
+  state: string;
+
+  @Column({ nullable: true })
+  postal_code: string;
+
+  @Column({ nullable: true, default: 'USA' })
+  country: string;
+
+  // Standard coordinates for backward compatibility and ease of use
+  @Column('float')
+  latitude: number;
+
+  @Column('float')
+  longitude: number;
+
+  // PostGIS geography type for spatial operations
+  @Column({
+    type: 'geography',
+    spatialFeatureType: 'Point',
+    srid: 4326,
+    nullable: true,
+  })
+  @Index({ spatial: true })
+  geom: Point;
+
+  @Column({
+    type: 'enum',
+    enum: LocationType,
+    default: LocationType.OTHER,
+  })
+  location_type: LocationType;
+
+  // For external API integration
+  @Column({ nullable: true })
+  external_id: string;
+
+  @Column({ nullable: true })
+  external_source: string; // 'here', 'google', 'osm', 'user'
+
+  @Column({ nullable: true })
+  external_category_id: string;
+
+  // Popularity metrics
+  @Column({ default: 0 })
+  usage_count: number;
+
+  @Column({ default: 0 })
+  user_rating: number;
+
+  @Column({ default: 0 })
+  rating_count: number;
+
+  @Column({ default: false })
+  is_verified: boolean;
+
+  @CreateDateColumn()
+  created_at: Date;
+
+  @UpdateDateColumn()
+  updated_at: Date;
+
+  // Relations
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'created_by' })
+  created_by: User;
+
+  @Column({ nullable: true })
+  created_by_id: number;
+
+  /* // One-to-many relationship with stops
+  @OneToMany(() => Stop, (stop) => stop.location)
+  stops: Stop[];*/
+
+  // Helper method to create a GeoJSON Point
+  static createPoint(latitude: number, longitude: number): Point {
+    return {
+      type: 'Point',
+      coordinates: [longitude, latitude],
+    };
+  }
+}

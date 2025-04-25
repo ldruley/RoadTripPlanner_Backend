@@ -65,16 +65,16 @@ export class Stint {
   @Column()
   trip_id: number;
 
-  @ManyToOne(() => Stop)
+  @ManyToOne(() => Location)
   @JoinColumn({ name: 'start_location_id' })
-  start_location: Stop;
+  start_location: Location;
 
   @Column({ nullable: true })
   start_location_id: number;
 
-  @ManyToOne(() => Stop, { nullable: true })
+  @ManyToOne(() => Location, { nullable: true })
   @JoinColumn({ name: 'end_location_id' })
-  end_location: Stop;
+  end_location: Location;
 
   @Column({ nullable: true })
   end_location_id: number;

@@ -44,7 +44,7 @@ describe('LegsController', () => {
     }).compile();
 
     controller = module.get<LegsController>(LegsController);
-    service = module.get(LegsService) as jest.Mocked<LegsService>;
+    service = module.get(LegsService);
   });
 
   it('should be defined', () => {

@@ -65,7 +65,7 @@ describe('StopsController', () => {
     }).compile();
 
     controller = module.get<StopsController>(StopsController);
-    service = module.get(StopsService) as jest.Mocked<StopsService>;
+    service = module.get(StopsService);
   });
 
   it('should be defined', () => {

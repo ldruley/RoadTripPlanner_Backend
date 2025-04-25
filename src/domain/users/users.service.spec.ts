@@ -76,7 +76,7 @@ describe('UsersService', () => {
 
       expect(repository.findByEmail).toHaveBeenCalledWith(createUserDto.email);
       expect(bcrypt.hash).toHaveBeenCalledWith(createUserDto.password, 10);
-      // eslint-disable-next-line @typescript-eslint/unbound-method
+
       expect(repository.create).toHaveBeenCalledWith({
         ...createUserDto,
         password_hash: 'hashedPassword',
@@ -92,9 +92,9 @@ describe('UsersService', () => {
       await expect(service.create(createUserDto)).rejects.toThrow(
         ConflictException,
       );
-      // eslint-disable-next-line @typescript-eslint/unbound-method
+
       expect(repository.findByEmail).toHaveBeenCalledWith(createUserDto.email);
-      // eslint-disable-next-line @typescript-eslint/unbound-method
+
       expect(repository.create).not.toHaveBeenCalled();
     });
   });
@@ -104,7 +104,7 @@ describe('UsersService', () => {
       repository.findOne.mockResolvedValue(mockUser as User);
 
       const result = await service.findOne(1);
-      // eslint-disable-next-line @typescript-eslint/unbound-method
+
       expect(repository.findOne).toHaveBeenCalledWith({
         where: { user_id: 1 },
       });
@@ -132,7 +132,7 @@ describe('UsersService', () => {
       const result = await service.update(1, updateUserDto);
 
       expect(result).toEqual(updatedUser);
-      // eslint-disable-next-line @typescript-eslint/unbound-method
+
       expect(repository.save).toHaveBeenCalled();
     });
 
@@ -158,11 +158,11 @@ describe('UsersService', () => {
       repository.remove.mockResolvedValue(mockUser as User);
 
       await service.remove(1);
-      // eslint-disable-next-line @typescript-eslint/unbound-method
+
       expect(repository.findOne).toHaveBeenCalledWith({
         where: { user_id: 1 },
       });
-      // eslint-disable-next-line @typescript-eslint/unbound-method
+
       expect(repository.remove).toHaveBeenCalledWith(mockUser);
     });
 
@@ -170,7 +170,7 @@ describe('UsersService', () => {
       repository.findOne.mockResolvedValue(null);
 
       await expect(service.remove(999)).rejects.toThrow(NotFoundException);
-      // eslint-disable-next-line @typescript-eslint/unbound-method
+
       expect(repository.remove).not.toHaveBeenCalled();
     });
   });

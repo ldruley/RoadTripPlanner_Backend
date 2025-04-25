@@ -39,7 +39,7 @@ describe('SuppliesController', () => {
     }).compile();
 
     controller = module.get<SuppliesController>(SuppliesController);
-    service = module.get(SuppliesService) as jest.Mocked<SuppliesService>;
+    service = module.get(SuppliesService);
   });
 
   it('should be defined', () => {

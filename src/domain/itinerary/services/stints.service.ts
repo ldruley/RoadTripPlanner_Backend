@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { CreateStintDto } from '../dto/create-stint-dto';
 import { Stint } from '../entities/stint.entity';
-import { UpdateStintDto } from '../dto/update-sprint-dto';
+import { UpdateStintDto } from '../dto/update-stint-dto';
 import { EntityManager, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 
