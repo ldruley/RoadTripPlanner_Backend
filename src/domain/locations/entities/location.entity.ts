@@ -60,13 +60,6 @@ export class Location {
   @Index({ spatial: true })
   geom: Point;
 
-  @Column({
-    type: 'enum',
-    enum: LocationCategoryCode,
-    default: LocationCategoryCode.OTHER,
-  })
-  location_type: LocationType;
-
   // For external API integration
   @Column({ nullable: true })
   external_id: string;
@@ -108,15 +101,15 @@ export class Location {
   @OneToMany(() => Stop, (stop) => stop.location)
   stops: Stop[];
 
-  @ManyToMany(() => LocationType, (category) => category.locations, {
+  /* @ManyToMany(() => LocationType, (category) => category.locations, {
     cascade: true,
   })
   @JoinTable({
     name: 'location_categories',
-    joinColumn: { name: 'location_id', referencedColumnName: 'id' },
+    joinColumn: { name: 'location_id', referencedColumnName: 'location_id' },
     inverseJoinColumn: { name: 'category_id', referencedColumnName: 'id' },
   })
-  categories: LocationType[];
+  categories: LocationType[];*/
 
   // Helper method to create a GeoJSON Point
   static createPoint(latitude: number, longitude: number): Point {

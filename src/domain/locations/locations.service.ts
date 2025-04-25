@@ -6,6 +6,8 @@ import { Location } from './entities/location.entity';
 import { CreateLocationDto } from './dto/create-location.dto';
 import { UpdateLocationDto } from './dto/update-location.dto';
 import { LocationCategoryCode } from '../../common/enums';
+import { LocationType } from './entities/location-type.entity';
+import { Trip } from '../trips/entities/trip.entity';
 
 @Injectable()
 export class LocationsService {
@@ -32,7 +34,8 @@ export class LocationsService {
       : this.locationRepository;
 
     // Create GeoJSON Point from latitude/longitude
-    const geom = Location.createPoint(
+
+    const geom: Point = Location.createPoint(
       createLocationDto.latitude,
       createLocationDto.longitude,
     );

@@ -13,6 +13,7 @@ import { TripsService } from './trips.service';
 import { UpdateTripDto } from './dto/update-trip-dto';
 import {
   ApiBearerAuth,
+  ApiBody,
   ApiOperation,
   ApiParam,
   ApiResponse,
@@ -34,6 +35,32 @@ export class TripsController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a new trip' })
+  @ApiBody({
+    description: 'Trip creation data',
+    type: CreateTripDto,
+    examples: {
+      example1: {
+        summary: 'Basic Trip',
+        description: 'Create a basic trip with minimal information',
+        value: {
+          title: 'West Coast Trip',
+          description: 'Driving up highway 1',
+          is_public: false,
+        },
+      },
+      example2: {
+        summary: 'Full Trip',
+        description: 'Create a trip with all available fields',
+        value: {
+          title: 'West Coast Adventure',
+          description: 'Exploring the California coast',
+          start_date: '2025-05-15',
+          end_date: '2025-05-30',
+          is_public: true,
+        },
+      },
+    },
+  })
   @ApiResponse({ status: 201, description: 'Trip successfully created' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   create(@Body() createTripDto: CreateTripDto, @GetUser() user: User) {

@@ -6,9 +6,11 @@ import {
   IsEnum,
   Min,
   Max,
+  IsArray,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { LocationCategoryCode } from '../../../common/enums';
+import { Transform } from 'class-transformer';
 
 export class CreateLocationDto {
   @ApiProperty({
@@ -87,16 +89,22 @@ export class CreateLocationDto {
   @IsNumber()
   longitude: number;
 
-  @ApiProperty({
+  /*@ApiProperty({
     enum: LocationCategoryCode,
-    example: LocationCategoryCode.GAS_STATION,
-    description: 'Type of location',
+    isArray: true,
+    example: [LocationCategoryCode.RESTAURANT, LocationCategoryCode.FAST_FOOD],
+    description: 'Type of locations - can be multiple',
     required: false,
     default: LocationCategoryCode.OTHER,
   })
   @IsOptional()
+  @IsArray()
   @IsEnum(LocationCategoryCode)
-  location_type?: LocationCategoryCode = LocationCategoryCode.GAS_STATION;
+  @Transform(
+    ({ value }) =>
+      (Array.isArray(value) ? value : [value]) as LocationCategoryCode[],
+  )
+  location_type?: LocationCategoryCode = LocationCategoryCode.OTHER;*/
 
   @ApiProperty({
     example: 'here-123456',

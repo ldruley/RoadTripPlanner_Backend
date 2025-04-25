@@ -64,6 +64,7 @@ export default registerAs('database', () => {
       synchronize: true, // For development mode, set to true
       autoLoadEntities: true,
       logging: process.env.NODE_ENV === 'development',
+      schema: 'public',
     };
   }
 });

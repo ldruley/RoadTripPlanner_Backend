@@ -1,11 +1,4 @@
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  ManyToMany,
-  ManyToOne,
-  OneToMany,
-} from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToMany } from 'typeorm';
 import { Location } from './location.entity';
 
 @Entity()
@@ -22,15 +15,6 @@ export class LocationType {
   @Column()
   here_id: string;
 
-  @ManyToMany(() => Location, (location) => location.categories)
-  locations: Location[];
-
-  // If we want hierarchical categories, we can add a parent-child relationship
-  @ManyToOne(() => LocationType, (category) => category.children, {
-    nullable: true,
-  })
-  parent: LocationType;
-
-  @OneToMany(() => LocationType, (category) => category.parent)
-  children: LocationType[];
+  /*  @ManyToMany(() => Location, (location) => location.categories)
+  locations: Location[];*/
 }
