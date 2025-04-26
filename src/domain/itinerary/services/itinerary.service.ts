@@ -428,12 +428,15 @@ export class ItineraryService {
         );
 
         // Coordination logic
+
         await this.updateLegsAfterStopChanges(stop.stint_id, [stop], manager);
+        console.log('updatedlegs');
         await this.stintsService.updateLocationReferences(
           stint,
-          await this.stopsService.getStintEdges(stop.stint_id, manager),
+          { end_location_id: stop.location_id },
           manager,
         );
+
         await this.updateStintTimings(stop.stint_id, manager);
 
         return stop;
@@ -939,14 +942,7 @@ export class ItineraryService {
     stintId: number,
     manager: EntityManager,
   ): Promise<void> {
-    const stops = await manager.getRepository(Stop).find({
-      where: { stint_id: stintId },
-      order: { sequence_number: 'ASC' },
-    });
-
-    if (stops.length === 0) {
-      return;
-    }
+    const stop = await this.stopsService.getStintEnd(stintId, manager);
 
     const stint = await manager.getRepository(Stint).findOne({
       where: { stint_id: stintId },
@@ -959,23 +955,7 @@ export class ItineraryService {
         `Stint with ID ${stintId} not found while updating stint locations.`,
       );
     }
-
-    const departureStop = stops.find((stop) => stop.sequence_number === 0);
-    if (departureStop) {
-      if (stint.start_location_id !== departureStop.stop_id) {
-        stint.start_location_id = departureStop.stop_id;
-        updated = true;
-      }
-    } else {
-      const firstStop = stops[0];
-      if (stint.start_location_id !== firstStop.stop_id) {
-        stint.start_location_id = firstStop.stop_id;
-        updated = true;
-      }
-    }
-
-    if (updated) {
-      await manager.getRepository(Stint).save(stint);
-    }
+    stint.end_location_id = stop.location_id;
+    await manager.getRepository(Stint).save(stint);
   }
 }

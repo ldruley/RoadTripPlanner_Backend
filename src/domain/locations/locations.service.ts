@@ -153,7 +153,6 @@ export class LocationsService {
         latitude: result.latitude,
         longitude: result.longitude,
         geom: result.geom,
-        location_type: result.location_type,
         external_id: result.external_id,
         external_source: result.external_source,
         usage_count: result.usage_count,

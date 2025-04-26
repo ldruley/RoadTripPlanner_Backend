@@ -246,6 +246,22 @@ export class StopsService {
     };
   }
 
+  async getStintEnd(stintId: number, manager?: EntityManager): Promise<Stop> {
+    const repo = manager ? manager.getRepository(Stop) : this.stopRepository;
+
+    const maxSequence = await this.findMaxSequenceNumber(stintId);
+    const endStop = await repo.findOne({
+      where: {
+        sequence_number: maxSequence,
+        stint_id: stintId,
+      },
+    });
+    if (!endStop) {
+      throw new NotFoundException(`End stop for stint ${stintId} not found`);
+    }
+    return endStop;
+  }
+
   async sumDuration(stintId: number, manager?: EntityManager): Promise<number> {
     const repo = manager ? manager.getRepository(Stop) : this.stopRepository;
     const result: { total: number } | undefined = await repo
