@@ -26,7 +26,7 @@ import { User } from '../users/entities/user.entity';
 import { JwtAuthGuard } from '../../infrastructure/auth/guards/jwt-auth-guard';
 import { LocationCategoryCode } from '../../common/enums';
 
-@ApiTags('Locations')
+@ApiTags('Locations [Frontend can use Nearby and Search]')
 @Controller('locations')
 export class LocationsController {
   constructor(private readonly locationsService: LocationsService) {}
@@ -34,7 +34,7 @@ export class LocationsController {
   @Post()
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Create a new location' })
+  @ApiOperation({ summary: '[TESTING] Create a new location' })
   @ApiResponse({ status: 201, description: 'Location created successfully' })
   async create(
     @Body() createLocationDto: CreateLocationDto,
@@ -107,7 +107,7 @@ export class LocationsController {
   @Put(':id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Update a location' })
+  @ApiOperation({ summary: '[TESTING] Update a location' })
   @ApiResponse({ status: 200, description: 'Location updated successfully' })
   @ApiResponse({ status: 404, description: 'Location not found' })
   async update(
@@ -120,7 +120,7 @@ export class LocationsController {
   @Delete(':id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Delete a location' })
+  @ApiOperation({ summary: '[TESTING] Delete a location' })
   @ApiResponse({ status: 200, description: 'Location deleted successfully' })
   @ApiResponse({ status: 404, description: 'Location not found' })
   async remove(@Param('id', ParseIntPipe) id: number) {

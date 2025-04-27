@@ -23,6 +23,7 @@ import { JwtAuthGuard } from '../../infrastructure/auth/guards/jwt-auth-guard';
 import { GetUser } from '../../infrastructure/auth/decorators/get-user-decorator';
 import { User } from '../users/entities/user.entity';
 import { ItineraryService } from '../itinerary/services/itinerary.service';
+import { TripTimelineResponseDto } from './dto/trip-timeline-response.dto';
 
 @Controller('trips')
 export class TripsController {
@@ -37,7 +38,7 @@ export class TripsController {
   @ApiOperation({ summary: 'Create a new trip' })
   @ApiBody({
     description: 'Trip creation data',
-    type: CreateTripDto,
+    type: 'CreateTripDto',
     examples: {
       example1: {
         summary: 'Basic Trip',
@@ -72,7 +73,26 @@ export class TripsController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Get a trip by ID' })
-  @ApiResponse({ status: 200, description: 'Trip found' })
+  @ApiResponse({
+    status: 200,
+    description: 'Trip id found',
+    content: {
+      'application/json': {
+        example: {
+          trip_id: 1,
+          title: 'West Coast Adventure',
+          description: 'A journey along the California coast',
+          start_date: '2025-05-15T00:00:00Z',
+          end_date: '2025-05-30T00:00:00Z',
+          total_distance: 850.5,
+          is_public: false,
+          created_at: '2025-04-27T21:15:16.830Z',
+          updated_at: '2025-04-27T21:15:16.830Z',
+          creator_id: 1,
+        },
+      },
+    },
+  })
   @ApiResponse({ status: 404, description: 'Trip not found' })
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.tripsService.findOne(id);
@@ -89,7 +109,114 @@ export class TripsController {
   })
   @ApiResponse({
     status: 200,
-    description: 'Returns the complete trip timeline',
+    description: 'Trip timeline retrieved successfully',
+    content: {
+      'application/json': {
+        example: {
+          trip_id: 1,
+          title: 'West Coast Adventure',
+          description: 'A journey along the California coast',
+          start_date: '2025-05-15T00:00:00Z',
+          end_date: '2025-05-30T00:00:00Z',
+          total_distance: 850.5,
+          total_duration: 2880,
+          stints: [
+            {
+              stint_id: 1,
+              name: 'California Coast Drive',
+              sequence_number: 1,
+              distance: 350.5,
+              estimated_duration: 480,
+              notes: 'Scenic coastal route',
+              start_time: '2025-05-15T08:00:00Z',
+              end_time: '2025-05-16T17:00:00Z',
+              continues_from_previous: false,
+              start_location_name: 'San Francisco',
+              end_location_name: 'Monterey',
+              timeline: [
+                {
+                  type: 'departure',
+                  sequence_number: 0,
+                  item: {
+                    stop_id: 0,
+                    name: 'San Francisco',
+                    latitude: 37.7749,
+                    longitude: -122.4194,
+                    address: '123 Main St, San Francisco, CA',
+                    stop_type: 'DEPARTURE',
+                    arrival_time: '2025-05-15T08:00:00Z',
+                    departure_time: '2025-05-15T08:00:00Z',
+                    duration: 0,
+                    sequence_number: 0,
+                    notes: 'Departure from San Francisco',
+                  },
+                },
+                {
+                  type: 'leg',
+                  sequence_number: 0.5,
+                  item: {
+                    leg_id: 1,
+                    distance: 50.2,
+                    estimated_travel_time: 60,
+                    route_type: 'HIGHWAY',
+                    notes: 'Take Highway 101 South',
+                    start_stop_name: 'San Francisco',
+                    end_stop_name: 'Half Moon Bay',
+                  },
+                },
+                {
+                  type: 'stop',
+                  sequence_number: 1,
+                  item: {
+                    stop_id: 1,
+                    name: 'Half Moon Bay',
+                    latitude: 37.4636,
+                    longitude: -122.4286,
+                    address: '123 Beach St, Half Moon Bay, CA',
+                    stop_type: 'ATTRACTION',
+                    arrival_time: '2025-05-15T09:00:00Z',
+                    departure_time: '2025-05-15T11:00:00Z',
+                    duration: 120,
+                    sequence_number: 1,
+                    notes: 'Beautiful coastal town',
+                  },
+                },
+                {
+                  type: 'leg',
+                  sequence_number: 1.5,
+                  item: {
+                    leg_id: 2,
+                    distance: 100.3,
+                    estimated_travel_time: 120,
+                    route_type: 'HIGHWAY',
+                    notes: 'Continue on Highway 1 South',
+                    start_stop_name: 'Half Moon Bay',
+                    end_stop_name: 'Santa Cruz',
+                  },
+                },
+                {
+                  type: 'stop',
+                  sequence_number: 2,
+                  item: {
+                    stop_id: 2,
+                    name: 'Santa Cruz Boardwalk',
+                    latitude: 36.9641,
+                    longitude: -122.0177,
+                    address: '400 Beach St, Santa Cruz, CA',
+                    stop_type: 'ATTRACTION',
+                    arrival_time: '2025-05-15T13:00:00Z',
+                    departure_time: '2025-05-15T17:00:00Z',
+                    duration: 240,
+                    sequence_number: 2,
+                    notes: 'Enjoy the beach and boardwalk',
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 404,

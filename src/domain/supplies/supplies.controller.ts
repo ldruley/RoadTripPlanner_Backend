@@ -8,7 +8,7 @@ import {
   Put,
 } from '@nestjs/common';
 import { SuppliesService } from './supplies.service';
-import { ApiOperation, ApiParam, ApiResponse } from '@nestjs/swagger';
+import { ApiBody, ApiOperation, ApiParam, ApiResponse } from '@nestjs/swagger';
 import { CreateSupplyDto } from './dto/create-supply.dto';
 import { SupplyCategory } from '../../common/enums';
 import { UpdateSupplyDto } from './dto/update-supply-dto';
@@ -24,13 +24,76 @@ export class SuppliesController {
     description: 'Supply has been successfully created ',
   })
   @ApiResponse({ status: 400, description: 'Bad request - invalid input' })
+  @ApiBody({
+    description: 'Supply creation data',
+    type: CreateSupplyDto,
+    examples: {
+      'Camping Gear': {
+        summary: 'Camping Gear',
+        description: 'Create a camping gear supply item',
+        value: {
+          name: '4-person tent',
+          category: 'gear',
+        },
+      },
+      'Food Item': {
+        summary: 'Food Item',
+        description: 'Create a food supply item',
+        value: {
+          name: 'Trail mix (5 packs)',
+          category: 'food',
+        },
+      },
+      'Emergency Supply': {
+        summary: 'Emergency Supply',
+        description: 'Create an emergency supply item',
+        value: {
+          name: 'First aid kit',
+          category: 'emergency',
+        },
+      },
+    },
+  })
   create(@Body() createSupplyDto: CreateSupplyDto) {
     return this.suppliesService.create(createSupplyDto);
   }
 
   @Get()
   @ApiOperation({ summary: 'Get all supplies' })
-  @ApiResponse({ status: 200, description: 'Returns all supplies' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns all supplies',
+    content: {
+      'application/json': {
+        example: [
+          {
+            id: 1,
+            name: '4-person tent',
+            category: 'gear',
+            created_at: '2023-10-01T12:00:00Z',
+          },
+          {
+            id: 2,
+            name: 'Sleeping bag',
+            category: 'gear',
+            created_at: '2023-10-02T15:30:00Z',
+          },
+          {
+            id: 3,
+            name: 'Trail mix (5 packs)',
+            category: 'food',
+            created_at: '2023-10-03T09:00:00Z',
+          },
+          {
+            id: 4,
+            name: 'First aid kit',
+            category: 'emergency',
+            created_at: '2023-10-04T11:45:00Z',
+          },
+        ],
+      },
+    },
+  })
   findAll() {
     return this.suppliesService.findAll();
   }
@@ -38,7 +101,20 @@ export class SuppliesController {
   @Get(':id')
   @ApiOperation({ summary: 'Get a supply by ID' })
   @ApiParam({ name: 'id', description: 'Supply ID' })
-  @ApiResponse({ status: 200, description: 'Returns the supply' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns the supply',
+    content: {
+      'application/json': {
+        example: {
+          id: 1,
+          name: '4-person tent',
+          category: 'gear',
+          created_at: '2023-10-01T12:00:00Z',
+        },
+      },
+    },
+  })
   @ApiResponse({ status: 404, description: 'Supply not found' })
   findOne(@Param('id') id: number) {
     return this.suppliesService.findOne(id);
@@ -50,6 +126,24 @@ export class SuppliesController {
   @ApiResponse({
     status: 200,
     description: 'Returns all supplies for given category',
+    content: {
+      'application/json': {
+        example: [
+          {
+            id: 1,
+            name: '4-person tent',
+            category: 'gear',
+            created_at: '2023-10-01T12:00:00Z',
+          },
+          {
+            id: 2,
+            name: 'Sleeping bag',
+            category: 'gear',
+            created_at: '2023-10-02T15:30:00Z',
+          },
+        ],
+      },
+    },
   })
   @ApiResponse({ status: 404, description: 'Supplies not found' })
   findByCategory(@Param('category') category: SupplyCategory) {

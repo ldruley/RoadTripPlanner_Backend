@@ -11,11 +11,19 @@ export class AuthController {
   constructor(private authService: AuthService) {}
 
   @Post('login')
-  @ApiOperation({ summary: 'Login with email and password' })
+  @ApiOperation({ summary: 'Login with email and password (hashed)' })
   @ApiResponse({ status: 200, description: 'Login successful' })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
   login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
+  }
+
+  @Post('loginPlain')
+  @ApiOperation({ summary: 'Login with email and password (not hashed)' })
+  @ApiResponse({ status: 200, description: 'Login successful' })
+  @ApiResponse({ status: 401, description: 'Invalid credentials' })
+  loginPlain(@Body() loginDto: LoginDto) {
+    return this.authService.loginPlaintext(loginDto);
   }
 
   @Post('register')
