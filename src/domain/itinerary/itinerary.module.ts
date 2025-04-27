@@ -20,11 +20,14 @@ import { ItineraryController } from './controllers/itinerary.controller';
 
 // Import TripsModule with forwardRef to resolve circular dependency
 import { TripsModule } from '../trips/trips.module';
+import { LocationsService } from '../locations/locations.service';
+import { LocationsModule } from '../locations/locations.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Stint, Stop, Leg]),
-    forwardRef(() => TripsModule), // resolve circular dependency
+    forwardRef(() => TripsModule),
+    LocationsModule,
   ],
   controllers: [
     StintsController,

@@ -15,9 +15,11 @@ import {
 import { HereApiService } from './here-api.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth-guard';
 
-@ApiTags('Locations')
-@Controller('locations')
-export class LocationController {
+@ApiTags(
+  'Here Locations [FOR TESTING - THESE WILL BE WRAPPED IN OUR OWN FUNCTIONS FOR FRONTEND TO CALL]',
+)
+@Controller('here-locations')
+export class HereLocationController {
   constructor(private readonly hereApiService: HereApiService) {}
 
   @Get('geocode')

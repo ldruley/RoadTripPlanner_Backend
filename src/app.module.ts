@@ -13,6 +13,7 @@ import { HereApiModule } from './infrastructure/api/here-api/here-api.module';
 import appConfig from './infrastructure/config/configuration';
 import databaseConfig from './infrastructure/config/database.config';
 import { ItineraryModule } from './domain/itinerary/itinerary.module';
+import { LocationsModule } from './domain/locations/locations.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { ItineraryModule } from './domain/itinerary/itinerary.module';
     UsersModule,
     TripsModule,
     ItineraryModule,
+    LocationsModule,
     VehiclesModule,
     SuppliesModule,
     AuthModule,

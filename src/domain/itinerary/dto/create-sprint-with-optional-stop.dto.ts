@@ -51,6 +51,43 @@ class InitialStopDto {
   address?: string;
 
   @ApiProperty({
+    example: 'San Francisco',
+    description: 'City of the location',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  city?: string;
+
+  @ApiProperty({
+    example: 'CA',
+    description: 'State of the location',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  state?: string;
+
+  @ApiProperty({
+    example: '94117',
+    description: 'Postal code of the location',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  postal_code?: string;
+
+  @ApiProperty({
+    example: 'USA',
+    description: 'Country of the location',
+    required: false,
+    default: 'USA',
+  })
+  @IsOptional()
+  @IsString()
+  country?: string;
+
+  @ApiProperty({
     enum: StopType,
     description: 'Type of stop',
     example: StopType.PITSTOP,

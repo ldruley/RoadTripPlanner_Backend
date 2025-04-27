@@ -51,8 +51,8 @@ export default registerAs('database', () => {
       port: process.env.DATABASE_PORT
         ? parseInt(process.env.DATABASE_PORT, 10)
         : 5432,
-      username: process.env.DATABASE_USERNAME || 'postgres',
-      password: process.env.DATABASE_PASSWORD || 'postgres',
+      username: process.env.POSTGRES_USERNAME || 'roadtrip',
+      password: process.env.POSTGRES_PASSWORD || 'postgres',
       database: process.env.DATABASE_NAME || 'roadtripplanner',
       ssl:
         process.env.DATABASE_SSL === 'true'
@@ -64,6 +64,7 @@ export default registerAs('database', () => {
       synchronize: true, // For development mode, set to true
       autoLoadEntities: true,
       logging: process.env.NODE_ENV === 'development',
+      schema: 'public',
     };
   }
 });

@@ -10,7 +10,12 @@ import {
 } from '@nestjs/common';
 import { VehiclesService } from './vehicles.service';
 import { JwtAuthGuard } from '../../infrastructure/auth/guards/jwt-auth-guard';
-import { ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiOperation,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { CreateVehicleDto } from './dto/create-vehicle-dto';
 import { GetUser } from '../../infrastructure/auth/decorators/get-user-decorator';
 import { User } from '../users/entities/user.entity';
@@ -25,6 +30,32 @@ export class VehiclesController {
   @ApiOperation({ summary: 'Create a new vehicle' })
   @ApiResponse({ status: 201, description: 'Vehicle successfully created' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiBody({
+    description: 'Vehicle creation data',
+    type: CreateVehicleDto,
+    examples: {
+      'Standard Car': {
+        summary: 'Standard Car',
+        description: 'Create a standard passenger car',
+        value: {
+          name: 'Toyota Camry',
+          year: 2022,
+          fuel_capacity: 15.8,
+          mpg: 28.5,
+        },
+      },
+      SUV: {
+        summary: 'SUV',
+        description: 'Create an SUV with lower fuel economy',
+        value: {
+          name: 'Ford Explorer',
+          year: 2023,
+          fuel_capacity: 20.2,
+          mpg: 21.0,
+        },
+      },
+    },
+  })
   create(@Body() createVehicleDto: CreateVehicleDto, @GetUser() user: User) {
     return this.vehiclesService.create({
       ...createVehicleDto,
@@ -34,7 +65,22 @@ export class VehiclesController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Get a vehicle by ID' })
-  @ApiResponse({ status: 200, description: 'Vehicle found' })
+  @ApiResponse({
+    status: 200,
+    description: 'Details of the vehicle with the given ID',
+    content: {
+      'application/json': {
+        example: {
+          id: 1,
+          name: 'Toyota Camry',
+          year: 2022,
+          fuel_capacity: 15.8,
+          mpg: 28.5,
+          owner_id: 1,
+        },
+      },
+    },
+  })
   @ApiResponse({ status: 404, description: 'Vehicle not found' })
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.vehiclesService.findOne(id);

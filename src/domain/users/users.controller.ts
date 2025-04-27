@@ -23,7 +23,7 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Post()
-  @ApiOperation({ summary: '[BASIC IMPLEMENTATION]: Create a new user' })
+  @ApiOperation({ summary: '[TESTING ONLY]: Create a new user' })
   @ApiResponse({
     status: 201,
     description: 'User has been successfully created ',

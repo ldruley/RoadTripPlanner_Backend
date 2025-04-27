@@ -7,7 +7,7 @@ import {
   IsNotEmpty,
   Min,
 } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiHideProperty, ApiProperty } from '@nestjs/swagger';
 import { StopType } from '../../../common/enums';
 import { Type } from 'class-transformer';
 
@@ -57,21 +57,23 @@ export class CreateStopDto {
   @IsEnum(StopType)
   stop_type: StopType;
 
-  @ApiProperty({
+  /*@ApiProperty({
     example: '2025-05-15T14:00:00Z',
     description: 'Planned arrival time',
     required: false,
-  })
+  })*/
+  @ApiHideProperty()
   @IsOptional()
   @IsDate()
   @Type(() => Date)
   arrival_time?: Date;
 
-  @ApiProperty({
+  /*  @ApiProperty({
     example: '2025-05-15T17:00:00Z',
     description: 'Planned departure time',
     required: false,
-  })
+  })*/
+  @ApiHideProperty()
   @IsOptional()
   @IsDate()
   @Type(() => Date)
@@ -124,4 +126,50 @@ export class CreateStopDto {
   @IsNotEmpty()
   @IsNumber()
   stint_id: number;
+
+  @ApiProperty({
+    example: 'San Francisco',
+    description: 'City of the stop',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  city?: string;
+
+  @ApiProperty({
+    example: 'CA',
+    description: 'State of the stop',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  state?: string;
+
+  @ApiProperty({
+    example: '94117',
+    description: 'Postal code of the stop',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  postal_code?: string;
+
+  @ApiProperty({
+    example: 'USA',
+    description: 'Country of the stop',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  country?: string;
+
+  @ApiProperty({
+    example: '42',
+    description:
+      'ID of the location this stop belongs to. When let users search for a location, we can use this in place of having to send details like lat/long, address, etc',
+    required: false,
+  })
+  @IsOptional()
+  @IsNumber()
+  location_id?: number;
 }

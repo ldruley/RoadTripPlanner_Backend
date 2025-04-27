@@ -37,7 +37,7 @@ describe('RoutingController', () => {
     }).compile();
 
     controller = module.get<RoutingController>(RoutingController);
-    service = module.get(HereApiService) as jest.Mocked<HereApiService>;
+    service = module.get(HereApiService);
   });
 
   it('should be defined', () => {

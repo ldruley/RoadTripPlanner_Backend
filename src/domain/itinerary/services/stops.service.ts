@@ -3,12 +3,14 @@ import { CreateStopDto } from '../dto/create-stop.dto';
 import { Stop } from '../entities/stop.entity';
 import { EntityManager, MoreThanOrEqual, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
+import { LocationsService } from '../../locations/locations.service';
 
 @Injectable()
 export class StopsService {
   constructor(
     @InjectRepository(Stop)
     private stopRepository: Repository<Stop>,
+    private locationsService: LocationsService,
   ) {}
 
   /**
@@ -58,7 +60,7 @@ export class StopsService {
   }
 
   /**
-   * Add a stop with sequence handling
+   * Add a stop with location integration and sequence handling
    * Validation and other handling must be done in itinerary service
    * @param createStopDto The DTO containing stop data
    * @param userId The ID of the user creating the stop
@@ -95,6 +97,25 @@ export class StopsService {
       );
     }
 
+    //TODO: We should create locations via api and generally not here
+    let location = await this.locationsService.findByCoordinates(
+      createStopDto.latitude,
+      createStopDto.longitude,
+    );
+    if (!location) {
+      location = await this.locationsService.create({
+        name: createStopDto.name,
+        latitude: createStopDto.latitude,
+        longitude: createStopDto.longitude,
+        address: createStopDto.address,
+        city: createStopDto.city,
+        state: createStopDto.state,
+        country: createStopDto.country,
+        postal_code: createStopDto.postal_code,
+        external_source: 'user',
+      });
+    }
+    createStopDto.location_id = location.location_id;
     // Create the stop
     const stop = repo.create(createStopDto);
     return repo.save(stop);
@@ -223,6 +244,22 @@ export class StopsService {
       start_location_id: startStop?.id ?? undefined,
       end_location_id: endStop?.id ?? undefined,
     };
+  }
+
+  async getStintEnd(stintId: number, manager?: EntityManager): Promise<Stop> {
+    const repo = manager ? manager.getRepository(Stop) : this.stopRepository;
+
+    const maxSequence = await this.findMaxSequenceNumber(stintId);
+    const endStop = await repo.findOne({
+      where: {
+        sequence_number: maxSequence,
+        stint_id: stintId,
+      },
+    });
+    if (!endStop) {
+      throw new NotFoundException(`End stop for stint ${stintId} not found`);
+    }
+    return endStop;
   }
 
   async sumDuration(stintId: number, manager?: EntityManager): Promise<number> {

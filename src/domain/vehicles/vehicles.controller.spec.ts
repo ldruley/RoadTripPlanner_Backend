@@ -55,7 +55,7 @@ describe('VehiclesController', () => {
     }).compile();
 
     controller = module.get<VehiclesController>(VehiclesController);
-    service = module.get(VehiclesService) as jest.Mocked<VehiclesService>;
+    service = module.get(VehiclesService);
   });
 
   it('should be defined', () => {

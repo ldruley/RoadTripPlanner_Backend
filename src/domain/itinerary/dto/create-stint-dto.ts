@@ -41,7 +41,7 @@ export class CreateStintDto {
 
   @ApiProperty({
     example: 42,
-    description: 'ID of the starting location stop',
+    description: 'ID of the starting location',
     required: false,
   })
   @IsNumber()
@@ -50,7 +50,7 @@ export class CreateStintDto {
 
   @ApiProperty({
     example: 43,
-    description: 'ID of the ending location stop',
+    description: 'ID of the ending location',
     required: false,
   })
   @IsNumber()

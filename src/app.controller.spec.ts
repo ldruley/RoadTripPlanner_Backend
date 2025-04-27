@@ -22,7 +22,7 @@ describe('AppController', () => {
     }).compile();
 
     controller = module.get<AppController>(AppController);
-    service = module.get(AppService) as jest.Mocked<AppService>;
+    service = module.get(AppService);
   });
 
   it('should be defined', () => {

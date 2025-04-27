@@ -9,6 +9,7 @@ import {
 } from 'typeorm';
 import { Stint } from './stint.entity';
 import { Stop } from './stop.entity';
+import { Location } from '../../locations/entities/location.entity';
 
 //tbd if we even want this
 export enum RouteType {
@@ -61,11 +62,18 @@ export class Leg {
   @Column()
   stint_id: number;
 
-  @ManyToOne(() => Stop)
+  @ManyToOne(() => Location, { nullable: true })
+  @JoinColumn({ name: 'start_location_id' })
+  start_location: Location;
+
+  @Column({ nullable: true })
+  start_location_id: number;
+
+  @ManyToOne(() => Stop, { nullable: true })
   @JoinColumn({ name: 'start_stop_id' })
   start_stop: Stop;
 
-  @Column()
+  @Column({ nullable: true })
   start_stop_id: number;
 
   @ManyToOne(() => Stop)

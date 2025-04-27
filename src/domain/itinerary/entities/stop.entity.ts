@@ -10,6 +10,7 @@ import {
 import { Trip } from '../../trips/entities/trip.entity';
 import { Stint } from './stint.entity';
 import { StopType } from '../../../common/enums';
+import { Location } from '../../locations/entities/location.entity';
 
 @Entity('stops')
 export class Stop {
@@ -24,9 +25,6 @@ export class Stop {
 
   @Column({ type: 'float' })
   longitude: number;
-
-  @Column({ nullable: true })
-  address: string;
 
   @Column({
     type: 'enum',
@@ -70,4 +68,11 @@ export class Stop {
 
   @Column({ nullable: true })
   stint_id: number;
+
+  @ManyToOne(() => Location, { nullable: true })
+  @JoinColumn({ name: 'location_id' })
+  location: Location;
+
+  @Column({ nullable: true })
+  location_id: number;
 }

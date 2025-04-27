@@ -91,10 +91,8 @@ describe('StintsController', () => {
     }).compile();
 
     controller = module.get<StintsController>(StintsController);
-    stintsService = module.get(StintsService) as jest.Mocked<StintsService>;
-    itineraryService = module.get(
-      ItineraryService,
-    ) as jest.Mocked<ItineraryService>;
+    stintsService = module.get(StintsService);
+    itineraryService = module.get(ItineraryService);
   });
 
   it('should be defined', () => {

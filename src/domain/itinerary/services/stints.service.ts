@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { CreateStintDto } from '../dto/create-stint-dto';
 import { Stint } from '../entities/stint.entity';
-import { UpdateStintDto } from '../dto/update-sprint-dto';
+import { UpdateStintDto } from '../dto/update-stint-dto';
 import { EntityManager, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 
@@ -60,7 +60,14 @@ export class StintsService {
     const repo = manager ? manager.getRepository(Stint) : this.stintRepository;
     return repo.find({
       where: { trip_id },
-      relations: ['stops', 'legs', 'legs.start_stop', 'legs.end_stop'],
+      relations: [
+        'stops',
+        'legs',
+        'legs.start_stop',
+        'legs.end_stop',
+        'start_location',
+        'stops.location',
+      ],
       order: { sequence_number: 'ASC' },
     });
   }
@@ -247,7 +254,6 @@ export class StintsService {
     manager?: EntityManager,
   ): Promise<Stint> {
     const repo = manager ? manager.getRepository(Stint) : this.stintRepository;
-
     if (updates.start_location_id) {
       stint.start_location_id = updates.start_location_id;
     }

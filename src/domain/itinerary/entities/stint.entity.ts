@@ -16,6 +16,7 @@ import { Leg } from './leg.entity';
 import { Vehicle } from '../../vehicles/entities/vehicle.entity';
 import { Supply } from '../../supplies/entities/supply.entity';
 import { User } from '../../users/entities/user.entity';
+import { Location } from '../../locations/entities/location.entity';
 
 @Entity('stints')
 export class Stint {
@@ -65,16 +66,16 @@ export class Stint {
   @Column()
   trip_id: number;
 
-  @ManyToOne(() => Stop)
+  @ManyToOne(() => Location)
   @JoinColumn({ name: 'start_location_id' })
-  start_location: Stop;
+  start_location: Location;
 
   @Column({ nullable: true })
   start_location_id: number;
 
-  @ManyToOne(() => Stop, { nullable: true })
+  @ManyToOne(() => Location, { nullable: true })
   @JoinColumn({ name: 'end_location_id' })
-  end_location: Stop;
+  end_location: Location;
 
   @Column({ nullable: true })
   end_location_id: number;

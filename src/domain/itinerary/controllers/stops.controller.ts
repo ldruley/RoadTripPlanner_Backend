@@ -42,6 +42,101 @@ export class StopsController {
     description:
       'If sequence_number is omitted or 0, the stop will be added to the end of the sequence',
   })
+  @ApiBody({
+    description: 'Stop creation data',
+    type: CreateStopDto,
+    examples: {
+      'Attraction Stop': {
+        summary: 'Attraction Stop',
+        description: 'Add an attraction stop to an existing stint',
+        value: {
+          name: 'Golden Gate Park',
+          latitude: 37.7749,
+          longitude: -122.4194,
+          address: '501 Stanyan St, San Francisco, CA 94117',
+          stop_type: 'ATTRACTION',
+          duration: 180,
+          notes: 'Bring hiking shoes and camera',
+          trip_id: 1,
+          stint_id: 1,
+          city: 'San Francisco',
+          state: 'CA',
+          postal_code: '94117',
+        },
+      },
+      'Overnight Stop': {
+        summary: 'Overnight Stop',
+        description: 'Add an overnight stop to an existing stint',
+        value: {
+          name: 'Monterey Bay Hotel',
+          latitude: 36.6002,
+          longitude: -121.8947,
+          address: '123 Ocean Ave, Monterey, CA 93940',
+          stop_type: 'OVERNIGHT',
+          duration: 720,
+          notes: 'Luxury oceanfront accommodations',
+          trip_id: 1,
+          stint_id: 1,
+          city: 'Monterey',
+          state: 'CA',
+          postal_code: '93940',
+        },
+      },
+      'Gas Station Stop': {
+        summary: 'Gas Station Stop',
+        description: 'Add a gas station stop to an existing stint',
+        value: {
+          name: 'Shell Gas Station',
+          latitude: 36.9741,
+          longitude: -122.0308,
+          address: '1003 Ocean St, Santa Cruz, CA 95060',
+          stop_type: 'GAS',
+          duration: 15,
+          notes: 'Refueling point',
+          trip_id: 1,
+          stint_id: 1,
+          city: 'Santa Cruz',
+          state: 'CA',
+          postal_code: '95060',
+        },
+      },
+      'Manual Timing/Sequence Stop': {
+        summary: 'Manual Timing/Sequence Stop',
+        description:
+          'Add a stop to an existing stint with manual timing and sequence order',
+        value: {
+          name: 'Shell Gas Station',
+          latitude: 36.9741,
+          longitude: -122.0308,
+          arrival_time: '2023-10-01T12:00:00Z',
+          departure_time: '2023-10-01T12:15:00Z',
+          sequence_number: 3,
+          address: '1003 Ocean St, Santa Cruz, CA 95060',
+          stop_type: 'GAS',
+          duration: 15,
+          notes: 'Refueling point',
+          trip_id: 1,
+          stint_id: 1,
+          city: 'Santa Cruz',
+          state: 'CA',
+          postal_code: '95060',
+        },
+      },
+      'Stop with location id': {
+        summary: 'Stop with location id (Not yet implemented)',
+        description:
+          'This is how adding a stop could work if we have them search for a stop first, and get the location id from the backend',
+        value: {
+          location_id: 22,
+          stop_type: 'ATTRACTION',
+          duration: 180,
+          notes: 'Bring hiking shoes and camera',
+          trip_id: 1,
+          stint_id: 1,
+        },
+      },
+    },
+  })
   @ApiResponse({ status: 201, description: 'Stop added successfully' })
   @ApiResponse({ status: 400, description: 'Bad request' })
   @ApiResponse({ status: 404, description: 'Stint not found' })

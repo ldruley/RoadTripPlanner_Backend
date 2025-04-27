@@ -69,10 +69,8 @@ describe('TripsController', () => {
     }).compile();
 
     controller = module.get<TripsController>(TripsController);
-    tripsService = module.get(TripsService) as jest.Mocked<TripsService>;
-    itineraryService = module.get(
-      ItineraryService,
-    ) as jest.Mocked<ItineraryService>;
+    tripsService = module.get(TripsService);
+    itineraryService = module.get(ItineraryService);
   });
 
   it('should be defined', () => {
