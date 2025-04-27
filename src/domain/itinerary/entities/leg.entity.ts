@@ -61,6 +61,13 @@ export class Leg {
   @Column()
   stint_id: number;
 
+  @ManyToOne(() => Location)
+  @JoinColumn({ name: 'start_location_id' })
+  start_location: Location;
+
+  @Column()
+  start_location_id: number;
+
   @ManyToOne(() => Stop)
   @JoinColumn({ name: 'start_stop_id' })
   start_stop: Stop;

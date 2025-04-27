@@ -304,17 +304,13 @@ export class ItineraryService {
         });
 
         // If previous stint exists, use its last stop as start location
-        if (prevStint) {
-          const lastStop = await manager.getRepository(Stop).findOne({
-            where: {
-              stint_id: prevStint.stint_id,
-            },
-          });
+        if (prevStint && prevStint.end_location_id) {
+          start_location_id = prevStint.end_location_id;
+          continues_from_previous = true;
 
-          if (lastStop) {
-            start_location_id = lastStop.location_id;
-            continues_from_previous = true;
-            start_time = lastStop.departure_time || lastStop.arrival_time;
+          // Get the end time of the previous stint as the start time for this one
+          if (prevStint.end_time) {
+            start_time = prevStint.end_time;
           }
         }
       }
@@ -722,6 +718,21 @@ export class ItineraryService {
     if (!stint) {
       throw new NotFoundException(`Stint with ID ${stintId} not found`);
     }
+    if (!stint.start_location_id) {
+      throw new NotFoundException(
+        `Stint with ID ${stintId} has no start location`,
+      );
+    }
+    const startLocation = await this.locationsService.findById(
+      stint.start_location_id,
+      manager,
+    );
+
+    if (!startLocation) {
+      throw new NotFoundException(
+        `Start location for stint ${stintId} not found`,
+      );
+    }
 
     const stops = await manager.getRepository(Stop).find({
       where: { stint_id: stintId },
@@ -738,13 +749,22 @@ export class ItineraryService {
       await legRepo.remove(existingLegs);
     }
 
-    // Filter out departure stop (sequence_number = 0) for leg creation
-    const regularStops = stops.filter((stop) => stop.sequence_number > 0);
+    // Create leg between start location and first stop.
+    const leg = legRepo.create({
+      stint_id: stintId,
+      start_location_id: startLocation.location_id,
+      end_stop_id: stops[0].stop_id,
+      sequence_number: 0,
+      distance: 10, // This should be calculated based on API calls
+      estimated_travel_time: 10, // This should be calculated based on API calls
+    });
+
+    await legRepo.save(leg);
 
     // Create legs between consecutive stops
-    for (let i = 0; i < regularStops.length - 1; i++) {
-      const currentStop = regularStops[i];
-      const nextStop = regularStops[i + 1];
+    for (let i = 0; i < stops.length - 1; i++) {
+      const currentStop = stops[i];
+      const nextStop = stops[i + 1];
 
       const leg = legRepo.create({
         stint_id: stintId,
@@ -756,47 +776,6 @@ export class ItineraryService {
       });
 
       await legRepo.save(leg);
-    }
-
-    // TODO: CLEAN THIS SHIT UP
-    // Handle the departure leg based on whether it's a continuation stint
-    if (
-      stint.continues_from_previous &&
-      stint.start_location_id &&
-      regularStops.length > 0
-    ) {
-      // For subsequent stints, create a leg from the reference to previous stint's end stop
-      const firstRegularStop = regularStops[0];
-
-      const departureLeg = legRepo.create({
-        stint_id: stintId,
-        start_stop_id: stint.start_location_id, // This references the previous stint's end stop
-        end_stop_id: firstRegularStop.stop_id,
-        sequence_number: 0,
-        distance: 10, // This should be calculated based on API calls
-        estimated_travel_time: 10, // This should be calculated based on API calls
-        notes: 'Transition leg from previous stint',
-      });
-
-      await legRepo.save(departureLeg);
-    } else {
-      // For the first stint, handle it as before
-      const departureStop = stops.find((stop) => stop.sequence_number === 0);
-      if (departureStop && regularStops.length > 0) {
-        const firstRegularStop = regularStops[0];
-
-        const departureLeg = legRepo.create({
-          stint_id: stintId,
-          start_stop_id: departureStop.stop_id,
-          end_stop_id: firstRegularStop.stop_id,
-          sequence_number: 0,
-          distance: 10, // This should be calculated based on API calls
-          estimated_travel_time: 10, // This should be calculated based on API calls
-          notes: 'Departure leg',
-        });
-
-        await legRepo.save(departureLeg);
-      }
     }
   }
 
