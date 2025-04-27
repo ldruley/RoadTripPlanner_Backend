@@ -60,7 +60,14 @@ export class StintsService {
     const repo = manager ? manager.getRepository(Stint) : this.stintRepository;
     return repo.find({
       where: { trip_id },
-      relations: ['stops', 'legs', 'legs.start_stop', 'legs.end_stop'],
+      relations: [
+        'stops',
+        'legs',
+        'legs.start_stop',
+        'legs.end_stop',
+        'start_location',
+        'stops.location',
+      ],
       order: { sequence_number: 'ASC' },
     });
   }

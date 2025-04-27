@@ -53,14 +53,20 @@ export class ItineraryService {
    * TODO: We need to incorporate stint/participants and vehicles. Likely sort out new user perms method first
    */
 
-  /*  async getTripTimeline(tripId: number, userId: number): Promise<TripTimeline> {
+  async getTripTimeline(tripId: number, userId: number): Promise<TripTimeline> {
     // First verify the trip exists and the user has access
     const trip = await this.tripsService.findOne(tripId);
     if (!trip) {
       throw new NotFoundException(`Trip with ID ${tripId} not found`);
     }
 
-    //TODO: We need to check if they have access to the trip, currently passed userId but we also need to check if they are a participant
+    // Check if user has access to the trip
+    const hasAccess = await this.tripsService.checkUserInTrip(tripId, userId);
+    if (!hasAccess) {
+      throw new ForbiddenException(
+        'You do not have permission to view this trip',
+      );
+    }
 
     // Get all stints for the trip
     const stints = await this.stintsService.findAllByTripWithRelations(tripId);
@@ -104,6 +110,7 @@ export class ItineraryService {
         end_time: stint.end_time,
       };
 
+      // Add start location data
       if (stint.start_location) {
         stintTimeline.start_location_name = stint.start_location.name;
       }
@@ -114,106 +121,96 @@ export class ItineraryService {
 
       const timelineItems: TimelineItem[] = [];
 
-      // Handle departure stop
-      if (stint.continues_from_previous && stint.start_location) {
-        // For continuation stints, add a reference to the previous stint's end location
-        // Be careful not to duplicate this later
-        const referencedStopId = stint.start_location.stop_id;
-
+      // Handle departure from start location
+      if (stint.start_location) {
         timelineItems.push({
-          type: 'stop',
+          type: 'departure',
           sequence_number: 0,
           item: {
-            stop_id: referencedStopId,
+            stop_id: 0, // No actual stop_id for start location
             name: stint.start_location.name,
             latitude: stint.start_location.latitude,
             longitude: stint.start_location.longitude,
-            address: stint.start_location.address,
+            address: stint.start_location.address || '',
             stop_type: StopType.DEPARTURE,
             arrival_time: stint.start_time, // Use stint start time
             departure_time: stint.start_time, // Use stint start time
-            duration: 0, // No wait at transition point
+            duration: 0, // No wait at departure point
             sequence_number: 0,
             notes: `Departure from ${stint.start_location.name}`,
           },
         });
-      } else {
-        // For the first stint or non-continuation stints
-        const departureStop = sortedStops.find(
-          (stop) => stop.sequence_number === 0,
-        );
-
-        if (departureStop) {
-          timelineItems.push({
-            type: 'stop',
-            sequence_number: 0,
-            item: {
-              stop_id: departureStop.stop_id,
-              name: departureStop.name,
-              latitude: departureStop.latitude,
-              longitude: departureStop.longitude,
-              address: departureStop.address,
-              stop_type: departureStop.stop_type || StopType.DEPARTURE, // Ensure it has the right type
-              arrival_time: departureStop.arrival_time,
-              departure_time: departureStop.departure_time,
-              duration: departureStop.duration,
-              sequence_number: 0, // Explicitly set to 0
-              notes: departureStop.notes,
-            },
-          });
-        }
       }
 
-      // Get IDs of stops already added to avoid duplicates
-      const addedStopIds = new Set(
-        timelineItems
-          .filter((item) => item.type === 'stop')
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-          .map((item) => (item.item as any).stop_id),
+      // Add legs and stops to timeline
+      // First, add the leg from start location to first stop, if it exists
+      const firstLeg = sortedLegs.find(
+        (leg) => leg.start_location_id === stint.start_location_id,
       );
-
-      // Add regular stops (sequence_number > 0) that haven't been added yet
-      sortedStops
-        .filter(
-          (stop) => stop.sequence_number > 0 && !addedStopIds.has(stop.stop_id),
-        )
-        .forEach((stop) => {
-          timelineItems.push({
-            type: 'stop',
-            sequence_number: stop.sequence_number,
-            item: {
-              stop_id: stop.stop_id,
-              name: stop.name,
-              latitude: stop.latitude,
-              longitude: stop.longitude,
-              address: stop.address,
-              stop_type: stop.stop_type,
-              arrival_time: stop.arrival_time,
-              departure_time: stop.departure_time,
-              duration: stop.duration,
-              sequence_number: stop.sequence_number,
-              notes: stop.notes,
-            },
-          });
-        });
-
-      // Add the legs between stops
-      sortedLegs.forEach((leg) => {
+      if (firstLeg) {
         timelineItems.push({
           type: 'leg',
-          // Setting sequence number to n + 0.5 to interleave with stops
-          sequence_number: leg.sequence_number + 0.5,
+          sequence_number: 0.5, // Before first stop
           item: {
-            leg_id: leg.leg_id,
-            distance: leg.distance,
-            estimated_travel_time: leg.estimated_travel_time,
-            route_type: leg.route_type,
-            polyline: leg.polyline,
-            notes: leg.notes,
-            start_stop_name: leg.start_stop?.name,
-            end_stop_name: leg.end_stop?.name,
+            leg_id: firstLeg.leg_id,
+            distance: firstLeg.distance,
+            estimated_travel_time: firstLeg.estimated_travel_time,
+            route_type: firstLeg.route_type,
+            polyline: firstLeg.polyline,
+            notes: firstLeg.notes,
+            start_stop_name: stint.start_location?.name,
+            end_stop_name: firstLeg.end_stop?.name,
           },
         });
+      }
+
+      // Add regular stops and legs between them
+      sortedStops.forEach((stop, index) => {
+        // Add the stop
+        timelineItems.push({
+          type: 'stop',
+          sequence_number: stop.sequence_number,
+          item: {
+            stop_id: stop.stop_id,
+            name: stop.name,
+            latitude: stop.location.latitude,
+            longitude: stop.location.longitude,
+            address: stop.location.address || '',
+            stop_type: stop.stop_type,
+            arrival_time: stop.arrival_time,
+            departure_time: stop.departure_time,
+            duration: stop.duration,
+            sequence_number: stop.sequence_number,
+            notes: stop.notes,
+          },
+        });
+
+        // Add the leg after this stop (if not the last stop)
+        if (index < sortedStops.length - 1) {
+          const nextStop = sortedStops[index + 1];
+          const leg = sortedLegs.find(
+            (l) =>
+              l.start_stop_id === stop.stop_id &&
+              l.end_stop_id === nextStop.stop_id,
+          );
+
+          if (leg) {
+            timelineItems.push({
+              type: 'leg',
+              sequence_number: stop.sequence_number + 0.5, // Between stops
+              item: {
+                leg_id: leg.leg_id,
+                distance: leg.distance,
+                estimated_travel_time: leg.estimated_travel_time,
+                route_type: leg.route_type,
+                polyline: leg.polyline,
+                notes: leg.notes,
+                start_stop_name: stop.name,
+                end_stop_name: nextStop.name,
+              },
+            });
+          }
+        }
       });
 
       // Sort timeline items by sequence number
@@ -260,7 +257,7 @@ export class ItineraryService {
     }
 
     return timeline;
-  }*/
+  }
 
   /**
    * Create a new stint with optional initial stop

@@ -78,7 +78,7 @@ export class TripsController {
     return this.tripsService.findOne(id);
   }
 
-  /*@Get(':id/timeline')
+  @Get(':id/timeline')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
@@ -97,7 +97,7 @@ export class TripsController {
   })
   getTimeline(@Param('id', ParseIntPipe) id: number, @GetUser() user: User) {
     return this.itineraryService.getTripTimeline(id, user.user_id);
-  }*/
+  }
 
   @Get('me')
   @UseGuards(JwtAuthGuard)
