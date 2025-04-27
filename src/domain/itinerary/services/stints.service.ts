@@ -247,7 +247,6 @@ export class StintsService {
     manager?: EntityManager,
   ): Promise<Stint> {
     const repo = manager ? manager.getRepository(Stint) : this.stintRepository;
-
     if (updates.start_location_id) {
       stint.start_location_id = updates.start_location_id;
     }

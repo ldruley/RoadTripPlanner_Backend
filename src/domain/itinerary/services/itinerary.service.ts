@@ -835,7 +835,17 @@ export class ItineraryService {
     if (!stint) {
       throw new NotFoundException(`Stint with ID ${stintId} not found`);
     }
-    let currentTime = stint.start_time;
+
+    // If this is a continuation stint, we need to set the start location and time
+    if (stint.continues_from_previous && !stint.start_location_id) {
+      const lastStop = await this.stopsService.getStintEnd(stintId, manager);
+      if (lastStop) {
+        stint.start_location_id = lastStop.location_id;
+        stint.start_time = lastStop.departure_time;
+      }
+    }
+
+    /* let currentTime = stint.start_time;
     if (stint.continues_from_previous && stint.start_location_id) {
       const previousStintEndLocation = await manager
         .getRepository(Stop)
@@ -848,6 +858,11 @@ export class ItineraryService {
         stint.start_time = currentTime;
         await manager.getRepository(Stint).save(stint);
       }
+    }*/
+
+    const startTime = stint.start_time;
+    if (!startTime) {
+      throw new NotFoundException(`Stint with ID ${stintId} has no start time`);
     }
 
     const stops = await manager.getRepository(Stop).find({
@@ -863,34 +878,15 @@ export class ItineraryService {
     if (stops.length === 0) {
       return;
     }
-
-    if (!currentTime) {
-      // If no start_time is set, we can't calculate timings
-      return;
-    }
-
-    // Handle the departure stop (sequence 0)
-    const departureStop = stops.find((stop) => stop.sequence_number === 0);
-    if (departureStop) {
-      departureStop.arrival_time = currentTime;
-      if (departureStop.duration) {
-        departureStop.departure_time = DateUtils.addMinutes(
-          currentTime,
-          departureStop.duration,
-        );
-        currentTime = departureStop.departure_time;
-      } else {
-        departureStop.departure_time = currentTime;
-      }
-      await manager.getRepository(Stop).save(departureStop);
-    }
-
-    // Process each regular stop
+    let currentTime = startTime;
+    // We need to set the arrival and departure times for each stop, accounting for the first leg which is from the departure location (not stop)
     for (let i = 0; i < stops.length; i++) {
       const stop = stops[i];
 
-      if (stop.sequence_number === 0) {
-        continue; // Already handled departure stop
+      if (i === 0) {
+        // First stop is the start location
+        stop.arrival_time = startTime;
+        stop.departure_time = startTime;
       }
 
       // Find the leg that arrives at this stop

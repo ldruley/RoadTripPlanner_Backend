@@ -16,6 +16,7 @@ import { User } from '../../users/entities/user.entity';
 import { Stop } from '../../itinerary/entities/stop.entity';
 import { LocationCategoryCode } from '../../../common/enums';
 import { LocationType } from './location-type.entity';
+import { Leg } from '../../itinerary/entities/leg.entity';
 
 @Entity('locations')
 export class Location {
@@ -100,6 +101,9 @@ export class Location {
   // One-to-many relationship with stops
   @OneToMany(() => Stop, (stop) => stop.location)
   stops: Stop[];
+
+  @OneToMany(() => Leg, (leg) => leg.start_location)
+  legs: Leg[];
 
   /* @ManyToMany(() => LocationType, (category) => category.locations, {
     cascade: true,
