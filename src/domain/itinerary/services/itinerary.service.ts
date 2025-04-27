@@ -28,6 +28,7 @@ import { DateUtils } from '../../../common/utils';
 import { StopType } from '../../../common/enums';
 import { InjectRepository } from '@nestjs/typeorm';
 import { LocationsService } from '../../locations/locations.service';
+import { CreateLocationDto } from '../../locations/dto/create-location.dto';
 
 //TODO: Implement TimelineLeg and TimelineStop interfaces - or figure out a combiined approach to interweave them into the timeline
 //TODO: potentially a dto for timeline?
@@ -311,7 +312,7 @@ export class ItineraryService {
           });
 
           if (lastStop) {
-            start_location_id = lastStop.stop_id;
+            start_location_id = lastStop.location_id;
             continues_from_previous = true;
             start_time = lastStop.departure_time || lastStop.arrival_time;
           }
@@ -345,7 +346,24 @@ export class ItineraryService {
           console.warn('Start time not provided, using current time');
         }
 
-        // Create the initial stop
+        const createLocationDto: CreateLocationDto = {
+          name: dto.initialStop.name,
+          latitude: dto.initialStop.latitude,
+          longitude: dto.initialStop.longitude,
+          address: dto.initialStop.address,
+          city: dto.initialStop.city,
+          state: dto.initialStop.state,
+          country: dto.initialStop.country,
+          postal_code: dto.initialStop.postal_code,
+        };
+
+        const savedLocation = await this.locationsService.create(
+          createLocationDto,
+          userId,
+          manager,
+        );
+
+        /*// Create the initial stop
         const createStopDto: CreateStopDto = {
           name: dto.initialStop.name,
           latitude: dto.initialStop.latitude,
@@ -368,11 +386,11 @@ export class ItineraryService {
           createStopDto,
           userId,
           manager,
-        );
+        );*/
 
         stint = await this.stintsService.updateLocationReferences(
           stint,
-          { start_location_id: savedStop.stop_id },
+          { start_location_id: savedLocation.location_id },
           manager,
         );
       }
