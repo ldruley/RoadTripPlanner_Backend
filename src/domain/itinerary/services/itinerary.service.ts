@@ -19,7 +19,7 @@ import {
   //TimelineStop,
   //TimelineLeg,
 } from '../../interfaces/itinerary';
-import { TripsService } from '../../trips/trips.service';
+import { TripsService } from '../../trips/services/trips.service';
 import { CreateStopDto } from '../dto/create-stop.dto';
 import { CreateStintDto } from '../dto/create-stint-dto';
 import { CreateStintWithStopDto } from '../dto/create-stint-with-stop.dto';

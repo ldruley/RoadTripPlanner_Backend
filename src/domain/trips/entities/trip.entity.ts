@@ -58,6 +58,20 @@ export class Trip {
   @OneToMany(() => Stop, (stop) => stop.trip)
   stops: Stop[];
 
+  @ManyToMany(() => User)
+  @JoinTable({
+    name: 'trip_participants',
+    joinColumn: {
+      name: 'trip_id',
+      referencedColumnName: 'trip_id',
+    },
+    inverseJoinColumn: {
+      name: 'user_id',
+      referencedColumnName: 'user_id',
+    },
+  })
+  participants: User[];
+
   /*
     // Many-to-many relation with supplies
     @ManyToMany(() => Supply)

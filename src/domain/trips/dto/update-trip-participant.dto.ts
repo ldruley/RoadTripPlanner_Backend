@@ -2,7 +2,7 @@ import { IsEnum } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { ParticipantRole } from '../../../common/enums';
 
-export class UpdateStintParticipantDto {
+export class UpdateTripParticipantDto {
   @ApiProperty({
     enum: ParticipantRole,
     example: ParticipantRole.DRIVER,

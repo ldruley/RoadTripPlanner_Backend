@@ -2,7 +2,7 @@ import { IsEnum, IsNotEmpty, IsNumber } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { ParticipantRole } from '../../../common/enums';
 
-export class CreateStintParticipantDto {
+export class CreateTripParticipantDto {
   @ApiProperty({
     example: 1,
     description: 'ID of the stint',
@@ -10,7 +10,7 @@ export class CreateStintParticipantDto {
   })
   @IsNotEmpty()
   @IsNumber()
-  stint_id: number;
+  trip_id: number;
 
   @ApiProperty({
     example: 2,

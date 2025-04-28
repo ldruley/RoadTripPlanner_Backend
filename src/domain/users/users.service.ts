@@ -8,7 +8,6 @@ import { User } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user-dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { EntityManager, Repository } from 'typeorm';
-import { StintParticipant } from '../itinerary/entities/stint-participant.entity';
 
 @Injectable()
 export class UsersService {

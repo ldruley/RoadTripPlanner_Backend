@@ -7,35 +7,36 @@ import {
   ConflictException,
   ForbiddenException,
 } from '@nestjs/common';
-import { StintParticipant } from '../entities/stint-participant.entity';
 import { ParticipantRole } from '../../../common/enums';
-import { StintsService } from './stints.service';
 import { UsersService } from '../../users/users.service';
-import { CreateStintParticipantDto } from '../dto/create-stint-participant.dto';
+import { CreateTripParticipantDto } from '../dto/create-trip-participant.dto';
+import { UpdateTripParticipantDto } from '../dto/update-trip-participant.dto';
 import { EntityManager, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as Console from 'node:console';
+import { TripParticipant } from '../entities/trip-participant.entity';
+import { TripsService } from './trips.service';
 
 @Injectable()
-export class StintParticipantService {
+export class TripParticipantService {
   constructor(
-    @InjectRepository(StintParticipant)
-    private stintParticipantRepository: Repository<StintParticipant>,
-    private stintsService: StintsService,
+    @InjectRepository(TripParticipant)
+    private tripParticipantRepository: Repository<TripParticipant>,
+    private tripsService: TripsService,
     private usersService: UsersService,
   ) {}
 
   async getParticipant(
-    stintId: number,
+    tripId: number,
     userId: number,
     manager?: EntityManager,
-  ): Promise<StintParticipant> {
+  ): Promise<TripParticipant> {
     const repo = manager
-      ? manager.getRepository(StintParticipant)
-      : this.stintParticipantRepository;
+      ? manager.getRepository(TripParticipant)
+      : this.tripParticipantRepository;
     const participant = await repo.findOne({
       where: {
-        stint_id: stintId,
+        trip_id: tripId,
         user_id: userId,
       },
     });
@@ -46,21 +47,22 @@ export class StintParticipantService {
   }
 
   async addParticipant(
-    createStintParticipantDto: CreateStintParticipantDto,
+    createTripParticipantDto: CreateTripParticipantDto,
     requesterId: number,
     manager?: EntityManager,
-  ): Promise<StintParticipant> {
+  ): Promise<TripParticipant> {
     const repo = manager
-      ? manager.getRepository(StintParticipant)
-      : this.stintParticipantRepository;
+      ? manager.getRepository(TripParticipant)
+      : this.tripParticipantRepository;
 
-    // Check if the stint exists
-    const stint = await this.stintsService.findById(
-      createStintParticipantDto.stint_id,
+    // Check if the trip exists
+    const trip = await this.tripsService.findOne(
+      createTripParticipantDto.trip_id,
+      manager,
     );
 
     // Check if requester has permission (is creator of the trip)
-    if (stint.trip.creator_id !== requesterId) {
+    if (trip.creator_id !== requesterId) {
       throw new ForbiddenException(
         'Only the trip creator can add participants',
       );
@@ -68,7 +70,7 @@ export class StintParticipantService {
 
     // Check if the user exists
     const user = await this.usersService.findOne(
-      createStintParticipantDto.user_id,
+      createTripParticipantDto.user_id,
     );
     if (!user) {
       throw new NotFoundException('User not found');
@@ -76,32 +78,30 @@ export class StintParticipantService {
 
     // Check if the user is already a participant
     const existingParticipant = await this.checkParticipation(
-      createStintParticipantDto.stint_id,
-      createStintParticipantDto.user_id,
+      createTripParticipantDto.trip_id,
+      createTripParticipantDto.user_id,
       manager,
     );
     if (existingParticipant) {
-      throw new ConflictException(
-        'User is already a participant in this stint',
-      );
+      throw new ConflictException('User is already a participant in this trip');
     }
 
     // Create a new participant
-    const participant = repo.create(createStintParticipantDto);
+    const participant = repo.create(createTripParticipantDto);
 
-    return this.stintParticipantRepository.save(participant);
+    return repo.save(participant);
   }
 
-  async findByStint(
+  async findByTrip(
     stintId: number,
     manager?: EntityManager,
-  ): Promise<StintParticipant[]> {
+  ): Promise<TripParticipant[]> {
     const repo = manager
-      ? manager.getRepository(StintParticipant)
-      : this.stintParticipantRepository;
+      ? manager.getRepository(TripParticipant)
+      : this.tripParticipantRepository;
     const participants = await repo.find({
       where: {
-        stint_id: stintId,
+        trip_id: stintId,
       },
     });
     if (!participants) {
@@ -113,10 +113,10 @@ export class StintParticipantService {
   async findByUser(
     userId: number,
     manager?: EntityManager,
-  ): Promise<StintParticipant[]> {
+  ): Promise<TripParticipant[]> {
     const repo = manager
-      ? manager.getRepository(StintParticipant)
-      : this.stintParticipantRepository;
+      ? manager.getRepository(TripParticipant)
+      : this.tripParticipantRepository;
     const participants = await repo.find({
       where: {
         user_id: userId,
@@ -130,69 +130,75 @@ export class StintParticipantService {
 
   //TODO: Use a DTO for this if we can
   async updateRole(
-    stintId: number,
+    tripId: number,
     userId: number,
     newRole: ParticipantRole,
     requesterId: number,
     manager?: EntityManager,
-  ): Promise<StintParticipant> {
-    // Check if the stint exists
-    const stint = await this.stintsService.findById(stintId, manager);
+  ): Promise<TripParticipant> {
+    const repo = manager
+      ? manager.getRepository(TripParticipant)
+      : this.tripParticipantRepository;
+    // Check if the trip exists
+    const trip = await this.tripsService.findOne(tripId, manager);
 
     // Check if requester has permission
-    if (stint.trip.creator_id !== requesterId) {
+    if (trip.creator_id !== requesterId) {
       throw new ForbiddenException(
         'Only the trip creator can update participant roles',
       );
     }
 
     // Find the participant
-    const participant = await this.getParticipant(stintId, userId, manager);
+    const participant = await this.getParticipant(tripId, userId, manager);
     if (!participant) {
       throw new NotFoundException('Participant not found');
     }
 
     // Update role
     participant.role = newRole;
-    return this.stintParticipantRepository.save(participant);
+    return repo.save(participant);
   }
 
   async removeParticipant(
-    stintId: number,
+    tripId: number,
     userId: number,
     requesterId: number,
     manager?: EntityManager,
   ): Promise<void> {
     // Check if the stint exists
-    const stint = await this.stintsService.findById(stintId, manager);
+    const trip = await this.tripsService.findOne(tripId, manager);
+    const repo = manager
+      ? manager.getRepository(TripParticipant)
+      : this.tripParticipantRepository;
 
     // Check if requester has permission or is removing themselves
-    if (stint.trip.creator_id !== requesterId && userId !== requesterId) {
+    if (trip.creator_id !== requesterId && userId !== requesterId) {
       throw new ForbiddenException(
         'Only the trip creator or the participant themselves can remove a participant',
       );
     }
 
     // Find the participant
-    const participant = await this.getParticipant(stintId, userId);
+    const participant = await this.getParticipant(tripId, userId);
     if (!participant) {
       throw new NotFoundException('Participant not found');
     }
 
-    await this.stintParticipantRepository.remove(participant);
+    await repo.remove(participant);
   }
 
   async checkParticipation(
-    stintId: number,
+    tripId: number,
     userId: number,
     manager?: EntityManager,
   ): Promise<boolean> {
     const repo = manager
-      ? manager.getRepository(StintParticipant)
-      : this.stintParticipantRepository;
+      ? manager.getRepository(TripParticipant)
+      : this.tripParticipantRepository;
     const participant = await repo.findOne({
       where: {
-        stint_id: stintId,
+        trip_id: tripId,
         user_id: userId,
       },
     });
