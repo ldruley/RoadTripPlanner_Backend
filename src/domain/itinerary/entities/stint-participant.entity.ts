@@ -1,4 +1,3 @@
-/*
 import {
   Entity,
   Column,
@@ -40,4 +39,3 @@ export class StintParticipant {
   @CreateDateColumn()
   joined_at: Date;
 }
-*/

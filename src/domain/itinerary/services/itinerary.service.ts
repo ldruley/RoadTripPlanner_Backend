@@ -938,7 +938,7 @@ export class ItineraryService {
       where: { stint_id: stintId },
     });
 
-    let updated = false;
+    const updated = false;
 
     if (!stint) {
       throw new NotFoundException(

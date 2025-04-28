@@ -7,7 +7,8 @@ import * as bcrypt from 'bcrypt';
 import { User } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user-dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { EntityManager, Repository } from 'typeorm';
+import { StintParticipant } from '../itinerary/entities/stint-participant.entity';
 
 @Injectable()
 export class UsersService {
@@ -19,11 +20,17 @@ export class UsersService {
   //TODO: we still need to check username uniqueness
   /**
    * Create a new user
-   * @param createUserDto
+   * @param createUserDto The user data to create
+   * @param manager Optional EntityManager for transaction handling
    * @returns The created user
    */
-  async create(createUserDto: CreateUserDto): Promise<User> {
-    const existingUser = await this.userRepository.findOne({
+  async create(
+    createUserDto: CreateUserDto,
+    manager?: EntityManager,
+  ): Promise<User> {
+    const repo = manager ? manager.getRepository(User) : this.userRepository;
+
+    const existingUser = await repo.findOne({
       where: { email: createUserDto.email },
     });
 

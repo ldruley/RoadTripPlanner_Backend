@@ -22,12 +22,16 @@ import { ItineraryController } from './controllers/itinerary.controller';
 import { TripsModule } from '../trips/trips.module';
 import { LocationsService } from '../locations/locations.service';
 import { LocationsModule } from '../locations/locations.module';
+import { StintParticipant } from './entities/stint-participant.entity';
+import { StintParticipantService } from './services/stint-participant.service';
+import { UsersModule } from '../users/users.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Stint, Stop, Leg]),
+    TypeOrmModule.forFeature([Stint, Stop, Leg, StintParticipant]),
     forwardRef(() => TripsModule),
     LocationsModule,
+    UsersModule,
   ],
   controllers: [
     StintsController,
@@ -38,6 +42,7 @@ import { LocationsModule } from '../locations/locations.module';
   providers: [
     // Services
     StintsService,
+    StintParticipantService,
     StopsService,
     LegsService,
     ItineraryService,
@@ -45,6 +50,7 @@ import { LocationsModule } from '../locations/locations.module';
   exports: [
     // Export services for use in other modules
     StintsService,
+    StintParticipantService,
     StopsService,
     LegsService,
     ItineraryService,
