@@ -56,7 +56,7 @@ export class StintsController {
             latitude: 37.7749,
             longitude: -122.4194,
             address: '123 Main St, San Francisco, CA',
-            stopType: 'DEPARTURE',
+            stopType: 'departure',
             notes: 'Our journey begins here',
           },
           notes: 'Scenic coastal route with stops at major viewpoints',

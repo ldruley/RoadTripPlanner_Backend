@@ -72,7 +72,7 @@ export class StopsController {
           latitude: 36.6002,
           longitude: -121.8947,
           address: '123 Ocean Ave, Monterey, CA 93940',
-          stop_type: 'OVERNIGHT',
+          stop_type: 'overnight',
           duration: 720,
           notes: 'Luxury oceanfront accommodations',
           trip_id: 1,
@@ -90,7 +90,7 @@ export class StopsController {
           latitude: 36.9741,
           longitude: -122.0308,
           address: '1003 Ocean St, Santa Cruz, CA 95060',
-          stop_type: 'GAS',
+          stop_type: 'gas',
           duration: 15,
           notes: 'Refueling point',
           trip_id: 1,
@@ -112,7 +112,7 @@ export class StopsController {
           departure_time: '2023-10-01T12:15:00Z',
           sequence_number: 3,
           address: '1003 Ocean St, Santa Cruz, CA 95060',
-          stop_type: 'GAS',
+          stop_type: 'gas',
           duration: 15,
           notes: 'Refueling point',
           trip_id: 1,
@@ -128,7 +128,7 @@ export class StopsController {
           'This is how adding a stop could work if we have them search for a stop first, and get the location id from the backend',
         value: {
           location_id: 22,
-          stop_type: 'ATTRACTION',
+          stop_type: 'attraction',
           duration: 180,
           notes: 'Bring hiking shoes and camera',
           trip_id: 1,
@@ -203,7 +203,7 @@ export class StopsController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
-    summary: 'Reorder stops within a stint',
+    summary: '[NEEDS UPDATING] Reorder stops within a stint',
     description:
       'Updates the sequence numbers of stops in a stint and reconstructs legs accordingly',
   })
@@ -256,7 +256,7 @@ export class StopsController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
-    summary: 'Remove a stop and update sequence numbers',
+    summary: '[NEEDS UPDATING] Remove a stop and update sequence numbers',
   })
   @ApiParam({ name: 'stopId', description: 'Stop ID' })
   @ApiResponse({ status: 200, description: 'Stop removed successfully' })

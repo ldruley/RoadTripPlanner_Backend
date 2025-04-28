@@ -21,7 +21,10 @@ export class StopsService {
    */
   async findById(stop_id: number, manager?: EntityManager): Promise<Stop> {
     const repo = manager ? manager.getRepository(Stop) : this.stopRepository;
-    const stop = await repo.findOne({ where: { stop_id } });
+    const stop = await repo.findOne({
+      where: { stop_id },
+      relations: ['location'],
+    });
     if (!stop) {
       throw new NotFoundException(`Stop with ID ${stop_id} not found`);
     }
