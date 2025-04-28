@@ -4,12 +4,12 @@ import {
   Post,
   Body,
   Param,
-  Put,
   Delete,
   Query,
   ParseIntPipe,
   ParseFloatPipe,
   UseGuards,
+  Patch,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -104,7 +104,7 @@ export class LocationsController {
     return this.locationsService.findById(id);
   }
 
-  @Put(':id')
+  @Patch(':id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: '[TESTING] Update a location' })

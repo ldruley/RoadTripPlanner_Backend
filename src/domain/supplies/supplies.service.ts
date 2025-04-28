@@ -4,7 +4,7 @@ import { Supply } from './entities/supply.entity';
 import { SupplyCategory } from '../../common/enums';
 import { UpdateSupplyDto } from './dto/update-supply-dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { EntityManager, Repository } from 'typeorm';
 
 @Injectable()
 export class SuppliesService {
@@ -26,17 +26,19 @@ export class SuppliesService {
   /**
    * Find a supply by its ID
    * @param supply_id The supply ID
+   * @param manager Optional EntityManager for transaction handling
    * @returns The supply if found, or null if not found
    */
-  async findOne(supply_id: number): Promise<Supply | null> {
-    const supply = await this.supplyRepository.findOne({
+  async findOne(
+    supply_id: number,
+    manager?: EntityManager,
+  ): Promise<Supply | null> {
+    const repo = manager
+      ? manager.getRepository(Supply)
+      : this.supplyRepository;
+    return await repo.findOne({
       where: { supply_id },
     });
-    if (!supply) {
-      throw new NotFoundException(`Supply with ID ${supply_id} not found`);
-    }
-
-    return supply;
   }
 
   /**

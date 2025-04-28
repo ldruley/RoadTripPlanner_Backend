@@ -11,39 +11,30 @@ import { ParticipantRole } from '../../../common/enums';
 import { UsersService } from '../../users/users.service';
 import { CreateTripParticipantDto } from '../dto/create-trip-participant.dto';
 import { UpdateTripParticipantDto } from '../dto/update-trip-participant.dto';
-import { EntityManager, Repository } from 'typeorm';
+import { EntityManager, In, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as Console from 'node:console';
 import { TripParticipant } from '../entities/trip-participant.entity';
 import { TripsService } from './trips.service';
+import { BaseService } from '../../../common/services/base.service';
 
 @Injectable()
-export class TripParticipantService {
+export class TripParticipantService extends BaseService<TripParticipant> {
   constructor(
     @InjectRepository(TripParticipant)
-    private tripParticipantRepository: Repository<TripParticipant>,
+    repo: Repository<TripParticipant>,
     private readonly tripsService: TripsService,
     private readonly usersService: UsersService,
-  ) {}
+  ) {
+    super(TripParticipant, repo);
+  }
 
   async getParticipant(
     tripId: number,
     userId: number,
     manager?: EntityManager,
   ): Promise<TripParticipant> {
-    const repo = manager
-      ? manager.getRepository(TripParticipant)
-      : this.tripParticipantRepository;
-    const participant = await repo.findOne({
-      where: {
-        trip_id: tripId,
-        user_id: userId,
-      },
-    });
-    if (!participant) {
-      throw new NotFoundException('Participant not found');
-    }
-    return participant;
+    return this.findOneOrThrow({ trip_id: tripId, user_id: userId }, manager);
   }
 
   async addParticipant(
@@ -51,16 +42,13 @@ export class TripParticipantService {
     requesterId: number,
     manager?: EntityManager,
   ): Promise<TripParticipant> {
-    const repo = manager
-      ? manager.getRepository(TripParticipant)
-      : this.tripParticipantRepository;
+    const repo = this.getRepo(manager);
 
     // Check if the trip exists
     const trip = await this.tripsService.findOne(
       createTripParticipantDto.trip_id,
       manager,
     );
-
     // Check if requester has permission (is creator of the trip)
     if (trip.creator_id !== requesterId) {
       throw new ForbiddenException(
@@ -96,36 +84,14 @@ export class TripParticipantService {
     stintId: number,
     manager?: EntityManager,
   ): Promise<TripParticipant[]> {
-    const repo = manager
-      ? manager.getRepository(TripParticipant)
-      : this.tripParticipantRepository;
-    const participants = await repo.find({
-      where: {
-        trip_id: stintId,
-      },
-    });
-    if (!participants) {
-      Console.warn('Participants not found');
-    }
-    return participants;
+    return this.findAll({ trip_id: stintId }, manager);
   }
 
   async findByUser(
     userId: number,
     manager?: EntityManager,
   ): Promise<TripParticipant[]> {
-    const repo = manager
-      ? manager.getRepository(TripParticipant)
-      : this.tripParticipantRepository;
-    const participants = await repo.find({
-      where: {
-        user_id: userId,
-      },
-    });
-    if (!participants) {
-      Console.warn('Participants not found');
-    }
-    return participants;
+    return this.findAll({ user_id: userId }, manager);
   }
 
   //TODO: Use a DTO for this if we can
@@ -136,9 +102,7 @@ export class TripParticipantService {
     requesterId: number,
     manager?: EntityManager,
   ): Promise<TripParticipant> {
-    const repo = manager
-      ? manager.getRepository(TripParticipant)
-      : this.tripParticipantRepository;
+    const repo = this.getRepo(manager);
     // Check if the trip exists
     const trip = await this.tripsService.findOne(tripId, manager);
 
@@ -168,9 +132,7 @@ export class TripParticipantService {
   ): Promise<void> {
     // Check if the stint exists
     const trip = await this.tripsService.findOne(tripId, manager);
-    const repo = manager
-      ? manager.getRepository(TripParticipant)
-      : this.tripParticipantRepository;
+    const repo = this.getRepo(manager);
 
     // Check if requester has permission or is removing themselves
     if (trip.creator_id !== requesterId && userId !== requesterId) {
@@ -193,15 +155,21 @@ export class TripParticipantService {
     userId: number,
     manager?: EntityManager,
   ): Promise<boolean> {
-    const repo = manager
-      ? manager.getRepository(TripParticipant)
-      : this.tripParticipantRepository;
-    const participant = await repo.findOne({
-      where: {
+    return this.exists({ trip_id: tripId, user_id: userId }, manager);
+  }
+
+  async isUserPlannerOrCreator(
+    tripId: number,
+    userId: number,
+    manager?: EntityManager,
+  ): Promise<boolean> {
+    return this.exists(
+      {
         trip_id: tripId,
         user_id: userId,
+        role: In(['planner', 'creator']),
       },
-    });
-    return !!participant;
+      manager,
+    );
   }
 }

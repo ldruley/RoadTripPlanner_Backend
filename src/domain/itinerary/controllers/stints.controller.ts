@@ -5,8 +5,8 @@ import {
   Get,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
-  Put,
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../../infrastructure/auth/guards/jwt-auth-guard';
@@ -21,7 +21,6 @@ import { GetUser } from '../../../infrastructure/auth/decorators/get-user-decora
 import { User } from '../../users/entities/user.entity';
 import { StintsService } from '../services/stints.service';
 import { ItineraryService } from '../services/itinerary.service';
-import { CreateStintWithStopDto } from '../dto/create-stint-with-stop.dto';
 import { CreateStintWithOptionalStopDto } from '../dto/create-sprint-with-optional-stop.dto';
 
 @Controller('stints')
@@ -134,7 +133,7 @@ export class StintsController {
     return this.stintsService.findById(id);
   }
 
-  @Put(':id')
+  @Patch(':id')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @ApiOperation({

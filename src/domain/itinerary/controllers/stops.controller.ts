@@ -5,9 +5,8 @@ import {
   Get,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
-  //Post,
-  Put,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -157,14 +156,14 @@ export class StopsController {
     return this.stopsService.findById(id);
   }
 
-  @Get('trip/:tripId')
+  /*  @Get('trip/:tripId')
   @ApiOperation({ summary: '[TESTING ONLY]: Get all stops for a trip' })
   @ApiParam({ name: 'tripId', description: 'Trip ID' })
   @ApiResponse({ status: 200, description: 'Returns stops for the trip' })
   @ApiResponse({ status: 404, description: 'No stops found for the trip' })
   findByTrip(@Param('tripId', ParseIntPipe) tripId: number) {
     return this.stopsService.findAllByTrip(tripId);
-  }
+  }*/
 
   @Get('stint/:stintId')
   @ApiOperation({ summary: '[TESTING ONLY]: Get all stops for a stint' })
@@ -199,7 +198,7 @@ export class StopsController {
     return this.stopsService.update(id, updateStopDto, user.user_id);
   }*/
 
-  @Put('stint/:stintId/reorder-stops')
+  @Patch('stint/:stintId/reorder-stops')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({

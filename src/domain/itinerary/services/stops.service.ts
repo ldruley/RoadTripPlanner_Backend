@@ -126,6 +126,26 @@ export class StopsService {
     return repo.save(stop);
   }
 
+  /** Update a stop
+   * @param id The ID of the stop to update
+   * @param updateStopDto The DTO containing the updated stop data
+   * @param userId The ID of the user making the request
+   * @param manager Optional EntityManager for transaction handling
+   */
+  /*  async update(
+    id: number,
+    updateStopDto: Partial<Stop>,
+    userId: number,
+    manager?: EntityManager,
+  ): Promise<Stop> {
+    const repo = manager ? manager.getRepository(Stop) : this.stopRepository;
+    const stop = await this.findById(id, manager);
+    if (!stop) {
+      throw new NotFoundException(`Stop with ID ${id} not found`);
+    }
+
+  }*/
+
   /**
    * Remove a stop with sequence handling
    * Validation and other handling must be done in itinerary service
@@ -135,8 +155,6 @@ export class StopsService {
     userId: number,
     manager?: EntityManager,
   ): Promise<Stop | null> {
-    // Domain validation...
-
     const repo = manager ? manager.getRepository(Stop) : this.stopRepository;
     const stop = await this.findById(stopId);
     if (!stop) {
