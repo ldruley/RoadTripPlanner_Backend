@@ -477,7 +477,7 @@ export class ItineraryService {
       throw new NotFoundException(`Stop with ID ${stopId} not found`);
     }
 
-    await this.tripsService.checkUserInTrip(stop.trip_id, userId);
+    await this.tripsService.checkUserInTrip(stop.stint.trip_id, userId);
 
     let nextStop: Stop | null;
     if (stop.sequence_number === 0) {

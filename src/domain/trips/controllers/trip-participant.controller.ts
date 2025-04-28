@@ -114,12 +114,4 @@ export class TripParticipantsController {
       user.user_id,
     );
   }
-
-  @Get()
-  @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: 'Get all trips a user is participating in' })
-  @ApiResponse({ status: 200, description: 'List of trips' })
-  async findTripsByUser(@Param('userId', ParseIntPipe) userId: number) {
-    return this.tripParticipantService.findByUser(userId);
-  }
 }

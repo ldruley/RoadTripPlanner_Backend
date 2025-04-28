@@ -8,10 +8,11 @@ import { TripParticipantsController } from './controllers/trip-participant.contr
 import { TripParticipantService } from './services/trip-participant.service';
 import { TripParticipant } from './entities/trip-participant.entity';
 import { UsersModule } from '../users/users.module';
+import { TripSupply } from './entities/trip.supplies.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Trip, TripParticipant]),
+    TypeOrmModule.forFeature([Trip, TripParticipant, TripSupply]),
     forwardRef(() => ItineraryModule),
     UsersModule,
   ],

@@ -55,7 +55,7 @@ export class Leg {
   updated_at: Date;
 
   // Relations
-  @ManyToOne(() => Stint, (stint) => stint.legs)
+  @ManyToOne(() => Stint, (stint) => stint.legs, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'stint_id' })
   stint: Stint;
 

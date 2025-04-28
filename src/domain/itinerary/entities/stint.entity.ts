@@ -7,15 +7,10 @@ import {
   ManyToOne,
   OneToMany,
   JoinColumn,
-  ManyToMany,
-  JoinTable,
 } from 'typeorm';
 import { Trip } from '../../trips/entities/trip.entity';
 import { Stop } from './stop.entity';
 import { Leg } from './leg.entity';
-import { Vehicle } from '../../vehicles/entities/vehicle.entity';
-import { Supply } from '../../supplies/entities/supply.entity';
-import { User } from '../../users/entities/user.entity';
 import { Location } from '../../locations/entities/location.entity';
 
 @Entity('stints')
@@ -59,7 +54,7 @@ export class Stint {
 
   // Relations
 
-  @ManyToOne(() => Trip, (trip) => trip.stints)
+  @ManyToOne(() => Trip, (trip) => trip.stints, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'trip_id' })
   trip: Trip;
 
@@ -80,39 +75,9 @@ export class Stint {
   @Column({ nullable: true })
   end_location_id: number;
 
-  @OneToMany(() => Stop, (stop) => stop.stint)
+  @OneToMany(() => Stop, (stop) => stop.stint, { cascade: true })
   stops: Stop[];
 
-  @OneToMany(() => Leg, (leg) => leg.stint)
+  @OneToMany(() => Leg, (leg) => leg.stint, { cascade: true })
   legs: Leg[];
-
-  // Many-to-many relation with vehicles
-  /* @ManyToMany(() => Vehicle)
-  @JoinTable({
-    name: 'stint_vehicles',
-    joinColumn: {
-      name: 'stint_id',
-      referencedColumnName: 'stint_id',
-    },
-    inverseJoinColumn: {
-      name: 'vehicle_id',
-      referencedColumnName: 'vehicle_id',
-    },
-  })
-  vehicles: Vehicle[];*/
-  /*
-              // Many-to-many relation with supplies
-              @ManyToMany(() => Supply)
-              @JoinTable({
-                  name: 'stint_supplies',
-                  joinColumn: {
-                      name: 'stint_id',
-                      referencedColumnName: 'stint_id',
-                  },
-                  inverseJoinColumn: {
-                      name: 'supply_id',
-                      referencedColumnName: 'supply_id',
-                  },
-              })
-              supplies: Supply[];*/
 }

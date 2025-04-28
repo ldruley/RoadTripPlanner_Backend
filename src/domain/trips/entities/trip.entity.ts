@@ -14,6 +14,8 @@ import { User } from '../../users/entities/user.entity';
 import { Stint } from '../../itinerary/entities/stint.entity';
 import { Stop } from '../../itinerary/entities/stop.entity';
 import { Supply } from '../../supplies/entities/supply.entity';
+import { TripSupply } from './trip.supplies.entity';
+import { TripParticipant } from './trip-participant.entity';
 
 @Entity('trips')
 export class Trip {
@@ -52,39 +54,16 @@ export class Trip {
   @Column()
   creator_id: number;
 
-  @OneToMany(() => Stint, (stint) => stint.trip)
+  @OneToMany(() => Stint, (stint) => stint.trip, { cascade: true })
   stints: Stint[];
 
-  @OneToMany(() => Stop, (stop) => stop.trip)
-  stops: Stop[];
-
-  @ManyToMany(() => User)
-  @JoinTable({
-    name: 'trip_participants',
-    joinColumn: {
-      name: 'trip_id',
-      referencedColumnName: 'trip_id',
-    },
-    inverseJoinColumn: {
-      name: 'user_id',
-      referencedColumnName: 'user_id',
-    },
+  @OneToMany(() => TripParticipant, (participant) => participant.trip, {
+    cascade: true,
   })
-  participants: User[];
+  participants: TripParticipant[];
 
-  /*
-    // Many-to-many relation with supplies
-    @ManyToMany(() => Supply)
-    @JoinTable({
-        name: 'trip_supplies',
-        joinColumn: {
-            name: 'trip_id',
-            referencedColumnName: 'trip_id',
-        },
-        inverseJoinColumn: {
-            name: 'supply_id',
-            referencedColumnName: 'supply_id',
-        },
-    })
-    supplies: Supply[];*/
+  @OneToMany(() => TripSupply, (tripSupply) => tripSupply.trip, {
+    cascade: true,
+  })
+  supplies: TripSupply[];
 }

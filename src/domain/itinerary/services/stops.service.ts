@@ -37,6 +37,7 @@ export class StopsService {
    * @param manager Optional EntityManager for transaction handling
    * @returns An array of stops in the specified trip or null if not found
    */
+  /*
   async findAllByTrip(
     trip_id: number,
     manager?: EntityManager,
@@ -44,6 +45,7 @@ export class StopsService {
     const repo = manager ? manager.getRepository(Stop) : this.stopRepository;
     return repo.find({ where: { trip_id } });
   }
+*/
 
   /**
    * Find all stops in a stint

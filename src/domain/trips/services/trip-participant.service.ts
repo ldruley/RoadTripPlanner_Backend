@@ -22,8 +22,8 @@ export class TripParticipantService {
   constructor(
     @InjectRepository(TripParticipant)
     private tripParticipantRepository: Repository<TripParticipant>,
-    private tripsService: TripsService,
-    private usersService: UsersService,
+    private readonly tripsService: TripsService,
+    private readonly usersService: UsersService,
   ) {}
 
   async getParticipant(
