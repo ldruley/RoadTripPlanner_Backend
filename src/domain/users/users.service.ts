@@ -64,7 +64,7 @@ export class UsersService extends BaseService<User> {
     email: string,
     manager?: EntityManager,
   ): Promise<User | null> {
-    return this.findOneOrThrow({ email }, manager);
+    return this.findOneOrNull({ email }, manager);
   }
 
   /**
@@ -118,9 +118,11 @@ export class UsersService extends BaseService<User> {
 
   /**
    * Remove a user
-   * @param id The user ID
+   * @param userId The user ID
+   * @param manager Optional EntityManager for transaction handling
+   * @returns void
    */
-  async remove(userId: number): Promise<void> {
-    await this.delete({ user_id: userId });
+  async remove(userId: number, manager?: EntityManager): Promise<void> {
+    await this.delete({ user_id: userId }, manager);
   }
 }

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, EntityManager, DataSource, DeepPartial } from 'typeorm';
+import { Repository, EntityManager, DeepPartial } from 'typeorm';
 import { Point } from 'geojson';
 import { Location } from './entities/location.entity';
 import { CreateLocationDto } from './dto/create-location.dto';
@@ -13,7 +13,6 @@ export class LocationsService extends BaseService<Location> {
   constructor(
     @InjectRepository(Location)
     repo: Repository<Location>,
-    private dataSource: DataSource,
   ) {
     super(Location, repo);
   }
