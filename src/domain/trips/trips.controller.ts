@@ -23,7 +23,6 @@ import { JwtAuthGuard } from '../../infrastructure/auth/guards/jwt-auth-guard';
 import { GetUser } from '../../infrastructure/auth/decorators/get-user-decorator';
 import { User } from '../users/entities/user.entity';
 import { ItineraryService } from '../itinerary/services/itinerary.service';
-import { TripTimelineResponseDto } from './dto/trip-timeline-response.dto';
 
 @Controller('trips')
 export class TripsController {
