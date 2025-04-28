@@ -54,7 +54,7 @@ export class StopsController {
           latitude: 37.7749,
           longitude: -122.4194,
           address: '501 Stanyan St, San Francisco, CA 94117',
-          stop_type: 'ATTRACTION',
+          stop_type: 'attraction',
           duration: 180,
           notes: 'Bring hiking shoes and camera',
           trip_id: 1,
