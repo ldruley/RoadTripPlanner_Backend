@@ -35,6 +35,14 @@ export abstract class BaseService<T extends ObjectLiteral> {
     return entity;
   }
 
+  async findOneOrNull(
+    where: FindOptionsWhere<T>,
+    manager?: EntityManager,
+  ): Promise<T | null> {
+    const repo = this.getRepo(manager);
+    return await repo.findOne({ where });
+  }
+
   async findAll(
     where?: FindOptionsWhere<T>,
     manager?: EntityManager,

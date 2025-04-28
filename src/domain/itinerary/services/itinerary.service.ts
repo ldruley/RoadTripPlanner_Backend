@@ -350,7 +350,7 @@ export class ItineraryService {
           postal_code: dto.initialStop.postal_code,
         };
 
-        const savedLocation = await this.locationsService.create(
+        const savedLocation = await this.locationsService.createLocation(
           createLocationDto,
           userId,
           manager,
