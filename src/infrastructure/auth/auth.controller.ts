@@ -1,9 +1,11 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { CreateUserDto } from '../../domain/users/dto/create-user-dto';
 import { RegisterDto } from './dto/register.dto';
+import { AuthGuard } from '@nestjs/passport';
+import { OAuthResponse } from '../../common/types/oauth-response.interface';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -33,5 +35,26 @@ export class AuthController {
   @ApiResponse({ status: 409, description: 'Email already in use' })
   register(@Body() registerDto: RegisterDto) {
     return this.authService.register(registerDto);
+  }
+
+  @Get('google')
+  @UseGuards(AuthGuard('google'))
+  @ApiOperation({ summary: 'Initiate Google OAuth login' })
+  googleAuth() {
+    // Google OAuth flow will be automatically triggered
+  }
+
+  @Get('google/callback')
+  @UseGuards(AuthGuard('google'))
+  googleAuthCallback(@Req() req: Request) {
+    const oauthUser = req.user as OAuthResponse;
+    const { access_token, user, platform } = oauthUser;
+    if (platform === 'mobile') {
+      return { access_token, user };
+    }
+    return {
+      access_token,
+      user,
+    };
   }
 }

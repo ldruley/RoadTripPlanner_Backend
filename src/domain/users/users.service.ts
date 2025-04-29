@@ -125,4 +125,21 @@ export class UsersService extends BaseService<User> {
   async remove(userId: number, manager?: EntityManager): Promise<void> {
     await this.delete({ user_id: userId }, manager);
   }
+
+  async createOAuthUser(
+    userData: Partial<User>,
+    manager?: EntityManager,
+  ): Promise<User> {
+    const repo = this.getRepo(manager);
+
+    const user = repo.create({
+      ...userData,
+      authProvider: 'google',
+      password_hash: '',
+      // Currently faking it because OAuth doesn't provide password
+      // Second option is to rework the user.entity.ts
+      // Check that file for more details
+    });
+    return repo.save(user);
+  }
 }
