@@ -274,16 +274,23 @@ export class StintsService {
     stint: Stint,
     updates: { start_location_id?: number; end_location_id?: number },
     manager?: EntityManager,
-  ): Promise<Stint> {
+  ): Promise<void> {
+    console.log(updates);
+
     const repo = manager ? manager.getRepository(Stint) : this.stintRepository;
-    if (updates.start_location_id) {
-      stint.start_location_id = updates.start_location_id;
+    const updateData: any = {};
+    if (updates.start_location_id !== undefined) {
+      updateData.start_location_id = updates.start_location_id;
+    }
+    if (updates.end_location_id !== undefined) {
+      updateData.end_location_id = updates.end_location_id;
     }
 
-    if (updates.end_location_id) {
-      stint.end_location_id = updates.end_location_id;
-    }
-
-    return repo.save(stint);
+    await repo
+      .createQueryBuilder()
+      .update(Stint)
+      .set(updateData)
+      .where('stint_id = :id', { id: stint.stint_id })
+      .execute();
   }
 }

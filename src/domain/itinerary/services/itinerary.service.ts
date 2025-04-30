@@ -631,11 +631,11 @@ export class ItineraryService {
 
         await this.updateLegsAfterStopChanges(stop.stint_id, [stop], manager);
         console.log('updatedlegs');
-        /* await this.stintsService.updateLocationReferences(
+        await this.stintsService.updateLocationReferences(
           stint,
           { end_location_id: stop.location_id },
           manager,
-        );*/
+        );
         console.log('updated location references');
         await this.recalculateStintTimeline(stint, manager);
 
