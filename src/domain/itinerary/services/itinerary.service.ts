@@ -631,12 +631,12 @@ export class ItineraryService {
 
         await this.updateLegsAfterStopChanges(stop.stint_id, [stop], manager);
         console.log('updatedlegs');
-        await this.stintsService.updateLocationReferences(
+        /* await this.stintsService.updateLocationReferences(
           stint,
           { end_location_id: stop.location_id },
           manager,
-        );
-
+        );*/
+        console.log('updated location references');
         await this.recalculateStintTimeline(stint, manager);
 
         return stop;
@@ -895,6 +895,8 @@ export class ItineraryService {
       return;
     }
 
+    console.log('update legs');
+
     const stint = await manager.getRepository(Stint).findOne({
       where: { stint_id: stintId },
       relations: ['start_location'],
@@ -943,7 +945,7 @@ export class ItineraryService {
       distance: 10, // This should be calculated based on API calls
       estimated_travel_time: 10, // This should be calculated based on API calls
     });
-
+    console.log('saving first leg');
     await legRepo.save(leg);
 
     // Create legs between consecutive stops
@@ -959,8 +961,9 @@ export class ItineraryService {
         distance: 10, // This should be calculated based on API calls
         estimated_travel_time: 10, // This should be calculated based on API calls
       });
-
+      console.log('saving legs');
       await legRepo.save(leg);
+      console.log('legs saved');
     }
   }
 
@@ -1007,8 +1010,14 @@ export class ItineraryService {
     stint: Stint,
     manager?: EntityManager,
   ): Promise<void> {
-    const repo = manager ? manager.getRepository(Stint) : this.stintRepository;
+    const stopRepo = manager
+      ? manager.getRepository(Stop)
+      : this.dataSource.getRepository(Stop);
 
+    const legRepo = manager
+      ? manager.getRepository(Leg)
+      : this.dataSource.getRepository(Leg);
+    console.log('start');
     const stops = stint.stops.sort(
       (a, b) => a.sequence_number - b.sequence_number,
     );
@@ -1021,6 +1030,7 @@ export class ItineraryService {
 
     //handle first leg
     const firstLeg = legs[0];
+    console.log(firstLeg);
 
     if (firstLeg) {
       currentTime = DateUtils.addMinutes(
@@ -1028,7 +1038,7 @@ export class ItineraryService {
         firstLeg.estimated_travel_time,
       );
     }
-
+    console.log('looping stops');
     for (const stop of stops) {
       stop.arrival_time = currentTime;
 
@@ -1054,9 +1064,10 @@ export class ItineraryService {
       const lastStop = stops[stops.length - 1];
       stint.end_location = lastStop.location; //
     }
-
-    await repo.save(updatedStops);
-    await repo.save(updatedLegs);
+    console.log(updatedLegs);
+    console.log(updatedStops);
+    await stopRepo.save(updatedStops);
+    await legRepo.save(updatedLegs);
   }
 
   /**

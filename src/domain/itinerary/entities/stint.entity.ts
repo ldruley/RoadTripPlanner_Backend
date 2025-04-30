@@ -75,9 +75,9 @@ export class Stint {
   @Column({ nullable: true })
   end_location_id: number;
 
-  @OneToMany(() => Stop, (stop) => stop.stint, { cascade: true })
+  @OneToMany(() => Stop, (stop) => stop.stint)
   stops: Stop[];
 
-  @OneToMany(() => Leg, (leg) => leg.stint, { cascade: true })
+  @OneToMany(() => Leg, (leg) => leg.stint)
   legs: Leg[];
 }
