@@ -12,13 +12,7 @@ import { LegsService } from './legs.service';
 import { Stint } from '../entities/stint.entity';
 import { Stop } from '../entities/stop.entity';
 import { Leg } from '../entities/leg.entity';
-import {
-  TripTimeline,
-  TimelineStint,
-  TimelineItem,
-  //TimelineStop,
-  //TimelineLeg,
-} from '../../interfaces/itinerary';
+import { TimelineEventModel } from '../../interfaces/itinerary';
 import { TripsService } from '../../trips/services/trips.service';
 import { CreateStopDto } from '../dto/create-stop.dto';
 import { CreateStintDto } from '../dto/create-stint-dto';
@@ -29,6 +23,11 @@ import { StopType } from '../../../common/enums';
 import { InjectRepository } from '@nestjs/typeorm';
 import { LocationsService } from '../../locations/locations.service';
 import { CreateLocationDto } from '../../locations/dto/create-location.dto';
+import { plainToInstance } from 'class-transformer';
+import { TripTimelineResponseDto } from '../../trips/dto/trip-timeline-response.dto';
+import { TripTimelineModel } from '../../interfaces/itinerary/trip-timeline.interface';
+import { StintTimelineModel } from '../../interfaces/itinerary/trip-timeline-stint.interface';
+import { Trip } from '../../trips/entities/trip.entity';
 
 //TODO: Implement TimelineLeg and TimelineStop interfaces - or figure out a combiined approach to interweave them into the timeline
 //TODO: potentially a dto for timeline?
@@ -53,7 +52,195 @@ export class ItineraryService {
    * TODO: We need to incorporate stint/participants and vehicles. Likely sort out new user perms method first
    */
 
-  async getTripTimeline(tripId: number, userId: number): Promise<TripTimeline> {
+  private async ensureUserCanAccessTrip(
+    tripId: number,
+    userId: number,
+  ): Promise<void> {
+    const trip = await this.tripsService.findOne(tripId);
+    if (!trip) throw new NotFoundException(`Trip ${tripId} not found`);
+
+    const hasAccess = await this.tripsService.checkUserInTrip(tripId, userId);
+    if (!hasAccess)
+      throw new ForbiddenException(`No permission to view trip ${tripId}`);
+  }
+
+  async getTripTimeline(
+    tripId: number,
+    userId: number,
+  ): Promise<TripTimelineResponseDto> {
+    await this.ensureUserCanAccessTrip(tripId, userId);
+
+    const stints = await this.stintsService.findAllByTripWithRelations(tripId);
+    const trip = await this.tripsService.findOneOrThrow({ trip_id: tripId });
+    if (!stints.length) {
+      throw new NotFoundException(`No stints found for trip ${tripId}`);
+    }
+
+    const timelineModel = this.buildTripTimeline(trip, stints);
+
+    return plainToInstance(TripTimelineResponseDto, timelineModel);
+  }
+  private buildTripTimeline(trip: Trip, stints: Stint[]): TripTimelineModel {
+    const timeline: TripTimelineModel = {
+      tripId: trip.trip_id,
+      title: trip.title,
+      description: trip.description,
+      startDate: this.formatDateToIso(trip.start_date),
+      endDate: this.formatDateToIso(trip.end_date),
+      totalDistance: 0,
+      totalDuration: 0,
+      stints: [],
+    };
+
+    const legsByStops = new Map<string, Leg>();
+
+    for (const stint of stints) {
+      for (const leg of stint.legs ?? []) {
+        legsByStops.set(`${leg.start_stop_id}_${leg.end_stop_id}`, leg);
+      }
+    }
+
+    for (const stint of stints) {
+      const stintTimeline = this.buildTimelineForStint(stint, legsByStops);
+
+      timeline.stints.push(stintTimeline);
+      timeline.totalDistance += stintTimeline.distance ?? 0;
+      timeline.totalDuration += stintTimeline.estimatedDuration ?? 0;
+    }
+
+    return timeline;
+  }
+
+  private buildTimelineForStint(
+    stint: Stint,
+    legsByStops: Map<string, Leg>,
+  ): StintTimelineModel {
+    const sortedStops = [...(stint.stops ?? [])].sort(
+      (a, b) => a.sequence_number - b.sequence_number,
+    );
+
+    const events: TimelineEventModel[] = [];
+
+    if (stint.start_location) {
+      events.push(this.buildDepartureEvent(stint));
+    }
+
+    if (stint.start_location) {
+      const firstLeg = stint.legs?.find(
+        (l) => l.start_location_id === stint.start_location_id,
+      );
+      if (firstLeg) {
+        events.push(
+          this.buildLegEvent(
+            firstLeg,
+            stint.start_location.name,
+            firstLeg.end_stop?.name,
+            0.5,
+          ),
+        );
+      }
+    }
+
+    sortedStops.forEach((stop, index) => {
+      events.push(this.buildStopEvent(stop));
+
+      if (index < sortedStops.length - 1) {
+        const nextStop = sortedStops[index + 1];
+        const connectingLeg = legsByStops.get(
+          `${stop.stop_id}_${nextStop.stop_id}`,
+        );
+        if (connectingLeg) {
+          events.push(
+            this.buildLegEvent(
+              connectingLeg,
+              stop.name,
+              nextStop.name,
+              stop.sequence_number + 0.5,
+            ),
+          );
+        }
+      }
+    });
+
+    return {
+      stintId: stint.stint_id,
+      name: stint.name,
+      sequenceNumber: stint.sequence_number,
+      distance: stint.distance,
+      estimatedDuration: stint.estimated_duration,
+      notes: stint.notes,
+      timeline: events.sort((a, b) => a.sequenceNumber - b.sequenceNumber),
+      continuesFromPrevious: stint.continues_from_previous,
+      startTime: this.formatDateToIso(stint.start_time),
+      endTime: this.formatDateToIso(stint.end_time),
+      startLocationName: stint.start_location?.name,
+      endLocationName: stint.end_location?.name,
+    };
+  }
+
+  private buildStopEvent(stop: Stop): TimelineEventModel {
+    return {
+      type: 'stop',
+      sequenceNumber: stop.sequence_number,
+      data: {
+        stop_id: stop.stop_id,
+        name: stop.name,
+        latitude: stop.location.latitude,
+        longitude: stop.location.longitude,
+        address: stop.location.address || '',
+        stop_type: stop.stop_type,
+        arrival_time: this.formatDateToIso(stop.arrival_time),
+        departure_time: this.formatDateToIso(stop.departure_time),
+        duration: stop.duration,
+        sequence_number: stop.sequence_number,
+        notes: stop.notes,
+      },
+    };
+  }
+
+  private buildLegEvent(
+    leg: Leg,
+    startStopName: string,
+    endStopName: string,
+    sequenceNumber: number,
+  ): TimelineEventModel {
+    return {
+      type: 'leg',
+      sequenceNumber,
+      data: {
+        leg_id: leg.leg_id,
+        distance: leg.distance,
+        estimated_travel_time: leg.estimated_travel_time,
+        route_type: leg.route_type,
+        polyline: leg.polyline,
+        notes: leg.notes,
+        start_stop_name: startStopName,
+        end_stop_name: endStopName,
+      },
+    };
+  }
+
+  private buildDepartureEvent(stint: Stint): TimelineEventModel {
+    return {
+      type: 'departure',
+      sequenceNumber: 0,
+      data: {
+        stop_id: 0,
+        name: stint.start_location?.name ?? 'Start',
+        latitude: stint.start_location?.latitude ?? 0,
+        longitude: stint.start_location?.longitude ?? 0,
+        address: stint.start_location?.address ?? '',
+        stop_type: StopType.DEPARTURE,
+        arrival_time: this.formatDateToIso(stint.start_time),
+        departure_time: this.formatDateToIso(stint.start_time),
+        duration: 0,
+        sequence_number: 0,
+        notes: `Departure from ${stint.start_location?.name}`,
+      },
+    };
+  }
+
+  /*async getTripTimeline(tripId: number, userId: number): Promise<TripTimeline> {
     // First verify the trip exists and the user has access
     const trip = await this.tripsService.findOne(tripId);
     if (!trip) {
@@ -257,7 +444,7 @@ export class ItineraryService {
     }
 
     return timeline;
-  }
+  }*/
 
   /**
    * Create a new stint with optional initial stop
@@ -448,7 +635,7 @@ export class ItineraryService {
           manager,
         );
 
-        await this.updateStintTimings(stop.stint_id, manager);
+        await this.recalculateStintTimeline(stop.stint, manager);
 
         return stop;
       })
@@ -496,11 +683,10 @@ export class ItineraryService {
     return this.dataSource
       .transaction(async (manager) => {
         const stintRepo = manager.getRepository(Stint);
-
+        const stint = await this.stintsService.findById(stop.stint_id);
         // TODO: consider moving this functionality to stintsService.
         // If this is the first stop in the stint we need to update
         if (stop.sequence_number === 0 && nextStop) {
-          const stint = await this.stintsService.findById(stop.stint_id);
           stint.start_location_id = nextStop.stop_id;
           await stintRepo.save(stint);
         }
@@ -523,7 +709,7 @@ export class ItineraryService {
           manager,
         );
         await this.updateStintStartEndLocations(stop.stint_id, manager);
-        await this.updateStintTimings(stop.stint_id, manager);
+        await this.recalculateStintTimeline(stint, manager);
       })
       .then(() => {
         this.updateStintDuration(stop.stint_id).catch((error) => {
@@ -580,7 +766,7 @@ export class ItineraryService {
         // Update legs and stint metadata
         await this.updateLegsAfterStopChanges(stintId, savedStops, manager);
         await this.updateStintStartEndLocations(stintId, manager);
-        await this.updateStintTimings(stintId, manager);
+        await this.recalculateStintTimeline(stint, manager);
       })
       .then(() => {
         this.updateStintDuration(stintId).catch((error) => {
@@ -815,12 +1001,67 @@ export class ItineraryService {
     await repo.save(stint);
   }
 
+  async recalculateStintTimeline(
+    stint: Stint,
+    manager?: EntityManager,
+  ): Promise<void> {
+    const repo = manager ? manager.getRepository(Stint) : this.stintRepository;
+    const stops = stint.stops.sort(
+      (a, b) => a.sequence_number - b.sequence_number,
+    );
+    const legs = stint.legs.sort(
+      (a, b) => a.sequence_number - b.sequence_number,
+    );
+    let currentTime = stint.start_time;
+    const updatedStops: Stop[] = [];
+    const updatedLegs: Leg[] = [];
+
+    //handle first leg
+    const firstLeg = legs[0];
+
+    if (firstLeg) {
+      currentTime = DateUtils.addMinutes(
+        currentTime,
+        firstLeg.estimated_travel_time,
+      );
+    }
+
+    for (const stop of stops) {
+      stop.arrival_time = currentTime;
+
+      stop.departure_time = DateUtils.addMinutes(
+        stop.arrival_time,
+        stop.duration,
+      );
+      updatedStops.push(stop);
+
+      currentTime = stop.departure_time;
+
+      const nextLeg = legs.find((leg) => leg.start_stop_id === stop.stop_id);
+      if (nextLeg) {
+        currentTime = DateUtils.addMinutes(
+          currentTime,
+          nextLeg.estimated_travel_time,
+        );
+        updatedLegs.push(nextLeg);
+      }
+    }
+
+    if (stops.length > 0) {
+      const lastStop = stops[stops.length - 1];
+      stint.end_location = lastStop.location; //
+    }
+
+    await repo.save(updatedStops);
+    await repo.save(updatedLegs);
+  }
+
   /**
    * Update all arrival and departure times for a stint based on legs and stop durations
    * This should be called after any stop changes or leg updates
    * TODO: Investigate combining some of these post-processing methods
    */
-  private async updateStintTimings(
+  /*private async updateStintTimings(
     stintId: number,
     manager: EntityManager,
   ): Promise<void> {
@@ -842,7 +1083,7 @@ export class ItineraryService {
       }
     }
 
-    /* let currentTime = stint.start_time;
+    /!* let currentTime = stint.start_time;
     if (stint.continues_from_previous && stint.start_location_id) {
       const previousStintEndLocation = await manager
         .getRepository(Stop)
@@ -855,7 +1096,7 @@ export class ItineraryService {
         stint.start_time = currentTime;
         await manager.getRepository(Stint).save(stint);
       }
-    }*/
+    }*!/
 
     const startTime = stint.start_time;
     if (!startTime) {
@@ -921,7 +1162,7 @@ export class ItineraryService {
       stint.end_time = lastStop.departure_time;
       await manager.getRepository(Stint).save(stint);
     }
-  }
+  }*/
 
   /**
    * Update the start and end locations of a stint based on its stops
@@ -947,5 +1188,10 @@ export class ItineraryService {
     }
     stint.end_location_id = stop.location_id;
     await manager.getRepository(Stint).save(stint);
+  }
+
+  formatDateToIso(date?: Date | null): string | null {
+    if (!date) return null;
+    return date.toISOString();
   }
 }
