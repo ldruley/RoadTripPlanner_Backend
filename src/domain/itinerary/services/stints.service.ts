@@ -31,6 +31,28 @@ export class StintsService {
     return stint;
   }
 
+  async findByIdWithRelationsOrThrow(
+    stint_id: number,
+    manager?: EntityManager,
+  ): Promise<Stint> {
+    const repo = manager ? manager.getRepository(Stint) : this.stintRepository;
+    const stint = await repo.findOne({
+      where: { stint_id },
+      relations: [
+        'stops',
+        'legs',
+        'legs.start_stop',
+        'legs.end_stop',
+        'start_location',
+        'stops.location',
+      ],
+    });
+    if (!stint) {
+      throw new NotFoundException(`Stint with ID ${stint_id} not found`);
+    }
+    return stint;
+  }
+
   /**
    * Find all stints in a trip
    * @param trip_id The trip ID

@@ -591,7 +591,9 @@ export class ItineraryService {
    * Add a new stop to a stint, handle potential re-ordering and update legs automatically
    */
   async addStop(createStopDto: CreateStopDto, userId: number): Promise<Stop> {
-    const stint = await this.stintsService.findById(createStopDto.stint_id);
+    const stint = await this.stintsService.findByIdWithRelationsOrThrow(
+      createStopDto.stint_id,
+    );
     if (!stint) {
       throw new NotFoundException(
         `Stint with ID ${createStopDto.stint_id} not found`,
@@ -635,7 +637,7 @@ export class ItineraryService {
           manager,
         );
 
-        await this.recalculateStintTimeline(stop.stint, manager);
+        await this.recalculateStintTimeline(stint, manager);
 
         return stop;
       })
@@ -1006,6 +1008,7 @@ export class ItineraryService {
     manager?: EntityManager,
   ): Promise<void> {
     const repo = manager ? manager.getRepository(Stint) : this.stintRepository;
+
     const stops = stint.stops.sort(
       (a, b) => a.sequence_number - b.sequence_number,
     );
