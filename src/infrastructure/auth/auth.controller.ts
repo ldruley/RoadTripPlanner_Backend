@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
@@ -39,22 +47,27 @@ export class AuthController {
 
   @Get('google')
   @UseGuards(AuthGuard('google'))
-  @ApiOperation({ summary: 'Initiate Google OAuth login' })
-  googleAuth() {
-    // Google OAuth flow will be automatically triggered
+  googleAuth(@Req() _req: Request, @Res() _res: Response): void {
+    // DO NOTHING – passport will handle it
   }
 
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
-  googleAuthCallback(@Req() req: Request) {
-    const oauthUser = req.user as OAuthResponse;
-    const { access_token, user, platform } = oauthUser;
+  googleAuthCallback(@Req() req: Request, @Res() res: Response) {
+    const { access_token, user, platform } = req.user as OAuthResponse;
+
     if (platform === 'mobile') {
-      return { access_token, user };
+      return res.json({ access_token, user });
     }
-    return {
-      access_token,
-      user,
-    };
+
+    // return res.redirect(
+    //   `http://localhost:3000/login-success?token=${access_token}`,
+    // );
+    // res.json({ access_token, user });
+
+    // Web: redirect to frontend
+    return res.redirect(
+      `http://localhost:8081/(auth)/google-web-redirect?token=${access_token}`,
+    );
   }
 }
