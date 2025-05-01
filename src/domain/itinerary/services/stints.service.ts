@@ -274,7 +274,7 @@ export class StintsService {
     stint: Stint,
     updates: { start_location_id?: number; end_location_id?: number },
     manager?: EntityManager,
-  ): Promise<void> {
+  ): Promise<Stint> {
     console.log(updates);
 
     const repo = manager ? manager.getRepository(Stint) : this.stintRepository;
@@ -292,5 +292,8 @@ export class StintsService {
       .set(updateData)
       .where('stint_id = :id', { id: stint.stint_id })
       .execute();
+
+    // Fetch the updated stint
+    return await this.findById(stint.stint_id, manager);
   }
 }

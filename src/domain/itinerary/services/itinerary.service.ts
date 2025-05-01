@@ -666,7 +666,11 @@ export class ItineraryService {
       throw new NotFoundException(`Stop with ID ${stopId} not found`);
     }
 
-    await this.tripsService.checkUserInTrip(stop.stint.trip_id, userId);
+    const stint = await this.stintsService.findByIdWithRelationsOrThrow(
+      stop.stint_id,
+    );
+
+    await this.tripsService.checkUserInTrip(stint.trip_id, userId);
 
     let nextStop: Stop | null;
     if (stop.sequence_number === 0) {
@@ -685,7 +689,7 @@ export class ItineraryService {
     return this.dataSource
       .transaction(async (manager) => {
         const stintRepo = manager.getRepository(Stint);
-        const stint = await this.stintsService.findById(stop.stint_id);
+
         // TODO: consider moving this functionality to stintsService.
         // If this is the first stop in the stint we need to update
         if (stop.sequence_number === 0 && nextStop) {
@@ -735,7 +739,8 @@ export class ItineraryService {
     stopOrder: { stop_id: number; sequence_number: number }[],
     userId: number,
   ): Promise<void> {
-    const stint = await this.stintsService.findById(stintId);
+    const stint =
+      await this.stintsService.findByIdWithRelationsOrThrow(stintId);
     if (!stint) {
       throw new NotFoundException(`Stint with ID ${stintId} not found`);
     }
