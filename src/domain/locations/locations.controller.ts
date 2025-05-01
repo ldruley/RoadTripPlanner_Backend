@@ -40,7 +40,7 @@ export class LocationsController {
     @Body() createLocationDto: CreateLocationDto,
     @GetUser() user: User,
   ) {
-    return this.locationsService.create(createLocationDto, user.user_id);
+    return this.locationsService.create(createLocationDto);
   }
 
   @Get('nearby')
