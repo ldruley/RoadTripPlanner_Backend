@@ -14,6 +14,12 @@ import { CreateUserDto } from '../../domain/users/dto/create-user-dto';
 import { RegisterDto } from './dto/register.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { OAuthResponse } from '../../common/types/oauth-response.interface';
+import { Request, Response } from 'express';
+
+interface GoogleCallbackRequest extends Request {
+  user: OAuthResponse;
+}
+
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -53,21 +59,13 @@ export class AuthController {
 
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
-  googleAuthCallback(@Req() req: Request, @Res() res: Response) {
-    const { access_token, user, platform } = req.user as OAuthResponse;
+  googleAuthCallback(@Req() req: GoogleCallbackRequest, @Res() res: Response) {
+    const { access_token, user, platform } = req.user;
 
     if (platform === 'mobile') {
-      return res.json({ access_token, user });
+      return res.redirect(`myapp://redirect?token=${access_token}`);
     }
 
-    // return res.redirect(
-    //   `http://localhost:3000/login-success?token=${access_token}`,
-    // );
-    // res.json({ access_token, user });
-
-    // Web: redirect to frontend
-    return res.redirect(
-      `http://localhost:8081/(auth)/google-web-redirect?token=${access_token}`,
-    );
+    return res.redirect(`http://localhost:8081/redirect?token=${access_token}`);
   }
 }
