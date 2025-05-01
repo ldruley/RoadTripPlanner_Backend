@@ -14,6 +14,11 @@ export class DateUtils {
     return newDate;
   }
 
+  static formatDateToIso(date?: Date | null): string | null {
+    if (!date) return null;
+    return date.toISOString();
+  }
+
   /**
    * Add hours to a date and return a new date object
    * @param date The original date

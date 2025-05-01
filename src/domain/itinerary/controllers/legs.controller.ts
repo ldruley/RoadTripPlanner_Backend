@@ -1,27 +1,6 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  ParseIntPipe,
-  Post,
-  Put,
-  UseGuards,
-} from '@nestjs/common';
-import {
-  ApiBearerAuth,
-  ApiOperation,
-  ApiParam,
-  ApiResponse,
-  ApiTags,
-} from '@nestjs/swagger';
+import { Controller, Get, Param, ParseIntPipe } from '@nestjs/common';
+import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { LegsService } from '../services/legs.service';
-import { CreateLegDto } from '../dto/create-leg.dto';
-import { UpdateLegDto } from '../dto/update-leg.dto';
-import { JwtAuthGuard } from '../../../infrastructure/auth/guards/jwt-auth-guard';
-import { GetUser } from '../../../infrastructure/auth/decorators/get-user-decorator';
-import { User } from '../../users/entities/user.entity';
 
 @ApiTags('Legs [TESTING]')
 @Controller('legs')

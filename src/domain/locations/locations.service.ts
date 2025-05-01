@@ -1,21 +1,21 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, EntityManager, DataSource } from 'typeorm';
+import { Repository, EntityManager, DeepPartial } from 'typeorm';
 import { Point } from 'geojson';
 import { Location } from './entities/location.entity';
 import { CreateLocationDto } from './dto/create-location.dto';
 import { UpdateLocationDto } from './dto/update-location.dto';
 import { LocationCategoryCode } from '../../common/enums';
-import { LocationType } from './entities/location-type.entity';
-import { Trip } from '../trips/entities/trip.entity';
+import { BaseService } from '../../common/services/base.service';
 
 @Injectable()
-export class LocationsService {
+export class LocationsService extends BaseService<Location> {
   constructor(
     @InjectRepository(Location)
-    private locationRepository: Repository<Location>,
-    private dataSource: DataSource,
-  ) {}
+    repo: Repository<Location>,
+  ) {
+    super(Location, repo);
+  }
 
   /**
    * Create a new location
@@ -24,29 +24,24 @@ export class LocationsService {
    * @param manager Optional EntityManager for transaction handling
    * @returns The created location
    */
-  async create(
+  async createLocation(
     createLocationDto: CreateLocationDto,
     userId?: number,
     manager?: EntityManager,
   ): Promise<Location> {
-    const repo = manager
-      ? manager.getRepository(Location)
-      : this.locationRepository;
-
     // Create GeoJSON Point from latitude/longitude
-
     const geom: Point = Location.createPoint(
       createLocationDto.latitude,
       createLocationDto.longitude,
     );
 
-    const location = repo.create({
+    const finalData: DeepPartial<Location> = {
       ...createLocationDto,
       geom,
       created_by_id: userId,
-    });
+    };
 
-    return repo.save(location);
+    return this.create(finalData, manager);
   }
 
   /**
@@ -56,34 +51,22 @@ export class LocationsService {
    * @returns The location or throws an error if not found
    */
   async findById(id: number, manager?: EntityManager): Promise<Location> {
-    const repo = manager
-      ? manager.getRepository(Location)
-      : this.locationRepository;
-    const location = await repo.findOne({ where: { location_id: id } });
-
-    if (!location) {
-      throw new NotFoundException(`Location with ID ${id} not found`);
-    }
-
-    return location;
+    return this.findOneOrThrow({ location_id: id }, manager);
   }
 
+  /**
+   * Fina a location by coordinates
+   * @param lat Latitude of the location
+   * @param long Longitude of the location
+   * @param manager Optional EntityManager for transaction handling
+   * @returns The location or null if not found
+   */
   async findByCoordinates(
     lat: number,
     long: number,
     manager?: EntityManager,
   ): Promise<Location | null> {
-    const repo = manager
-      ? manager.getRepository(Location)
-      : this.locationRepository;
-    const location = await repo.findOne({
-      where: {
-        latitude: lat,
-        longitude: long,
-      },
-    });
-
-    return location;
+    return this.findOneOrNull({ latitude: lat, longitude: long }, manager);
   }
 
   /**
@@ -104,9 +87,7 @@ export class LocationsService {
     locationType?: LocationCategoryCode,
     manager?: EntityManager,
   ): Promise<{ location: Location; distance: number }[]> {
-    const repo = manager
-      ? manager.getRepository(Location)
-      : this.locationRepository;
+    const repo = this.getRepo(manager);
     const point = `POINT(${longitude} ${latitude})`;
 
     let query = repo
@@ -203,9 +184,7 @@ export class LocationsService {
     limit: number = 10,
     manager?: EntityManager,
   ): Promise<Location[]> {
-    const repo = manager
-      ? manager.getRepository(Location)
-      : this.locationRepository;
+    const repo = this.getRepo(manager);
 
     return repo
       .createQueryBuilder('location')
@@ -294,9 +273,7 @@ export class LocationsService {
     locationId: number,
     manager?: EntityManager,
   ): Promise<Location> {
-    const repo = manager
-      ? manager.getRepository(Location)
-      : this.locationRepository;
+    const repo = this.getRepo(manager);
 
     await repo
       .createQueryBuilder()
@@ -325,9 +302,7 @@ export class LocationsService {
     // Ensure rating is between 1 and 5
     rating = Math.min(Math.max(rating, 1), 5);
 
-    const repo = manager
-      ? manager.getRepository(Location)
-      : this.locationRepository;
+    const repo = this.getRepo(manager);
     const location = await this.findById(locationId, manager);
 
     // Calculate new average rating
@@ -353,9 +328,7 @@ export class LocationsService {
     updateLocationDto: UpdateLocationDto,
     manager?: EntityManager,
   ): Promise<Location> {
-    const repo = manager
-      ? manager.getRepository(Location)
-      : this.locationRepository;
+    const repo = this.getRepo(manager);
     const location = await this.findById(id, manager);
 
     // Update geom if latitude or longitude changed
@@ -382,12 +355,7 @@ export class LocationsService {
    * @returns void
    */
   async remove(id: number, manager?: EntityManager): Promise<void> {
-    const repo = manager
-      ? manager.getRepository(Location)
-      : this.locationRepository;
-    const location = await this.findById(id, manager);
-
-    await repo.remove(location);
+    await this.delete({ location_id: id }, manager);
   }
 
   /**

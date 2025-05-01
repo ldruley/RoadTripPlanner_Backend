@@ -3,18 +3,22 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Trip } from './entities/trip.entity';
+import { Trip } from '../entities/trip.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { EntityManager, Repository } from 'typeorm';
+import { BaseService } from '../../../common/services/base.service';
+import { CreateTripDto } from '../dto/create-trip.dto';
 
 //TODO: we aren't using UpdateTripDTO
 
 @Injectable()
-export class TripsService {
+export class TripsService extends BaseService<Trip> {
   constructor(
     @InjectRepository(Trip)
-    private tripRepository: Repository<Trip>,
-  ) {}
+    repo: Repository<Trip>,
+  ) {
+    super(Trip, repo);
+  }
 
   //TODO: any
   /**
@@ -24,10 +28,14 @@ export class TripsService {
    * @returns The created trip
    */
   async create(createTripDto: any, manager?: EntityManager): Promise<any> {
-    const repo = manager ? manager.getRepository(Trip) : this.tripRepository;
+    const repo = this.getRepo(manager);
     const trip = repo.create(createTripDto);
     return repo.save(trip);
   }
+
+  /*async createTrip(createTripDto: any, manager?: EntityManager): Promise<Trip> {
+    return this.create(createTripDto, manager);
+  }*/
 
   /**
    * Find a trip by its ID
@@ -36,12 +44,7 @@ export class TripsService {
    * @returns The trip if found, or throws an error if not found
    */
   async findOne(trip_id: number, manager?: EntityManager): Promise<Trip> {
-    const repo = manager ? manager.getRepository(Trip) : this.tripRepository;
-    const trip = await repo.findOne({ where: { trip_id } });
-    if (!trip) {
-      throw new NotFoundException(`Trip with ID ${trip_id} not found`);
-    }
-    return trip;
+    return this.findOneOrThrow({ trip_id }, manager);
   }
 
   /**
@@ -54,12 +57,7 @@ export class TripsService {
     creator_id: number,
     manager?: EntityManager,
   ): Promise<Trip[] | null> {
-    const repo = manager ? manager.getRepository(Trip) : this.tripRepository;
-    const trips = await repo.find({ where: { creator_id } });
-    if (!trips || trips.length === 0) {
-      return null;
-    }
-    return trips;
+    return this.findAll({ creator_id }, manager);
   }
 
   /**
@@ -76,7 +74,7 @@ export class TripsService {
     userId: number,
     manager?: EntityManager,
   ): Promise<Trip> {
-    const repo = manager ? manager.getRepository(Trip) : this.tripRepository;
+    const repo = this.getRepo(manager);
     const trip = await this.findOne(id);
     if (!trip) {
       throw new NotFoundException(`Trip with ID ${id} not found`);
@@ -93,30 +91,26 @@ export class TripsService {
 
   /**
    * Delete a trip
-   * @param id The trip ID
+   * @param tripId The trip ID
    * @param userId The ID of the user making the request
    * @param manager Optional EntityManager for transaction handling
    * @returns void
    */
   async remove(
-    id: number,
+    tripId: number,
     userId: number,
     manager?: EntityManager,
   ): Promise<void> {
-    const repo = manager ? manager.getRepository(Trip) : this.tripRepository;
-    const trip = await this.findOne(id);
-    if (!trip) {
-      throw new NotFoundException(`Trip with ID ${id} not found`);
-    }
+    const trip = await this.findOneOrThrow({ trip_id: tripId }, manager);
     if (trip.creator_id !== userId) {
       throw new ForbiddenException(
         `You don't have permission to delete this trip`,
       );
     }
-
-    await repo.remove(trip);
+    await this.delete({ trip_id: tripId }, manager);
   }
 
+  //TODO: this might not be needed with the new trip-participant service
   /**
    * Check if a user is in a trip
    * @param trip_id The trip ID
@@ -129,11 +123,7 @@ export class TripsService {
     user_id: number,
     manager?: EntityManager,
   ): Promise<boolean> {
-    const trip = await this.findOne(trip_id, manager);
-    if (trip.creator_id === user_id) {
-      return true;
-    }
-    return false;
+    return this.exists({ trip_id, creator_id: user_id }, manager);
   }
 
   //TODO evaluate if below methods should be here or itinerary service

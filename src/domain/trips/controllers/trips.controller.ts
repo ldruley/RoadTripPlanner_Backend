@@ -5,12 +5,12 @@ import {
   Get,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
-  Put,
   UseGuards,
 } from '@nestjs/common';
-import { TripsService } from './trips.service';
-import { UpdateTripDto } from './dto/update-trip-dto';
+import { TripsService } from '../services/trips.service';
+import { UpdateTripDto } from '../dto/update-trip-dto';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -18,11 +18,11 @@ import {
   ApiParam,
   ApiResponse,
 } from '@nestjs/swagger';
-import { CreateTripDto } from './dto/create-trip.dto';
-import { JwtAuthGuard } from '../../infrastructure/auth/guards/jwt-auth-guard';
-import { GetUser } from '../../infrastructure/auth/decorators/get-user-decorator';
-import { User } from '../users/entities/user.entity';
-import { ItineraryService } from '../itinerary/services/itinerary.service';
+import { CreateTripDto } from '../dto/create-trip.dto';
+import { JwtAuthGuard } from '../../../infrastructure/auth/guards/jwt-auth-guard';
+import { GetUser } from '../../../infrastructure/auth/decorators/get-user-decorator';
+import { User } from '../../users/entities/user.entity';
+import { ItineraryService } from '../../itinerary/services/itinerary.service';
 
 @Controller('trips')
 export class TripsController {
@@ -236,7 +236,7 @@ export class TripsController {
     return this.tripsService.findByCreator(user.user_id);
   }
 
-  @Put(':id')
+  @Patch(':id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({

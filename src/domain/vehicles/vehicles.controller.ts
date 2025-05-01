@@ -4,8 +4,8 @@ import {
   Get,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
-  Put,
   UseGuards,
 } from '@nestjs/common';
 import { VehiclesService } from './vehicles.service';
@@ -104,7 +104,7 @@ export class VehiclesController {
     return this.vehiclesService.findByOwner(user.user_id);
   }
 
-  @Put(':id')
+  @Patch(':id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: '[BASIC IMPLEMENTATION]: Update a vehicle' })

@@ -2,8 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { TripsService } from './trips.service';
 import { TripsRepository } from './repository/trips.repository';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
-import { Trip } from './entities/trip.entity';
-import { UpdateTripDto } from './dto/update-trip-dto';
+import { Trip } from '../entities/trip.entity';
+import { UpdateTripDto } from '../dto/update-trip-dto';
 
 describe('TripsService', () => {
   let service: TripsService;

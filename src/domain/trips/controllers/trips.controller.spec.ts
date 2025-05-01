@@ -1,12 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { TripsController } from './trips.controller';
-import { TripsService } from './trips.service';
-import { ItineraryService } from '../itinerary/services/itinerary.service';
-import { CreateTripDto } from './dto/create-trip.dto';
-import { UpdateTripDto } from './dto/update-trip-dto';
+import { TripsService } from '../services/trips.service';
+import { ItineraryService } from '../../itinerary/services/itinerary.service';
+import { CreateTripDto } from '../dto/create-trip.dto';
+import { UpdateTripDto } from '../dto/update-trip-dto';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
-import { Trip } from './entities/trip.entity';
-import { User } from '../users/entities/user.entity';
+import { Trip } from '../entities/trip.entity';
+import { User } from '../../users/entities/user.entity';
 
 describe('TripsController', () => {
   let controller: TripsController;

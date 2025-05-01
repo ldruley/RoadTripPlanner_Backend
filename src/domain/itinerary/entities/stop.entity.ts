@@ -7,7 +7,6 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
-import { Trip } from '../../trips/entities/trip.entity';
 import { Stint } from './stint.entity';
 import { StopType } from '../../../common/enums';
 import { Location } from '../../locations/entities/location.entity';
@@ -55,14 +54,11 @@ export class Stop {
   updated_at: Date;
 
   //Relations
-  @ManyToOne(() => Trip, (trip) => trip.stops)
-  @JoinColumn({ name: 'trip_id' })
-  trip: Trip;
 
-  @Column()
-  trip_id: number;
-
-  @ManyToOne(() => Stint, (stint) => stint.stops, { nullable: true })
+  @ManyToOne(() => Stint, (stint) => stint.stops, {
+    nullable: true,
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'stint_id' })
   stint: Stint;
 

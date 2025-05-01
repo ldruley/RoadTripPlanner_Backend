@@ -5,8 +5,8 @@ import {
   Get,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
-  Put,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -91,7 +91,7 @@ export class UsersController {
     return this.usersService.findOne(user.user_id);
   }
 
-  @Put(':id')
+  @Patch(':id')
   @ApiOperation({ summary: '[BASIC IMPLEMENTATION]: Update a user' })
   @ApiParam({ name: 'id', description: 'User ID' })
   @ApiResponse({
@@ -104,7 +104,7 @@ export class UsersController {
     @Param('id', ParseIntPipe) id: number,
     @Body() updateUserDto: Partial<UpdateUserDto>,
   ) {
-    return this.usersService.update(id, updateUserDto);
+    return this.usersService.updateUser(id, updateUserDto);
   }
 
   @Delete(':id')

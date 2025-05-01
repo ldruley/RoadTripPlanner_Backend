@@ -9,6 +9,7 @@ import {
 import { Exclude } from 'class-transformer';
 import { Trip } from '../../trips/entities/trip.entity';
 import { Vehicle } from '../../vehicles/entities/vehicle.entity';
+import { TripParticipant } from '../../trips/entities/trip-participant.entity';
 
 @Entity('users')
 export class User {
@@ -37,6 +38,9 @@ export class User {
   // Relations
   @OneToMany(() => Trip, (trip) => trip.creator)
   created_trips: Trip[];
+
+  @OneToMany(() => TripParticipant, (tripParticipant) => tripParticipant.user)
+  tripParticipants: TripParticipant[];
 
   @OneToMany(() => Vehicle, (vehicle) => vehicle.owner)
   owned_vehicles: Vehicle[];
