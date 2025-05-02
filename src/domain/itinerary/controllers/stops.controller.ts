@@ -120,11 +120,11 @@ export class StopsController {
         },
       },
       'Stop with location id': {
-        summary: 'Stop with location id (Not yet implemented)',
+        summary: 'Stop using existing location',
         description:
-          'This is how adding a stop could work if we have them search for a stop first, and get the location id from the backend',
+          'Add a stop using an existing location ID instead of providing coordinates and other location data',
         value: {
-          location_id: 22,
+          location_id: 42,
           stop_type: 'attraction',
           duration: 180,
           notes: 'Bring hiking shoes and camera',

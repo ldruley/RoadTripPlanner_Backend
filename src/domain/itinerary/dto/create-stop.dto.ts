@@ -6,6 +6,7 @@ import {
   IsDate,
   IsNotEmpty,
   Min,
+  ValidateIf,
 } from 'class-validator';
 import { ApiHideProperty, ApiProperty } from '@nestjs/swagger';
 import { StopType } from '../../../common/enums';
@@ -15,8 +16,10 @@ export class CreateStopDto {
   @ApiProperty({
     example: 'Golden Gate Park',
     description: 'Name of the stop',
-    required: true,
+    required: false,
   })
+  @IsOptional()
+  @ValidateIf((o) => !o.location_id)
   @IsNotEmpty()
   @IsString()
   name: string;
@@ -24,8 +27,10 @@ export class CreateStopDto {
   @ApiProperty({
     example: 37.7749,
     description: 'Latitude coordinate',
-    required: true,
+    required: false,
   })
+  @IsOptional() // Make optional when location_id is provided
+  @ValidateIf((o) => !o.location_id)
   @IsNotEmpty()
   @IsNumber()
   latitude: number;
@@ -33,8 +38,10 @@ export class CreateStopDto {
   @ApiProperty({
     example: -122.4194,
     description: 'Longitude coordinate',
-    required: true,
+    required: false,
   })
+  @IsOptional() // Make optional when location_id is provided
+  @ValidateIf((o) => !o.location_id)
   @IsNotEmpty()
   @IsNumber()
   longitude: number;
