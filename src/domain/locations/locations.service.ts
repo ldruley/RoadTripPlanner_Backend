@@ -1,4 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  forwardRef,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, EntityManager, DeepPartial } from 'typeorm';
 import { Point } from 'geojson';
@@ -7,12 +13,16 @@ import { CreateLocationDto } from './dto/create-location.dto';
 import { UpdateLocationDto } from './dto/update-location.dto';
 import { LocationCategoryCode } from '../../common/enums';
 import { BaseService } from '../../common/services/base.service';
+import { HereApiService } from '../../infrastructure/api/here-api/here-api.service';
+import { GeocodeLocationDto } from './dto/geocode-location.dto';
 
 @Injectable()
 export class LocationsService extends BaseService<Location> {
   constructor(
     @InjectRepository(Location)
     repo: Repository<Location>,
+    @Inject(forwardRef(() => HereApiService))
+    private readonly hereApiService: HereApiService,
   ) {
     super(Location, repo);
   }
@@ -42,6 +52,83 @@ export class LocationsService extends BaseService<Location> {
     };
 
     return this.create(finalData, manager);
+  }
+  /**
+   * Geocode an address and create a location
+   * @param addressQuery The address to geocode
+   * @param locationName Optional name for the location
+   * @param locationDescription Optional description for the location
+   * @param userId Optional ID of the creating user
+   * @param manager Optional EntityManager for transaction handling
+   * @returns Object containing the created location and the HERE API response
+   */
+  /**
+   * Geocode an address and create a location
+   * @param geocodeDto The geocode request data
+   * @param userId Optional ID of the creating user
+   * @param manager Optional EntityManager for transaction handling
+   * @returns Object containing the created location and the HERE API response
+   */
+  async geocodeAndCreateLocation(
+    geocodeDto: GeocodeLocationDto,
+    userId?: number,
+    manager?: EntityManager,
+  ): Promise<{ location: Location; hereResponse: any }> {
+    try {
+      // Call HERE API to geocode the address
+      const geocodeResult = await this.hereApiService.geocodeLocations(
+        geocodeDto.address,
+        1,
+      );
+
+      if (!geocodeResult.items || geocodeResult.items.length === 0) {
+        throw new NotFoundException(
+          `No locations found for address: ${geocodeDto.address}`,
+        );
+      }
+
+      // Get the first (best) result
+      const bestMatch = geocodeResult.items[0];
+
+      if (
+        !bestMatch.position ||
+        !bestMatch.position.lat ||
+        !bestMatch.position.lng
+      ) {
+        throw new BadRequestException('Geocoding result missing position data');
+      }
+
+      // Create location from HERE API data
+      const locationData: CreateLocationDto = {
+        name: geocodeDto.name || bestMatch.title,
+        description: geocodeDto.description,
+        address: bestMatch.address?.label || geocodeDto.address,
+        city: bestMatch.address?.city,
+        state: bestMatch.address?.state,
+        postal_code: bestMatch.address?.postalCode,
+        country: bestMatch.address?.countryName || 'USA',
+        latitude: bestMatch.position.lat,
+        longitude: bestMatch.position.lng,
+        external_id: bestMatch.id,
+        external_source: 'here',
+      };
+
+      // Create the location
+      const location = await this.createLocation(locationData, userId, manager);
+
+      return {
+        location,
+        hereResponse: bestMatch,
+      };
+    } catch (error) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
+        throw error;
+      }
+      throw new Error(`Error geocoding address: ${error.message}`);
+    }
   }
 
   /**

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { StopsService } from '../../../domain/itinerary/services/stops.service';
 import axios from 'axios';
@@ -13,6 +13,7 @@ export class HereApiService {
 
   constructor(
     private configService: ConfigService,
+    @Inject(forwardRef(() => StopsService))
     private stopsService: StopsService,
   ) {
     this.apiKey = this.configService.get<string>('app.hereApiKey') || '';

@@ -15,8 +15,8 @@ import {
   ApiBearerAuth,
   ApiBody,
   ApiOperation,
-  ApiParam,
   ApiResponse,
+  ApiTags,
 } from '@nestjs/swagger';
 import { CreateTripDto } from '../dto/create-trip.dto';
 import { JwtAuthGuard } from '../../../infrastructure/auth/guards/jwt-auth-guard';
@@ -24,6 +24,7 @@ import { GetUser } from '../../../infrastructure/auth/decorators/get-user-decora
 import { User } from '../../users/entities/user.entity';
 import { ItineraryService } from '../../itinerary/services/itinerary.service';
 
+@ApiTags('Trips')
 @Controller('trips')
 export class TripsController {
   constructor(

@@ -8,11 +8,18 @@ import {
   Put,
 } from '@nestjs/common';
 import { SuppliesService } from './supplies.service';
-import { ApiBody, ApiOperation, ApiParam, ApiResponse } from '@nestjs/swagger';
+import {
+  ApiBody,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { CreateSupplyDto } from './dto/create-supply.dto';
 import { SupplyCategory } from '../../common/enums';
 import { UpdateSupplyDto } from './dto/update-supply-dto';
 
+@ApiTags('Supplies')
 @Controller('supplies')
 export class SuppliesController {
   constructor(private readonly suppliesService: SuppliesService) {}

@@ -11,12 +11,18 @@ import {
 } from '@nestjs/common';
 import { StintVehicleService } from '../services/stint-vehicle.service';
 import { JwtAuthGuard } from '../../../infrastructure/auth/guards/jwt-auth-guard';
-import { ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { GetUser } from '../../../infrastructure/auth/decorators/get-user-decorator';
 import { User } from '../../users/entities/user.entity';
 import { CreateStintVehicleDto } from '../dto/create-stint-vehicle.dto';
 import { UpdateStintVehicleDto } from '../dto/update-stint-vehicle.dto';
 
+@ApiTags('Stint Vehicles')
 @Controller('stints/:stintId/vehicles')
 export class StintVehicleController {
   constructor(private readonly stintVehicleService: StintVehicleService) {}
