@@ -8,6 +8,7 @@ export interface TimelineEventModel {
 
 export interface StopEventData {
   stop_id: number;
+  location_id: number;
   name: string;
   latitude: number;
   longitude: number;
@@ -33,6 +34,7 @@ export interface LegEventData {
 
 export interface DepartureEventData {
   stop_id: number; // Always 0 or a special ID
+  location_id: number;
   name: string;
   latitude: number;
   longitude: number;
