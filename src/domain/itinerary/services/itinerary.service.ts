@@ -184,6 +184,7 @@ export class ItineraryService {
       sequenceNumber: stop.sequence_number,
       data: {
         stop_id: stop.stop_id,
+        location_id: stop.location_id,
         name: stop.name,
         latitude: stop.location.latitude,
         longitude: stop.location.longitude,
@@ -226,6 +227,7 @@ export class ItineraryService {
       sequenceNumber: 0,
       data: {
         stop_id: 0,
+        location_id: stint.start_location_id,
         name: stint.start_location?.name ?? 'Start',
         latitude: stint.start_location?.latitude ?? 0,
         longitude: stint.start_location?.longitude ?? 0,
