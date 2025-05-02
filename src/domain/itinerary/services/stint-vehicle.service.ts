@@ -1,96 +1,115 @@
-/*
 import {
   Injectable,
-  NotFoundException,
   ConflictException,
   ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
-import { StintVehicleRepository } from '../repositories/stint-vehicle.repository';
-import { StintVehicle } from '../entities/stint-vehicle.entity';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, EntityManager } from 'typeorm';
 import { StintsService } from './stints.service';
 import { VehiclesService } from '../../vehicles/vehicles.service';
 import { UsersService } from '../../users/users.service';
-import { Vehicle } from '../../vehicles/entities/vehicle.entity';
 import { CreateStintVehicleDto } from '../dto/create-stint-vehicle.dto';
 import { UpdateStintVehicleDto } from '../dto/update-stint-vehicle.dto';
+import { BaseService } from '../../../common/services/base.service';
+import { StintVehicle } from '../entities/stint-vehicle.entity';
 
 @Injectable()
-export class StintVehicleService {
+export class StintVehicleService extends BaseService<StintVehicle> {
   constructor(
-    private stintVehicleRepository: StintVehicleRepository,
-    private stintsService: StintsService,
-    private vehiclesService: VehiclesService,
-    private usersService: UsersService,
-  ) {}
+    @InjectRepository(StintVehicle)
+    repo: Repository<StintVehicle>,
+    private readonly stintsService: StintsService,
+    private readonly vehiclesService: VehiclesService,
+    private readonly usersService: UsersService,
+  ) {
+    super(StintVehicle, repo);
+  }
 
+  /**
+   * Assign a vehicle to a stint
+   * @param createStintVehicleDto The DTO containing assignment data
+   * @param requesterId The ID of the user making the request
+   * @param manager Optional EntityManager for transaction handling
+   * @returns The created StintVehicle entity
+   */
   async assignVehicle(
     createStintVehicleDto: CreateStintVehicleDto,
     requesterId: number,
+    manager?: EntityManager,
   ): Promise<StintVehicle> {
+    const repo = this.getRepo(manager);
+
     // Check if the stint exists
-    const stint = await this.stintsService.findById(
+    const stint = await this.stintsService.findByIdWithRelationsOrThrow(
       createStintVehicleDto.stint_id,
+      manager,
     );
 
-    // Check if requester has permission
+    // Check if requester has permission (is creator of the trip)
     if (stint.trip.creator_id !== requesterId) {
       throw new ForbiddenException('Only the trip creator can assign vehicles');
     }
 
     // Check if the vehicle exists
-    const vehicle = await this.vehiclesService.findOne(
+    await this.vehiclesService.findOne(
       createStintVehicleDto.vehicle_id,
+      manager,
     );
-    if (!vehicle) {
-      throw new NotFoundException('Vehicle not found');
-    }
 
     // Check if driver exists (if provided)
     if (createStintVehicleDto.driver_id) {
-      const driver = await this.usersService.findOne(
-        createStintVehicleDto.driver_id,
-      );
-      if (!driver) {
-        throw new NotFoundException('Driver not found');
-      }
+      await this.usersService.findOne(createStintVehicleDto.driver_id, manager);
     }
 
     // Check if vehicle is already assigned to this stint
-    const existingAssignment =
-      await this.stintVehicleRepository.findByStintAndVehicle(
-        createStintVehicleDto.stint_id,
-        createStintVehicleDto.vehicle_id,
-      );
+    const existingAssignment = await this.findOneOrNull(
+      {
+        stint_id: createStintVehicleDto.stint_id,
+        vehicle_id: createStintVehicleDto.vehicle_id,
+      },
+      manager,
+    );
+
     if (existingAssignment) {
       throw new ConflictException('Vehicle is already assigned to this stint');
     }
 
     // Create a new vehicle assignment
-    const stintVehicle = this.stintVehicleRepository.create(
-      createStintVehicleDto,
-    );
-
-    return this.stintVehicleRepository.save(stintVehicle);
+    const vehicleAssignment = repo.create(createStintVehicleDto);
+    return repo.save(vehicleAssignment);
   }
 
-  async findByStint(stintId: number): Promise<StintVehicle[]> {
-    return this.stintVehicleRepository.findByStint(stintId);
+  /**
+   * Find all vehicles assigned to a stint
+   * @param stintId The stint ID
+   * @param manager Optional EntityManager for transaction handling
+   * @returns An array of StintVehicle entities
+   */
+  async findByStint(
+    stintId: number,
+    manager?: EntityManager,
+  ): Promise<StintVehicle[]> {
+    return this.findAll({ stint_id: stintId }, manager);
   }
 
-  //TODO: Use a DTO for this if we can
-  //TODO: This is scuffed, I'm tired, disabling
-  //TODO: completely forgot what I was doing, we need to properly search for old vehicle and then assign new values
-  /!*async updateDriver(
+  /**
+   * Update the driver for a vehicle assignment
+   * @param updateStintVehicleDto The DTO containing update data
+   * @param requesterId The ID of the user making the request
+   * @param manager Optional EntityManager for transaction handling
+   * @returns The updated StintVehicle entity
+   */
+  async updateDriver(
     updateStintVehicleDto: UpdateStintVehicleDto,
     requesterId: number,
+    manager?: EntityManager,
   ): Promise<StintVehicle> {
     // Check if the stint exists
-    const stint = await this.stintsService.findOne(
+    const stint = await this.stintsService.findByIdWithRelationsOrThrow(
       updateStintVehicleDto.stint_id,
+      manager,
     );
-    if (!stint) {
-      throw new NotFoundException('Stint not found');
-    }
 
     // Check if requester has permission
     if (stint.trip.creator_id !== requesterId) {
@@ -98,40 +117,44 @@ export class StintVehicleService {
     }
 
     // Find the vehicle assignment
-    const stintVehicle =
-      await this.stintVehicleRepository.findByStintAndVehicle(
-        updateStintVehicleDto.stint_id,
-        updateStintVehicleDto.vehicle_id,
-      );
-    if (!stintVehicle) {
-      throw new NotFoundException('Vehicle assignment not found');
-    }
+    const stintVehicle = await this.findOneOrThrow(
+      {
+        stint_id: updateStintVehicleDto.stint_id,
+        vehicle_id: updateStintVehicleDto.vehicle_id,
+      },
+      manager,
+    );
 
     // Check if driver exists (if provided)
     if (updateStintVehicleDto.driver_id) {
-      const newDriver = await this.usersService.findOne(
-        updateStintVehicleDto.driver_id,
-      );
-      if (!newDriver) {
-        throw new NotFoundException('Driver not found');
-      }
+      await this.usersService.findOne(updateStintVehicleDto.driver_id, manager);
+    } else {
+      throw new BadRequestException('Driver ID is required');
     }
 
     // Update driver
-    stintVehicle.driver_id = newDriverId;
-    return this.stintVehicleRepository.save(stintVehicle);
-  }*!/
+    stintVehicle.driver_id = updateStintVehicleDto.driver_id;
+    return this.save(stintVehicle, manager);
+  }
 
+  /**
+   * Remove a vehicle assignment
+   * @param stintId The stint ID
+   * @param vehicleId The vehicle ID
+   * @param requesterId The ID of the user making the request
+   * @param manager Optional EntityManager for transaction handling
+   */
   async removeVehicle(
     stintId: number,
     vehicleId: number,
     requesterId: number,
+    manager?: EntityManager,
   ): Promise<void> {
     // Check if the stint exists
-    const stint = await this.stintsService.findById(stintId);
-    if (!stint) {
-      throw new NotFoundException('Stint not found');
-    }
+    const stint = await this.stintsService.findByIdWithRelationsOrThrow(
+      stintId,
+      manager,
+    );
 
     // Check if requester has permission
     if (stint.trip.creator_id !== requesterId) {
@@ -139,16 +162,39 @@ export class StintVehicleService {
     }
 
     // Find the vehicle assignment
-    const stintVehicle =
-      await this.stintVehicleRepository.findByStintAndVehicle(
-        stintId,
-        vehicleId,
-      );
-    if (!stintVehicle) {
-      throw new NotFoundException('Vehicle assignment not found');
-    }
+    await this.findOneOrThrow(
+      { stint_id: stintId, vehicle_id: vehicleId },
+      manager,
+    );
 
-    await this.stintVehicleRepository.remove(stintVehicle);
+    await this.delete({ stint_id: stintId, vehicle_id: vehicleId }, manager);
+  }
+
+  /**
+   * Find all stints with a specific vehicle assigned
+   * @param vehicleId The vehicle ID
+   * @param manager Optional EntityManager for transaction handling
+   * @returns An array of StintVehicle entities
+   */
+  async findByVehicle(
+    vehicleId: number,
+    manager?: EntityManager,
+  ): Promise<StintVehicle[]> {
+    return this.findAll({ vehicle_id: vehicleId }, manager);
+  }
+
+  /**
+   * Check if a vehicle is assigned to a stint
+   * @param vehicleId The vehicle ID
+   * @param stintId The stint ID to check against
+   * @param manager Optional EntityManager for transaction handling
+   * @returns Boolean indicating if the vehicle is assigned to that stint
+   */
+  async isVehicleAssigned(
+    vehicleId: number,
+    stintId: number,
+    manager?: EntityManager,
+  ): Promise<boolean> {
+    return this.exists({ vehicle_id: vehicleId, stint_id: stintId }, manager);
   }
 }
-*/
