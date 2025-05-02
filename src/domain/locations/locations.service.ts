@@ -145,8 +145,6 @@ export class LocationsService extends BaseService<Location> {
     discoverDto: DiscoverNearbyDto,
   ): Promise<{ locations: any[]; hereResponse: any }> {
     try {
-      // Create a direct instance of HereApiService
-
       let latitude: number;
       let longitude: number;
 
