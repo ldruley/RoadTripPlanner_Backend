@@ -240,7 +240,7 @@ export class TripsController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
-    summary: '[IN PROGRESS - NEEDS UPDATING]: Update a trip',
+    summary: 'Update a trip',
     description:
       'This is only for updating Trip metadata - name, description, start_date, public, etc',
   })
@@ -259,7 +259,7 @@ export class TripsController {
   @Delete(':id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: '[IN PROGRESS - NEEDS UPDATING] Delete a trip' })
+  @ApiOperation({ summary: 'Delete a trip' })
   @ApiResponse({ status: 200, description: 'Trip deleted successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })

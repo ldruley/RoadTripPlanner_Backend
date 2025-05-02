@@ -13,7 +13,13 @@ import {
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user-dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { ApiOperation, ApiParam, ApiQuery, ApiResponse } from '@nestjs/swagger';
+import {
+  ApiBody,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { User } from './entities/user.entity';
 import { JwtAuthGuard } from '../../infrastructure/auth/guards/jwt-auth-guard';
 import { GetUser } from '../../infrastructure/auth/decorators/get-user-decorator';
@@ -30,13 +36,15 @@ export class UsersController {
   })
   @ApiResponse({ status: 400, description: 'Bad request - invalid input' })
   @ApiResponse({ status: 409, description: 'Conflict - email already in use' })
+  @ApiBody({ type: CreateUserDto })
   create(@Body() createUserDto: CreateUserDto) {
     return this.usersService.create(createUserDto);
   }
 
   @Get()
   @ApiOperation({
-    summary: '[BASIC IMPLEMENTATION]: Find users with optional Filters',
+    summary:
+      'Find users with optional Filters - with no filters returns all users',
   })
   @ApiQuery({
     name: 'username',
@@ -92,7 +100,7 @@ export class UsersController {
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: '[BASIC IMPLEMENTATION]: Update a user' })
+  @ApiOperation({ summary: 'Update a user' })
   @ApiParam({ name: 'id', description: 'User ID' })
   @ApiResponse({
     status: 200,
@@ -100,6 +108,7 @@ export class UsersController {
   })
   @ApiResponse({ status: 400, description: 'Bad request - invalid input' })
   @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiBody({ type: UpdateUserDto })
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateUserDto: Partial<UpdateUserDto>,
