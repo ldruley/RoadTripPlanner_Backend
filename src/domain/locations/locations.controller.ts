@@ -10,6 +10,8 @@ import {
   ParseFloatPipe,
   UseGuards,
   Patch,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -27,6 +29,8 @@ import { User } from '../users/entities/user.entity';
 import { JwtAuthGuard } from '../../infrastructure/auth/guards/jwt-auth-guard';
 import { LocationCategoryCode } from '../../common/enums';
 import { GeocodeLocationDto } from './dto/geocode-location.dto';
+import { DiscoverNearbyDto } from './dto/discover-nearby.dto';
+import { StopsService } from '../itinerary/services/stops.service';
 
 @ApiTags('Locations [Frontend can use Nearby and Search]')
 @Controller('locations')
@@ -136,6 +140,97 @@ export class LocationsController {
       geocodeDto,
       user.user_id,
     );
+  }
+
+  @Post('discover-nearby')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary:
+      'Search for nearby locations using a stop or location as center point',
+    description:
+      'Searches for locations near a specified stop or location using the HERE API. Accepts either stop or location id but one of the two is required. Returns an array of location results with detailed information.',
+  })
+  @ApiBody({
+    type: DiscoverNearbyDto,
+    description: 'Search parameters',
+    examples: {
+      'Search for a specific place': {
+        value: {
+          query: 'Monterey Bay Aquarium',
+          stopId: 1,
+          limit: 10,
+          radius: 100000,
+        },
+        summary: 'Search for a specific place',
+      },
+      'Search by Stop ID': {
+        value: {
+          query: 'restaurants',
+          stopId: 1,
+          limit: 10,
+          radius: 5000,
+        },
+        summary: 'Search for restaurants near a stop (example with stop id)',
+      },
+      'Search by Location ID': {
+        value: {
+          query: 'hotels',
+          locationId: 5,
+          limit: 15,
+          radius: 10000,
+        },
+        summary: 'Search for hotels near a location (example with location id)',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns an array of nearby locations',
+    content: {
+      'application/json': {
+        example: {
+          locations: [
+            {
+              name: 'The Cheesecake Factory',
+              description: 'restaurant',
+              address: '251 Geary St, San Francisco, CA 94102, United States',
+              city: 'San Francisco',
+              state: 'CA',
+              postal_code: '94102',
+              country: 'USA',
+              latitude: 37.7873,
+              longitude: -122.4064,
+              external_id:
+                'here:pds:place:8409q2tt-f5d90d9e2cec487eb13d8b1183fac11b',
+              external_source: 'here',
+              distance: 254,
+              categories: [
+                {
+                  id: '100-1000-0000',
+                  name: 'Restaurant',
+                  primary: true,
+                },
+              ],
+            },
+            // More locations...
+          ],
+          hereResponse: {
+            items: [
+              // HERE API raw response
+            ],
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - missing required parameters or invalid input',
+  })
+  @ApiResponse({ status: 404, description: 'Stop or location not found' })
+  async discoverNearby(@Body() discoverDto: DiscoverNearbyDto) {
+    return this.locationsService.discoverNearby(discoverDto);
   }
 
   @Get('nearby')

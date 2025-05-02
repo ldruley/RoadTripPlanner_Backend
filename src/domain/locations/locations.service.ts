@@ -15,6 +15,8 @@ import { LocationCategoryCode } from '../../common/enums';
 import { BaseService } from '../../common/services/base.service';
 import { HereApiService } from '../../infrastructure/api/here-api/here-api.service';
 import { GeocodeLocationDto } from './dto/geocode-location.dto';
+import { DiscoverNearbyDto } from './dto/discover-nearby.dto';
+import { StopsService } from '../itinerary/services/stops.service';
 
 @Injectable()
 export class LocationsService extends BaseService<Location> {
@@ -23,6 +25,8 @@ export class LocationsService extends BaseService<Location> {
     repo: Repository<Location>,
     @Inject(forwardRef(() => HereApiService))
     private readonly hereApiService: HereApiService,
+    @Inject(forwardRef(() => StopsService))
+    private readonly stopsService: StopsService,
   ) {
     super(Location, repo);
   }
@@ -128,6 +132,90 @@ export class LocationsService extends BaseService<Location> {
         throw error;
       }
       throw new Error(`Error geocoding address: ${error.message}`);
+    }
+  }
+
+  /**
+   * Discover nearby locations using either a stop or location as the center point
+   * @param discoverDto The discover request data
+   * @param stopsService Optional StopsService for fetching stop data when stopId is provided
+   * @returns Array of nearby locations with HERE API details
+   */
+  async discoverNearby(
+    discoverDto: DiscoverNearbyDto,
+  ): Promise<{ locations: any[]; hereResponse: any }> {
+    try {
+      // Create a direct instance of HereApiService
+
+      let latitude: number;
+      let longitude: number;
+
+      // Get coordinates based on either stopId or locationId
+      if (discoverDto.stopId) {
+        const stop = await this.stopsService.findById(discoverDto.stopId);
+        latitude = stop.latitude;
+        longitude = stop.longitude;
+      } else if (discoverDto.locationId) {
+        // Get location coordinates directly
+        const location = await this.findById(discoverDto.locationId);
+        latitude = location.latitude;
+        longitude = location.longitude;
+      } else {
+        throw new BadRequestException(
+          'Either stopId or locationId must be provided',
+        );
+      }
+
+      if (!discoverDto.limit) {
+        discoverDto.limit = 10;
+      }
+
+      // Call HERE API to discover nearby locations
+      const discoverResult =
+        await this.hereApiService.discoverLocationsByCoordinates(
+          discoverDto.query,
+          discoverDto.limit,
+          latitude,
+          longitude,
+        );
+
+      if (!discoverResult.items || discoverResult.items.length === 0) {
+        return { locations: [], hereResponse: discoverResult };
+      }
+
+      // Transform HERE API results to a format similar to our Location entity
+      const locations = discoverResult.items.map((item: any) => {
+        return {
+          name: item.title,
+          description: item.resultType,
+          address: item.address?.label,
+          city: item.address?.city,
+          state: item.address?.state,
+          postal_code: item.address?.postalCode,
+          country: item.address?.countryName || 'USA',
+          latitude: item.position?.lat,
+          longitude: item.position?.lng,
+          external_id: item.id,
+          external_source: 'here',
+          distance: item.distance, // Distance in meters from the search center
+          categories: item.categories,
+          // Include the complete HERE item for additional info
+          hereDetails: item,
+        };
+      });
+
+      return {
+        locations,
+        hereResponse: discoverResult,
+      };
+    } catch (error) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
+        throw error;
+      }
+      throw new Error(`Error discovering nearby locations: ${error.message}`);
     }
   }
 

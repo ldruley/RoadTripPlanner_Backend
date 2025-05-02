@@ -36,7 +36,7 @@ export class HereLocationController {
     return this.hereApiService.geocodeLocations(query, limit);
   }*/
 
-  @Get('discover/by-stop')
+  /*@Get('discover/by-stop')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Search for locations near a previous stop' })
@@ -52,7 +52,7 @@ export class HereLocationController {
       limit,
       prevStopId,
     );
-  }
+  }*/
 
   @Get('discover/by-coordinates')
   @UseGuards(JwtAuthGuard)
