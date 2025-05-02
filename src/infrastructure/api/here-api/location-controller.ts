@@ -22,7 +22,7 @@ import { JwtAuthGuard } from '../../auth/guards/jwt-auth-guard';
 export class HereLocationController {
   constructor(private readonly hereApiService: HereApiService) {}
 
-  @Get('geocode')
+  /*@Get('geocode')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
@@ -34,7 +34,7 @@ export class HereLocationController {
     @Query('limit', ParseIntPipe) limit: number,
   ) {
     return this.hereApiService.geocodeLocations(query, limit);
-  }
+  }*/
 
   @Get('discover/by-stop')
   @UseGuards(JwtAuthGuard)
