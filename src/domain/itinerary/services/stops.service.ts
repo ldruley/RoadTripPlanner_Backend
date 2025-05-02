@@ -102,25 +102,48 @@ export class StopsService {
       );
     }
 
-    //TODO: We should create locations via api and generally not here
-    let location = await this.locationsService.findByCoordinates(
-      createStopDto.latitude,
-      createStopDto.longitude,
-    );
-    if (!location) {
-      location = await this.locationsService.create({
-        name: createStopDto.name,
-        latitude: createStopDto.latitude,
-        longitude: createStopDto.longitude,
-        address: createStopDto.address,
-        city: createStopDto.city,
-        state: createStopDto.state,
-        country: createStopDto.country,
-        postal_code: createStopDto.postal_code,
-        external_source: 'user',
-      });
+    let locationId = createStopDto.location_id;
+
+    if (locationId) {
+      // Use existing location - get data from it for the stop
+      const location = await this.locationsService.findById(
+        locationId,
+        manager,
+      );
+      if (!location) {
+        throw new NotFoundException(`Location with ID ${locationId} not found`);
+      }
+
+      // Fill in stop data from the location
+      createStopDto.name = createStopDto.name || location.name;
+      createStopDto.latitude = location.latitude;
+      createStopDto.longitude = location.longitude;
+      createStopDto.address = location.address;
+      createStopDto.city = location.city;
+      createStopDto.state = location.state;
+      createStopDto.country = location.country;
+      createStopDto.postal_code = location.postal_code;
+    } else {
+      let location = await this.locationsService.findByCoordinates(
+        createStopDto.latitude,
+        createStopDto.longitude,
+      );
+      if (!location) {
+        location = await this.locationsService.create({
+          name: createStopDto.name,
+          latitude: createStopDto.latitude,
+          longitude: createStopDto.longitude,
+          address: createStopDto.address,
+          city: createStopDto.city,
+          state: createStopDto.state,
+          country: createStopDto.country,
+          postal_code: createStopDto.postal_code,
+          external_source: 'user',
+        });
+      }
+      locationId = location.location_id;
     }
-    createStopDto.location_id = location.location_id;
+    createStopDto.location_id = locationId;
     // Create the stop
     const stop = repo.create(createStopDto);
     return repo.save(stop);
