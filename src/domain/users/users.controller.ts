@@ -111,7 +111,7 @@ export class UsersController {
   @ApiBody({ type: UpdateUserDto })
   update(
     @Param('id', ParseIntPipe) id: number,
-    @Body() updateUserDto: Partial<UpdateUserDto>,
+    @Body() updateUserDto: UpdateUserDto,
   ) {
     return this.usersService.updateUser(id, updateUserDto);
   }

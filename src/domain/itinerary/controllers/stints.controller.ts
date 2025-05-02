@@ -22,6 +22,7 @@ import { User } from '../../users/entities/user.entity';
 import { StintsService } from '../services/stints.service';
 import { ItineraryService } from '../services/itinerary.service';
 import { CreateStintWithOptionalStopDto } from '../dto/create-sprint-with-optional-stop.dto';
+import { UpdateStintDto } from '../dto/update-stint-dto';
 
 @Controller('stints')
 export class StintsController {
@@ -137,19 +138,24 @@ export class StintsController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @ApiOperation({
-    summary: '[IN PROGRESS - NEEDS UPDATING]: Update a stint',
+    summary: ' Update a stint',
     description: 'For updating stint metadata, not the sequence number',
   })
   @ApiResponse({ status: 200, description: 'Stint updated successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
   @ApiResponse({ status: 404, description: 'Stint not found' })
+  @ApiBody({ type: UpdateStintDto })
   update(
     @Param('id', ParseIntPipe) id: number,
-    @Body() updateStintDto: CreateStintDto,
+    @Body() updateStintDto: Partial<UpdateStintDto>,
     @GetUser() user: User,
   ) {
-    return this.stintsService.update(id, updateStintDto, user.user_id);
+    return this.stintsService.updateStintMetadata(
+      id,
+      updateStintDto,
+      user.user_id,
+    );
   }
 
   @Delete(':id')

@@ -1,5 +1,5 @@
 import { IsNumber, IsOptional, IsString, Min } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiHideProperty, ApiProperty } from '@nestjs/swagger';
 
 export class UpdateStintDto {
   @ApiProperty({
@@ -22,38 +22,42 @@ export class UpdateStintDto {
   @Min(1)
   sequence_number?: number;
 
-  @ApiProperty({
+  @ApiHideProperty()
+  /* @ApiProperty({
     example: 42,
     description: 'Updated ID of the starting location',
     required: false,
-  })
+  })*/
   @IsNumber()
   @IsOptional()
   start_location_id?: number;
 
-  @ApiProperty({
+  @ApiHideProperty()
+  /* @ApiProperty({
     example: 43,
     description: 'Updated ID of the ending location',
     required: false,
-  })
+  })*/
   @IsNumber()
   @IsOptional()
   end_location_id?: number;
 
-  @ApiProperty({
+  @ApiHideProperty()
+  /*@ApiProperty({
     example: 375.2,
     description: 'Updated total distance of the stint in miles',
     required: false,
-  })
+  })*/
   @IsNumber()
   @IsOptional()
   distance?: number;
 
-  @ApiProperty({
+  @ApiHideProperty()
+  /*@ApiProperty({
     example: 450,
     description: 'Updated estimated duration of the stint in minutes',
     required: false,
-  })
+  })*/
   @IsNumber()
   @IsOptional()
   estimated_duration?: number;
