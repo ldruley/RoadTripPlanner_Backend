@@ -47,9 +47,10 @@ export class StintVehicleService extends BaseService<StintVehicle> {
     );
 
     // Check if requester has permission (is creator of the trip)
-    if (stint.trip.creator_id !== requesterId) {
-      throw new ForbiddenException('Only the trip creator can assign vehicles');
-    }
+    //TODO: need new permission check
+    // if (stint.trip.creator_id !== requesterId) {
+    //  throw new ForbiddenException('Only the trip creator can assign vehicles');
+    //}
 
     // Check if the vehicle exists
     await this.vehiclesService.findOne(
@@ -112,9 +113,9 @@ export class StintVehicleService extends BaseService<StintVehicle> {
     );
 
     // Check if requester has permission
-    if (stint.trip.creator_id !== requesterId) {
-      throw new ForbiddenException('Only the trip creator can update drivers');
-    }
+    // if (stint.trip.creator_id !== requesterId) {
+    //  throw new ForbiddenException('Only the trip creator can update drivers');
+    //}
 
     // Find the vehicle assignment
     const stintVehicle = await this.findOneOrThrow(
@@ -157,9 +158,9 @@ export class StintVehicleService extends BaseService<StintVehicle> {
     );
 
     // Check if requester has permission
-    if (stint.trip.creator_id !== requesterId) {
-      throw new ForbiddenException('Only the trip creator can remove vehicles');
-    }
+    // if (stint.trip.creator_id !== requesterId) {
+    //   throw new ForbiddenException('Only the trip creator can remove vehicles');
+    //  }
 
     // Find the vehicle assignment
     await this.findOneOrThrow(

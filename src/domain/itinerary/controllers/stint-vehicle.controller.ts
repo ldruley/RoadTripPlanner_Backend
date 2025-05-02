@@ -68,7 +68,7 @@ export class StintVehicleController {
   @Patch(':vehicleId')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Update vehicle assignment for a stint' })
+  @ApiOperation({ summary: 'Update driver assignment for a stint' })
   @ApiResponse({ status: 200, description: 'Vehicle assignment updated' })
   @ApiResponse({ status: 404, description: 'Vehicle assignment not found' })
   @ApiResponse({
