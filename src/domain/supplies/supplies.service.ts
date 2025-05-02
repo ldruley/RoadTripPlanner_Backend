@@ -5,22 +5,29 @@ import { SupplyCategory } from '../../common/enums';
 import { UpdateSupplyDto } from './dto/update-supply-dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { EntityManager, Repository } from 'typeorm';
+import { BaseService } from '../../common/services/base.service';
 
 @Injectable()
-export class SuppliesService {
+export class SuppliesService extends BaseService<Supply> {
   constructor(
     @InjectRepository(Supply)
-    private supplyRepository: Repository<Supply>,
-  ) {}
+    repo: Repository<Supply>,
+  ) {
+    super(Supply, repo);
+  }
 
   /**
    * Create a new supply
    * @param createSupplyDto The supply data to create
    * @returns The created supply
    */
-  async create(createSupplyDto: CreateSupplyDto): Promise<Supply> {
-    const supply = this.supplyRepository.create(createSupplyDto);
-    return this.supplyRepository.save(supply);
+  async create(
+    createSupplyDto: CreateSupplyDto,
+    manager?: EntityManager,
+  ): Promise<Supply> {
+    const repo = this.getRepo(manager);
+    const supply = repo.create(createSupplyDto);
+    return repo.save(supply);
   }
 
   /**
@@ -33,57 +40,65 @@ export class SuppliesService {
     supply_id: number,
     manager?: EntityManager,
   ): Promise<Supply | null> {
-    const repo = manager
-      ? manager.getRepository(Supply)
-      : this.supplyRepository;
-    return await repo.findOne({
-      where: { supply_id },
-    });
+    return this.findOneOrNull({ supply_id }, manager);
   }
 
   /**
    * Find all supplies
+   * @param manager Optional EntityManager for transaction handling
    * @returns An array of supplies
    */
-  async findAll(): Promise<Supply[]> {
-    return this.supplyRepository.find();
+  async findAllSupplies(manager?: EntityManager): Promise<Supply[]> {
+    return this.findAll({}, manager);
   }
 
   /**
    * Find supplies by category
    * @param category The supply category
+   * @param manager Optional EntityManager for transaction handling
    * @returns An array of supplies in the specified category
    */
-  async findByCategory(category: SupplyCategory): Promise<Supply[]> {
-    return this.supplyRepository.find({ where: { category } });
+  async findByCategory(
+    category: SupplyCategory,
+    manager?: EntityManager,
+  ): Promise<Supply[]> {
+    const repo = this.getRepo(manager);
+    return repo.find({ where: { category } });
   }
 
   /**
    * Update a supply
    * @param id
    * @param updateSupplyDto
+   * @param manager Optional EntityManager for transaction handling
    * @returns The updated supply
    */
-  async update(id: number, updateSupplyDto: UpdateSupplyDto): Promise<Supply> {
+  async update(
+    id: number,
+    updateSupplyDto: UpdateSupplyDto,
+    manager?: EntityManager,
+  ): Promise<Supply> {
+    const repo = this.getRepo(manager);
     const supply = await this.findOne(id);
     if (!supply) {
       throw new NotFoundException(`Supply with ID ${id} not found`);
     }
 
     Object.assign(supply, updateSupplyDto);
-    return this.supplyRepository.save(supply);
+    return repo.save(supply);
   }
 
   /**
    * Remove a supply
    * @param id The supply ID
    */
-  async remove(id: number): Promise<void> {
+  async remove(id: number, manager?: EntityManager): Promise<void> {
+    const repo = this.getRepo(manager);
     const supply = await this.findOne(id);
     if (!supply) {
       throw new NotFoundException(`Supply with ID ${id} not found`);
     }
 
-    await this.supplyRepository.remove(supply);
+    await repo.remove(supply);
   }
 }

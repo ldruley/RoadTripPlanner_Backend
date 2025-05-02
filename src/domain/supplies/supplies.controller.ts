@@ -95,7 +95,7 @@ export class SuppliesController {
     },
   })
   findAll() {
-    return this.suppliesService.findAll();
+    return this.suppliesService.findAllSupplies();
   }
 
   @Get(':id')
