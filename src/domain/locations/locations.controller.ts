@@ -12,6 +12,7 @@ import {
   Patch,
   Inject,
   forwardRef,
+  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -233,10 +234,30 @@ export class LocationsController {
     return this.locationsService.discoverNearby(discoverDto);
   }
 
-  @Get('nearby')
-  @ApiOperation({ summary: 'Find locations near a point' })
-  @ApiQuery({ name: 'lat', description: 'Latitude', type: Number })
-  @ApiQuery({ name: 'lng', description: 'Longitude', type: Number })
+  @Get('suggested')
+  @ApiOperation({
+    summary: 'Find suggested locations near a point',
+    description:
+      'Takes either a location id or lat/lng coordinates and returns a list of suggested locations inside the radius.',
+  })
+  @ApiQuery({
+    name: 'lat',
+    description: 'Latitude',
+    type: Number,
+    required: false,
+  })
+  @ApiQuery({
+    name: 'lng',
+    description: 'Longitude',
+    type: Number,
+    required: false,
+  })
+  @ApiQuery({
+    name: 'locationId',
+    description: 'ID of a location to use as the center point',
+    type: Number,
+    required: false,
+  })
   @ApiQuery({
     name: 'radius',
     description: 'Radius in meters',
@@ -249,26 +270,48 @@ export class LocationsController {
     type: Number,
     required: false,
   })
-  @ApiQuery({
-    name: 'type',
-    description: 'Location type filter',
-    enum: LocationCategoryCode,
-    required: false,
-  })
   @ApiResponse({ status: 200, description: 'Returns nearby locations' })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - missing required parameters or invalid input',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Location not found when using locationId',
+  })
   async findNearby(
-    @Query('lat', ParseFloatPipe) latitude: number,
-    @Query('lng', ParseFloatPipe) longitude: number,
+    @Query('lat') latitude?: number,
+    @Query('lng') longitude?: number,
+    @Query('locationId', new ParseIntPipe({ optional: true }))
+    locationId?: number,
     @Query('radius') radius?: number,
     @Query('limit') limit?: number,
-    @Query('type') locationType?: LocationCategoryCode,
   ) {
+    // Validate that either coordinates or locationId is provided
+    if ((!latitude || !longitude) && !locationId) {
+      throw new BadRequestException(
+        'Either lat/lng or locationId must be provided',
+      );
+    }
+
+    // If coordinates are provided, parse them
+    if (latitude !== undefined && longitude !== undefined) {
+      latitude = parseFloat(latitude.toString());
+      longitude = parseFloat(longitude.toString());
+
+      if (isNaN(latitude) || isNaN(longitude)) {
+        throw new BadRequestException(
+          'Invalid coordinates. Lat and lng must be valid numbers.',
+        );
+      }
+    }
+
     return this.locationsService.findNearby(
       latitude,
       longitude,
+      locationId,
       radius,
       limit,
-      locationType,
     );
   }
 

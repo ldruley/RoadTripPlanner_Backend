@@ -246,38 +246,56 @@ export class LocationsService extends BaseService<Location> {
    * Find locations near a point
    * @param latitude Latitude of the center point
    * @param longitude Longitude of the center point
+   * @param locationId Optional location ID to use as the center point
    * @param radiusInMeters Radius to search within (in meters)
    * @param limit Maximum number of results to return
-   * @param locationType Optional type filter
    * @param manager Optional EntityManager for transaction handling
    * @returns Array of nearby locations with distance
    */
   async findNearby(
-    latitude: number,
-    longitude: number,
+    latitude?: number,
+    longitude?: number,
+    locationId?: number,
     radiusInMeters: number = 5000,
     limit: number = 10,
-    locationType?: LocationCategoryCode,
     manager?: EntityManager,
   ): Promise<{ location: Location; distance: number }[]> {
     const repo = this.getRepo(manager);
+
+    // If locationId is provided, use that to get coordinates
+    if (locationId) {
+      const location = await this.findById(locationId, manager);
+      if (!location) {
+        throw new NotFoundException(`Location with ID ${locationId} not found`);
+      }
+      latitude = location.latitude;
+      longitude = location.longitude;
+    }
+
+    // Validate we have coordinates to search with
+    if (!latitude || !longitude) {
+      throw new BadRequestException(
+        'Either lat/lng or locationId must be provided',
+      );
+    }
+
     const point = `POINT(${longitude} ${latitude})`;
 
-    let query = repo
+    const query = repo
       .createQueryBuilder('location')
       .select([
         'location.*',
         `ST_Distance(
-          location.geom::geography, 
-          ST_SetSRID(ST_GeomFromText(:point), 4326)::geography
-        ) as distance`,
+        location.geom::geography, 
+        ST_SetSRID(ST_GeomFromText(:point), 4326)::geography
+      ) as distance`,
       ])
       .where(
         `ST_DWithin(
-        location.geom::geography, 
-        ST_SetSRID(ST_GeomFromText(:point), 4326)::geography, 
-        :radius
-      )`,
+      location.geom::geography, 
+      ST_SetSRID(ST_GeomFromText(:point), 4326)::geography, 
+      :radius
+    )`,
       )
       .setParameters({
         point: point,
@@ -285,12 +303,6 @@ export class LocationsService extends BaseService<Location> {
       })
       .orderBy('distance', 'ASC')
       .limit(limit);
-
-    if (locationType) {
-      query = query.andWhere('location.location_type = :locationType', {
-        locationType,
-      });
-    }
 
     const results = await query.getRawMany();
 
