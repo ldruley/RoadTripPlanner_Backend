@@ -15,6 +15,7 @@ import {
   ApiBody,
   ApiOperation,
   ApiResponse,
+  ApiTags,
 } from '@nestjs/swagger';
 import { CreateStintDto } from '../dto/create-stint-dto';
 import { GetUser } from '../../../infrastructure/auth/decorators/get-user-decorator';
@@ -24,6 +25,7 @@ import { ItineraryService } from '../services/itinerary.service';
 import { CreateStintWithOptionalStopDto } from '../dto/create-sprint-with-optional-stop.dto';
 import { UpdateStintDto } from '../dto/update-stint-dto';
 
+@ApiTags('Stints')
 @Controller('stints')
 export class StintsController {
   constructor(

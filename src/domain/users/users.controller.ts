@@ -19,11 +19,13 @@ import {
   ApiParam,
   ApiQuery,
   ApiResponse,
+  ApiTags,
 } from '@nestjs/swagger';
 import { User } from './entities/user.entity';
 import { JwtAuthGuard } from '../../infrastructure/auth/guards/jwt-auth-guard';
 import { GetUser } from '../../infrastructure/auth/decorators/get-user-decorator';
 
+@ApiTags('Users')
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}

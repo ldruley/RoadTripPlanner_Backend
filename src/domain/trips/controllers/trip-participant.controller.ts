@@ -10,13 +10,19 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { TripParticipantService } from '../services/trip-participant.service';
-import { ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../../infrastructure/auth/guards/jwt-auth-guard';
 import { CreateTripParticipantDto } from '../dto/create-trip-participant.dto';
 import { GetUser } from '../../../infrastructure/auth/decorators/get-user-decorator';
 import { User } from '../../users/entities/user.entity';
 import { UpdateTripParticipantDto } from '../dto/update-trip-participant.dto';
 
+@ApiTags('Trip Participants')
 @Controller('trips/:tripId/participants')
 export class TripParticipantsController {
   constructor(
