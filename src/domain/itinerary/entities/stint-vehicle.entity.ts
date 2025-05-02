@@ -1,4 +1,3 @@
-/*
 import {
   Entity,
   Column,
@@ -16,14 +15,14 @@ export class StintVehicle {
   @PrimaryGeneratedColumn()
   stint_vehicle_id: number;
 
-  @ManyToOne(() => Stint)
+  @ManyToOne(() => Stint, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'stint_id' })
   stint: Stint;
 
   @Column()
   stint_id: number;
 
-  @ManyToOne(() => Vehicle)
+  @ManyToOne(() => Vehicle, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'vehicle_id' })
   vehicle: Vehicle;
 
@@ -40,4 +39,3 @@ export class StintVehicle {
   @CreateDateColumn()
   created_at: Date;
 }
-*/

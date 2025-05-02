@@ -15,32 +15,32 @@ import { ItineraryService } from './services/itinerary.service';
 // Controllers
 import { StintsController } from './controllers/stints.controller';
 import { StopsController } from './controllers/stops.controller';
-import { LegsController } from './controllers/legs.controller';
-import { ItineraryController } from './controllers/itinerary.controller';
 
 // Import TripsModule with forwardRef to resolve circular dependency
 import { TripsModule } from '../trips/trips.module';
-import { LocationsService } from '../locations/locations.service';
 import { LocationsModule } from '../locations/locations.module';
+import { StintVehicle } from './entities/stint-vehicle.entity';
+import { StintVehicleController } from './controllers/stint-vehicle.controller';
+import { StintVehicleService } from './services/stint-vehicle.service';
+import { VehiclesModule } from '../vehicles/vehicles.module';
+import { UsersModule } from '../users/users.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Stint, Stop, Leg]),
+    TypeOrmModule.forFeature([Stint, Stop, Leg, StintVehicle]),
     forwardRef(() => TripsModule),
     LocationsModule,
+    VehiclesModule,
+    UsersModule,
   ],
-  controllers: [
-    StintsController,
-    StopsController,
-    LegsController,
-    ItineraryController,
-  ],
+  controllers: [StintsController, StopsController, StintVehicleController],
   providers: [
     // Services
     StintsService,
     StopsService,
     LegsService,
     ItineraryService,
+    StintVehicleService,
   ],
   exports: [
     // Export services for use in other modules
@@ -48,6 +48,7 @@ import { LocationsModule } from '../locations/locations.module';
     StopsService,
     LegsService,
     ItineraryService,
+    StintVehicleService,
   ],
 })
 export class ItineraryModule {}

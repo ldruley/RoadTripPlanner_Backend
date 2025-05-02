@@ -99,7 +99,7 @@ export class StopsController {
           postal_code: '95060',
         },
       },
-      'Manual Timing/Sequence Stop': {
+      'Manual Sequence Stop': {
         summary: 'Manual Timing/Sequence Stop',
         description:
           'Add a stop to an existing stint with manual timing and sequence order',
@@ -107,8 +107,6 @@ export class StopsController {
           name: 'Shell Gas Station',
           latitude: 36.9741,
           longitude: -122.0308,
-          arrival_time: '2023-10-01T12:00:00Z',
-          departure_time: '2023-10-01T12:15:00Z',
           sequence_number: 3,
           address: '1003 Ocean St, Santa Cruz, CA 95060',
           stop_type: 'gas',

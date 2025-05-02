@@ -42,6 +42,7 @@ export class VehiclesController {
           year: 2022,
           fuel_capacity: 15.8,
           mpg: 28.5,
+          owner_id: 1,
         },
       },
       SUV: {
@@ -52,6 +53,7 @@ export class VehiclesController {
           year: 2023,
           fuel_capacity: 20.2,
           mpg: 21.0,
+          owner_id: 1,
         },
       },
     },
@@ -107,7 +109,7 @@ export class VehiclesController {
   @Patch(':id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: '[BASIC IMPLEMENTATION]: Update a vehicle' })
+  @ApiOperation({ summary: 'Update a vehicle' })
   @ApiResponse({ status: 200, description: 'Vehicle updated successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })

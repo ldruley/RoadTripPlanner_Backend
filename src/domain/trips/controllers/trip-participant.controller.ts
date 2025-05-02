@@ -24,7 +24,6 @@ export class TripParticipantsController {
   ) {}
 
   @Get(':userId')
-  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Check if a user is participating in a trip' })
   @ApiResponse({ status: 200, description: 'User is participating' })
   @ApiResponse({ status: 404, description: 'User is not participating' })
@@ -36,9 +35,9 @@ export class TripParticipantsController {
   }
 
   @Get()
-  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Get all participants of a trip' })
   @ApiResponse({ status: 200, description: 'List of participants' })
+  @ApiResponse({ status: 404, description: 'Trip not found' })
   async findAll(@Param('tripId', ParseIntPipe) tripId: number) {
     return this.tripParticipantService.findByTrip(tripId);
   }

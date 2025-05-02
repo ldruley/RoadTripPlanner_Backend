@@ -8,13 +8,16 @@ import { Stint } from '../entities/stint.entity';
 import { UpdateStintDto } from '../dto/update-stint-dto';
 import { EntityManager, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
+import { BaseService } from '../../../common/services/base.service';
 
 @Injectable()
-export class StintsService {
+export class StintsService extends BaseService<Stint> {
   constructor(
     @InjectRepository(Stint)
-    private stintRepository: Repository<Stint>,
-  ) {}
+    repo: Repository<Stint>,
+  ) {
+    super(Stint, repo);
+  }
 
   /**
    * Find a stint by its ID
@@ -23,7 +26,7 @@ export class StintsService {
    * @returns The stint if found, or null if not found
    */
   async findById(stint_id: number, manager?: EntityManager): Promise<Stint> {
-    const repo = manager ? manager.getRepository(Stint) : this.stintRepository;
+    const repo = this.getRepo(manager);
     const stint = await repo.findOne({ where: { stint_id } });
     if (!stint) {
       throw new NotFoundException(`Stint with ID ${stint_id} not found`);
@@ -35,7 +38,7 @@ export class StintsService {
     stint_id: number,
     manager?: EntityManager,
   ): Promise<Stint> {
-    const repo = manager ? manager.getRepository(Stint) : this.stintRepository;
+    const repo = this.getRepo(manager);
     const stint = await repo.findOne({
       where: { stint_id },
       relations: [
@@ -63,7 +66,7 @@ export class StintsService {
     trip_id: number,
     manager?: EntityManager,
   ): Promise<Stint[]> {
-    const repo = manager ? manager.getRepository(Stint) : this.stintRepository;
+    const repo = this.getRepo(manager);
     return repo.find({ where: { trip_id } });
   }
 
@@ -79,7 +82,7 @@ export class StintsService {
     trip_id: number,
     manager?: EntityManager,
   ): Promise<Stint[]> {
-    const repo = manager ? manager.getRepository(Stint) : this.stintRepository;
+    const repo = this.getRepo(manager);
     return repo.find({
       where: { trip_id },
       relations: [
@@ -104,7 +107,7 @@ export class StintsService {
     createStintDto: CreateStintDto,
     manager?: EntityManager,
   ): Promise<Stint> {
-    const repo = manager ? manager.getRepository(Stint) : this.stintRepository;
+    const repo = this.getRepo(manager);
     const stint = repo.create(createStintDto);
     return repo.save(stint);
   }
@@ -124,13 +127,14 @@ export class StintsService {
     userId: number,
     manager?: EntityManager,
   ): Promise<Stint | null> {
+    const repo = this.getRepo(manager);
     const stint = await this.findById(stint_id, manager);
     if (!stint) {
       return null;
     }
     Object.assign(stint, updateStintDto);
 
-    return this.stintRepository.save(stint);
+    return repo.save(stint);
   }
 
   //TODO: update with consquence handling - this will likely run into foreign key issues
@@ -145,7 +149,7 @@ export class StintsService {
     userId: number,
     manager?: EntityManager,
   ): Promise<void> {
-    const repo = manager ? manager.getRepository(Stint) : this.stintRepository;
+    const repo = this.getRepo(manager);
     const stint = await this.findById(stint_id, manager);
     if (!stint) {
       //TODO: are we throwing an error here or elsewhere
@@ -171,7 +175,7 @@ export class StintsService {
     trip_id: number,
     manager?: EntityManager,
   ): Promise<number> {
-    const repo = manager ? manager.getRepository(Stint) : this.stintRepository;
+    const repo = this.getRepo(manager);
     const result: { maxSequence: string | null } | undefined = await repo
       .createQueryBuilder('stint')
       .select('MAX(stint.sequence_number)', 'maxSequence')
@@ -192,7 +196,7 @@ export class StintsService {
     trip_id: number,
     manager?: EntityManager,
   ): Promise<number> {
-    const repo = manager ? manager.getRepository(Stint) : this.stintRepository;
+    const repo = this.getRepo(manager);
     const result: { maxSequence: string | null } | undefined = await repo
       .createQueryBuilder('stint')
       .select('MAX(stint.sequence_number)', 'maxSequence')
@@ -216,7 +220,7 @@ export class StintsService {
     continuesFromPrevious: boolean,
     manager?: EntityManager,
   ): Promise<Stint> {
-    const repo = manager ? manager.getRepository(Stint) : this.stintRepository;
+    const repo = this.getRepo(manager);
     stint.continues_from_previous = continuesFromPrevious;
     return repo.save(stint);
   }
@@ -233,7 +237,7 @@ export class StintsService {
     timing: { start_time?: Date; end_time?: Date },
     manager?: EntityManager,
   ): Promise<Stint> {
-    const repo = manager ? manager.getRepository(Stint) : this.stintRepository;
+    const repo = this.getRepo(manager);
 
     if (timing.start_time !== undefined) {
       stint.start_time = timing.start_time;
@@ -248,17 +252,19 @@ export class StintsService {
 
   /**
    * Update stint metadata
-   * @param stint The stint to update
+   * @param stintId The stint to update
    * @param updateData The new metadata properties
    * @param manager Optional EntityManager for transaction handling
    * @returns The updated stint
    * */
   async updateStintMetadata(
-    stint: Stint,
-    updateData: Partial<Stint>,
+    stintId: number,
+    updateData: Partial<UpdateStintDto>,
+    userId: number,
     manager?: EntityManager,
   ): Promise<Stint> {
-    const repo = manager ? manager.getRepository(Stint) : this.stintRepository;
+    const repo = this.getRepo(manager);
+    const stint = await this.findOneOrThrow({ stint_id: stintId }, manager);
     Object.assign(stint, updateData);
     return repo.save(stint);
   }
@@ -277,7 +283,7 @@ export class StintsService {
   ): Promise<Stint> {
     console.log(updates);
 
-    const repo = manager ? manager.getRepository(Stint) : this.stintRepository;
+    const repo = this.getRepo(manager);
     const updateData: any = {};
     if (updates.start_location_id !== undefined) {
       updateData.start_location_id = updates.start_location_id;
