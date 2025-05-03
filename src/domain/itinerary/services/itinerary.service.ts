@@ -1213,6 +1213,16 @@ export class ItineraryService {
 
   formatDateToIso(date?: Date | null): string | null {
     if (!date) return null;
+
+    if (typeof date === 'string') {
+      const parsed = new Date(date);
+      if (!isNaN(parsed.getTime())) {
+        return parsed.toISOString();
+      }
+      // If not a valid date string, return as is
+      return date;
+    }
+
     return date.toISOString();
   }
 }
