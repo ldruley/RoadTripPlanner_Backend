@@ -35,13 +35,15 @@ export class UsersService extends BaseService<User> {
     if (existingUser) {
       throw new ConflictException('Email already in use');
     }
+    console.log(createUserDto);
+    const passwordHash = createUserDto.password;
 
-    const passwordHash = await bcrypt.hash(createUserDto.password, 10);
-
-    return repo.create({
+    const user = repo.create({
       ...createUserDto,
       password_hash: passwordHash,
     });
+
+    return repo.save(user);
   }
 
   /**
