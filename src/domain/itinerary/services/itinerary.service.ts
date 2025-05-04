@@ -1147,7 +1147,7 @@ export class ItineraryService {
     await repo.save(stint);
   }
 
-  async recalculateStintTimeline(
+  /*async recalculateStintTimeline(
     stint: Stint,
     manager?: EntityManager,
   ): Promise<void> {
@@ -1228,6 +1228,70 @@ export class ItineraryService {
     if (updatedLegs.length > 0) {
       await legRepo.save(updatedLegs);
     }
+  }*/
+
+  async recalculateStintTimeline(
+    stint: Stint,
+    manager?: EntityManager,
+  ): Promise<void> {
+    const stopRepo = manager
+      ? manager.getRepository(Stop)
+      : this.dataSource.getRepository(Stop);
+
+    const legRepo = manager
+      ? manager.getRepository(Leg)
+      : this.dataSource.getRepository(Leg);
+    console.log('start');
+    const stops = stint.stops.sort(
+      (a, b) => a.sequence_number - b.sequence_number,
+    );
+    const legs = stint.legs.sort(
+      (a, b) => a.sequence_number - b.sequence_number,
+    );
+    let currentTime = stint.start_time;
+    const updatedStops: Stop[] = [];
+    const updatedLegs: Leg[] = [];
+
+    //handle first leg
+    const firstLeg = legs[0];
+    console.log(firstLeg);
+
+    if (firstLeg) {
+      currentTime = DateUtils.addMinutes(
+        currentTime,
+        firstLeg.estimated_travel_time,
+      );
+    }
+    console.log('looping stops');
+    for (const stop of stops) {
+      stop.arrival_time = currentTime;
+
+      stop.departure_time = DateUtils.addMinutes(
+        stop.arrival_time,
+        stop.duration,
+      );
+      updatedStops.push(stop);
+
+      currentTime = stop.departure_time;
+
+      const nextLeg = legs.find((leg) => leg.start_stop_id === stop.stop_id);
+      if (nextLeg) {
+        currentTime = DateUtils.addMinutes(
+          currentTime,
+          nextLeg.estimated_travel_time,
+        );
+        updatedLegs.push(nextLeg);
+      }
+    }
+
+    if (stops.length > 0) {
+      const lastStop = stops[stops.length - 1];
+      stint.end_location = lastStop.location; //
+    }
+    console.log(updatedLegs);
+    console.log(updatedStops);
+    await stopRepo.save(updatedStops);
+    await legRepo.save(updatedLegs);
   }
 
   /**
