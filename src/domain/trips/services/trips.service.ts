@@ -35,11 +35,15 @@ export class TripsService extends BaseService<Trip> {
       const repo = this.getRepo(mgr);
 
       // Create the trip
-      const trip = repo.create(createTripDto);
-      const savedTrip = await repo.save(trip);
+      // @ts-expect-error ts stupid
+      const trip: Trip = repo.create(createTripDto);
+      console.log(Array.isArray(createTripDto));
+      const savedTrip: Trip = await repo.save(trip);
       if (!savedTrip) {
         throw new NotFoundException('Trip not created');
       }
+      console.log(savedTrip[0]);
+      console.log(savedTrip);
       // Create a participant record for the trip creator
       const tripParticipantRepo = mgr.getRepository(TripParticipant);
       const creatorParticipant = tripParticipantRepo.create({
