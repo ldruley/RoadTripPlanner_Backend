@@ -13,4 +13,5 @@ export class StintTimelineModel {
   startLocationName?: string;
   endLocationName?: string;
   timeline: TimelineEventModel[];
+  vehicles?: StintVehicleInfo[];
 }

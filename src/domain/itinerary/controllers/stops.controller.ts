@@ -200,9 +200,9 @@ export class StopsController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
-    summary: '[NEEDS UPDATING] Reorder stops within a stint',
+    summary: 'Reorder stops within a stint',
     description:
-      'Updates the sequence numbers of stops in a stint and reconstructs legs accordingly',
+      'Updates the sequence numbers of stops in a stint and reconstructs legs accordingly. Supports partial reordering - you only need to include the stops you want to change.',
   })
   @ApiParam({ name: 'stintId', description: 'Stint ID' })
   @ApiBody({
@@ -230,6 +230,37 @@ export class StopsController {
         },
       },
     },
+    examples: {
+      'Full Reordering': {
+        value: {
+          stopOrder: [
+            { stop_id: 1, sequence_number: 3 },
+            { stop_id: 2, sequence_number: 1 },
+            { stop_id: 3, sequence_number: 2 },
+          ],
+        },
+        summary: 'Reorder all stops in a stint',
+        description: 'Change the order of all stops in the stint',
+      },
+      'Swap Two Stops': {
+        value: {
+          stopOrder: [
+            { stop_id: 1, sequence_number: 2 },
+            { stop_id: 2, sequence_number: 1 },
+          ],
+        },
+        summary: 'Swap the positions of two stops',
+        description: 'Simple swap of two stops in a stint',
+      },
+      'Move Single Stop': {
+        value: {
+          stopOrder: [{ stop_id: 3, sequence_number: 1 }],
+        },
+        summary: 'Move a single stop to the beginning',
+        description:
+          'Move just one stop to a new position (others will adjust automatically)',
+      },
+    },
   })
   @ApiResponse({ status: 200, description: 'Stops reordered successfully' })
   @ApiResponse({ status: 404, description: 'Stint not found' })
@@ -237,11 +268,14 @@ export class StopsController {
     status: 403,
     description: 'Forbidden - user does not have permission',
   })
-  reorderStops(
+  async reorderStops(
     @Param('stintId', ParseIntPipe) stintId: number,
     @Body() data: { stopOrder: { stop_id: number; sequence_number: number }[] },
     @GetUser() user: User,
   ) {
+    console.log('Reordering stops for stint:', stintId);
+    console.log('Stop order data:', JSON.stringify(data.stopOrder, null, 2));
+
     return this.itineraryService.reorderStops(
       stintId,
       data.stopOrder,

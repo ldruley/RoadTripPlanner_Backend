@@ -8,6 +8,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { EntityManager, Repository } from 'typeorm';
 import { BaseService } from '../../../common/services/base.service';
 import { CreateTripDto } from '../dto/create-trip.dto';
+import { TripParticipant } from '../entities/trip-participant.entity';
+import { ParticipantRole } from '../../../common/enums';
 
 //TODO: we aren't using UpdateTripDTO
 
@@ -28,9 +30,29 @@ export class TripsService extends BaseService<Trip> {
    * @returns The created trip
    */
   async create(createTripDto: any, manager?: EntityManager): Promise<any> {
-    const repo = this.getRepo(manager);
-    const trip = repo.create(createTripDto);
-    return repo.save(trip);
+    return this.withTransaction(async (transactionManager) => {
+      const mgr = manager || transactionManager;
+      const repo = this.getRepo(mgr);
+
+      // Create the trip
+      const trip = repo.create(createTripDto);
+      const savedTrip = await repo.save(trip);
+      if (!savedTrip) {
+        throw new NotFoundException('Trip not created');
+      }
+      // Create a participant record for the trip creator
+      const tripParticipantRepo = mgr.getRepository(TripParticipant);
+      const creatorParticipant = tripParticipantRepo.create({
+        trip_id: savedTrip.trip_id,
+        user_id: savedTrip.creator_id,
+        role: ParticipantRole.CREATOR, // Use the enum value for creator role
+        joined_at: new Date(),
+      });
+
+      await tripParticipantRepo.save(creatorParticipant);
+
+      return savedTrip;
+    });
   }
 
   /*async createTrip(createTripDto: any, manager?: EntityManager): Promise<Trip> {

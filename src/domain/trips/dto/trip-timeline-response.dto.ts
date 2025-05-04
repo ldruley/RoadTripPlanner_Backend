@@ -1,6 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Expose, Type } from 'class-transformer';
 import { StintTimelineResponseDto } from './stint-timeline-response.dto';
+import { TripParticipantResponseDto } from './trip-participant-response.dto';
+import { SupplyResponseDto } from './supply-response.dto';
 
 export class TripTimelineResponseDto {
   @ApiProperty()
@@ -35,4 +37,14 @@ export class TripTimelineResponseDto {
   @Expose()
   @Type(() => StintTimelineResponseDto)
   stints: StintTimelineResponseDto[];
+
+  @ApiProperty({ type: [TripParticipantResponseDto], required: false })
+  @Expose()
+  @Type(() => TripParticipantResponseDto)
+  participants?: TripParticipantResponseDto[];
+
+  @ApiProperty({ type: [SupplyResponseDto], required: false })
+  @Expose()
+  @Type(() => SupplyResponseDto)
+  supplies?: SupplyResponseDto[];
 }

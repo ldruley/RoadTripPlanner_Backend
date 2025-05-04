@@ -28,6 +28,9 @@ import { TripTimelineResponseDto } from '../../trips/dto/trip-timeline-response.
 import { TripTimelineModel } from '../../interfaces/itinerary/trip-timeline.interface';
 import { StintTimelineModel } from '../../interfaces/itinerary/trip-timeline-stint.interface';
 import { Trip } from '../../trips/entities/trip.entity';
+import { TripParticipant } from '../../trips/entities/trip-participant.entity';
+import { StintVehicle } from '../entities/stint-vehicle.entity';
+import { TripSupply } from '../../trips/entities/trip.supplies.entity';
 
 //TODO: Implement TimelineLeg and TimelineStop interfaces - or figure out a combiined approach to interweave them into the timeline
 //TODO: potentially a dto for timeline?
@@ -76,7 +79,59 @@ export class ItineraryService {
       throw new NotFoundException(`No stints found for trip ${tripId}`);
     }
 
+    const tripParticipants = await this.dataSource
+      .getRepository(TripParticipant)
+      .find({
+        where: { trip_id: tripId },
+        relations: ['user'],
+      });
+
+    const tripSupplies = await this.dataSource.getRepository(TripSupply).find({
+      where: { tripId },
+      relations: ['supply'],
+    });
+
     const timelineModel = this.buildTripTimeline(trip, stints);
+
+    timelineModel.participants = tripParticipants.map((participant) => ({
+      user_id: participant.user.user_id,
+      username: participant.user.username,
+      fullname: participant.user.fullname,
+      role: participant.role,
+      joined_at: this.formatDateToIso(participant.joined_at) ?? '',
+    }));
+
+    timelineModel.supplies = tripSupplies.map((tripSupply) => ({
+      supply_id: tripSupply.supply.supply_id,
+      name: tripSupply.supply.name,
+      category: tripSupply.supply.category,
+      quantity: tripSupply.quantity,
+      notes: tripSupply.notes || undefined,
+    }));
+
+    for (const stint of timelineModel.stints) {
+      // Load stint vehicles
+      const stintVehicles = await this.dataSource
+        .getRepository(StintVehicle)
+        .find({
+          where: { stint_id: stint.stintId },
+          relations: ['vehicle', 'driver'],
+        });
+
+      // Add vehicles to stint
+      stint.vehicles = stintVehicles.map((sv) => ({
+        vehicle_id: sv.vehicle.vehicle_id,
+        name: sv.vehicle.name,
+        year: sv.vehicle.year,
+        driver: sv.driver
+          ? {
+              user_id: sv.driver.user_id,
+              username: sv.driver.username,
+              fullname: sv.driver.fullname,
+            }
+          : undefined,
+      }));
+    }
 
     return plainToInstance(TripTimelineResponseDto, timelineModel);
   }
@@ -90,6 +145,8 @@ export class ItineraryService {
       totalDistance: 0,
       totalDuration: 0,
       stints: [],
+      participants: [],
+      supplies: [],
     };
 
     const legsByStops = new Map<string, Leg>();
@@ -175,6 +232,7 @@ export class ItineraryService {
       endTime: this.formatDateToIso(stint.end_time),
       startLocationName: stint.start_location?.name,
       endLocationName: stint.end_location?.name,
+      vehicles: [],
     };
   }
 
@@ -758,22 +816,98 @@ export class ItineraryService {
     return this.dataSource
       .transaction(async (manager) => {
         const stopRepo = manager.getRepository(Stop);
-        const savedStops: Stop[] = [];
-        // Update sequence numbers for each stop
-        for (const item of stopOrder) {
-          const stop = await this.stopsService.findById(item.stop_id);
-          if (stop.stint_id !== stintId) {
-            throw new ForbiddenException(
-              `Stop with ID ${stop.stop_id} does not belong to stint ${stintId}`,
-            );
-          }
-          savedStops.push(stop);
-          stop.sequence_number = item.sequence_number;
-          await stopRepo.save(stop);
+
+        // Get all stops for this stint
+        const allStops = await stopRepo.find({
+          where: { stint_id: stintId },
+          order: { sequence_number: 'ASC' },
+        });
+
+        if (allStops.length === 0) {
+          console.log(`No stops found for stint ${stintId}`);
+          return;
         }
 
-        // Update legs and stint metadata
-        await this.updateLegsAfterStopChanges(stintId, savedStops, manager);
+        console.log(`Found ${allStops.length} stops for stint ${stintId}`);
+
+        // Create a map of stop_id to current stop
+        const stopMap = new Map<number, Stop>();
+        allStops.forEach((stop) => stopMap.set(stop.stop_id, stop));
+
+        // First, validate that all stops in the request belong to this stint
+        for (const item of stopOrder) {
+          if (!stopMap.has(item.stop_id)) {
+            throw new ForbiddenException(
+              `Stop with ID ${item.stop_id} does not belong to stint ${stintId}`,
+            );
+          }
+        }
+
+        // Create a comprehensive reordering plan including ALL stops in the stint
+        const reorderingPlan: {
+          stop_id: number;
+          sequence_number: number;
+          stop: Stop;
+        }[] = [];
+
+        // Add the stops that were explicitly included in the request
+        stopOrder.forEach((item) => {
+          const stop = stopMap.get(item.stop_id);
+          if (stop) {
+            reorderingPlan.push({
+              stop_id: item.stop_id,
+              sequence_number: item.sequence_number,
+              stop: stop,
+            });
+          }
+        });
+
+        // Add any stops that weren't included in the request (keeping their current sequence number)
+        const stopIdsInRequest = new Set(stopOrder.map((item) => item.stop_id));
+        allStops.forEach((stop) => {
+          if (!stopIdsInRequest.has(stop.stop_id)) {
+            reorderingPlan.push({
+              stop_id: stop.stop_id,
+              sequence_number: stop.sequence_number,
+              stop: stop,
+            });
+          }
+        });
+
+        // Sort the complete reordering plan by the sequence number
+        const sortedReorderingPlan = [...reorderingPlan].sort(
+          (a, b) => a.sequence_number - b.sequence_number,
+        );
+
+        console.log(
+          'Reordering plan:',
+          JSON.stringify(
+            sortedReorderingPlan.map((p) => ({
+              stop_id: p.stop_id,
+              old_seq: p.stop.sequence_number,
+              new_seq: p.sequence_number,
+            })),
+          ),
+        );
+
+        // Now update all stops with their new sequence numbers
+        const updatedStops: Stop[] = [];
+
+        for (let i = 0; i < sortedReorderingPlan.length; i++) {
+          const item = sortedReorderingPlan[i];
+          const normalizedSequence = i + 1;
+
+          if (item.stop.sequence_number !== normalizedSequence) {
+            item.stop.sequence_number = normalizedSequence;
+            await stopRepo.save(item.stop);
+            console.log(
+              `Updated stop ${item.stop_id} sequence to ${normalizedSequence}`,
+            );
+          }
+          updatedStops.push(item.stop);
+        }
+
+        await this.updateLegsAfterStopChanges(stintId, updatedStops, manager);
         await this.updateStintStartEndLocations(stintId, manager);
         await this.recalculateStintTimeline(stint, manager);
       })
@@ -1024,41 +1158,52 @@ export class ItineraryService {
     const legRepo = manager
       ? manager.getRepository(Leg)
       : this.dataSource.getRepository(Leg);
-    console.log('start');
-    const stops = stint.stops.sort(
-      (a, b) => a.sequence_number - b.sequence_number,
-    );
-    const legs = stint.legs.sort(
-      (a, b) => a.sequence_number - b.sequence_number,
-    );
+    const freshStops = await stopRepo.find({
+      where: { stint_id: stint.stint_id },
+      order: { sequence_number: 'ASC' },
+      relations: ['location'],
+    });
+
+    const freshLegs = await legRepo.find({
+      where: { stint_id: stint.stint_id },
+      order: { sequence_number: 'ASC' },
+    });
+
     let currentTime = stint.start_time;
     const updatedStops: Stop[] = [];
     const updatedLegs: Leg[] = [];
 
-    //handle first leg
-    const firstLeg = legs[0];
-    console.log(firstLeg);
-
-    if (firstLeg) {
+    // Handle first leg (from start location to first stop)
+    const firstLeg = freshLegs.find(
+      (leg) => leg.start_location_id === stint.start_location_id,
+    );
+    if (firstLeg && currentTime) {
       currentTime = DateUtils.addMinutes(
         currentTime,
         firstLeg.estimated_travel_time,
       );
+      updatedLegs.push(firstLeg);
     }
-    console.log('looping stops');
-    for (const stop of stops) {
-      stop.arrival_time = currentTime;
 
+    // Process each stop and the leg after it
+    for (const stop of freshStops) {
+      // Update stop timing
+      stop.arrival_time = currentTime;
       stop.departure_time = DateUtils.addMinutes(
         stop.arrival_time,
-        stop.duration,
+        stop.duration || 0,
       );
       updatedStops.push(stop);
 
+      // Update current time to departure time
       currentTime = stop.departure_time;
 
-      const nextLeg = legs.find((leg) => leg.start_stop_id === stop.stop_id);
+      // Find the leg starting from this stop
+      const nextLeg = freshLegs.find(
+        (leg) => leg.start_stop_id === stop.stop_id,
+      );
       if (nextLeg) {
+        // Update current time based on leg travel time
         currentTime = DateUtils.addMinutes(
           currentTime,
           nextLeg.estimated_travel_time,
@@ -1067,14 +1212,22 @@ export class ItineraryService {
       }
     }
 
-    if (stops.length > 0) {
-      const lastStop = stops[stops.length - 1];
-      stint.end_location = lastStop.location; //
+    // Update stint end location and time
+    if (freshStops.length > 0) {
+      const lastStop = freshStops[freshStops.length - 1];
+      stint.end_location_id = lastStop.location_id;
+      stint.end_time = lastStop.departure_time;
+      await manager?.getRepository(Stint).save(stint);
     }
-    console.log(updatedLegs);
-    console.log(updatedStops);
-    await stopRepo.save(updatedStops);
-    await legRepo.save(updatedLegs);
+
+    // Save all updated stops and legs
+    if (updatedStops.length > 0) {
+      await stopRepo.save(updatedStops);
+    }
+
+    if (updatedLegs.length > 0) {
+      await legRepo.save(updatedLegs);
+    }
   }
 
   /**

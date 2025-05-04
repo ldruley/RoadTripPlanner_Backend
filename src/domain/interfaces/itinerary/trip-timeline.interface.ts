@@ -1,5 +1,4 @@
 import { StintTimelineModel } from './trip-timeline-stint.interface';
-
 export class TripTimelineModel {
   tripId: number;
   title: string;
@@ -9,4 +8,6 @@ export class TripTimelineModel {
   totalDistance: number;
   totalDuration: number;
   stints: StintTimelineModel[];
+  participants?: TripParticipantInfo[];
+  supplies?: TripSupplies[];
 }
