@@ -66,6 +66,8 @@ export class AuthController {
       return res.redirect(`myapp://redirect?token=${access_token}`);
     }
 
-    return res.redirect(`http://localhost:8081/redirect?token=${access_token}`);
+    return res.redirect(
+      `http://localhost:8081/google-web-redirect?token=${access_token}`,
+    );
   }
 }
