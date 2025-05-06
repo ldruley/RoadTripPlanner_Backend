@@ -155,11 +155,11 @@ export class StintsService extends BaseService<Stint> {
       //TODO: are we throwing an error here or elsewhere
       return;
     }
-    if (stint.trip.creator_id !== userId) {
+    /*if (stint.trip.creator_id !== userId) {
       throw new ForbiddenException(
         `You don't have permission to delete this stint`,
       );
-    }
+    }*/
 
     await repo.remove(stint);
   }

@@ -102,10 +102,8 @@ export class TripsController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
-    summary:
-      '[IN PROGRESS - MOSTLY WORKING]: Get complete trip timeline with all details',
-    description:
-      'This still needs a few updates, but implementation is mostly in place',
+    summary: 'Get complete trip timeline with all details',
+    description: 'This is the final version, or close to it.',
   })
   @ApiResponse({
     status: 200,

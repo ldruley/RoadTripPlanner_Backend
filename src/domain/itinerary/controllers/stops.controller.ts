@@ -154,24 +154,6 @@ export class StopsController {
     return this.stopsService.findById(id);
   }
 
-  /*  @Get('trip/:tripId')
-  @ApiOperation({ summary: '[TESTING ONLY]: Get all stops for a trip' })
-  @ApiParam({ name: 'tripId', description: 'Trip ID' })
-  @ApiResponse({ status: 200, description: 'Returns stops for the trip' })
-  @ApiResponse({ status: 404, description: 'No stops found for the trip' })
-  findByTrip(@Param('tripId', ParseIntPipe) tripId: number) {
-    return this.stopsService.findAllByTrip(tripId);
-  }*/
-
-  @Get('stint/:stintId')
-  @ApiOperation({ summary: '[TESTING ONLY]: Get all stops for a stint' })
-  @ApiParam({ name: 'stintId', description: 'Stint ID' })
-  @ApiResponse({ status: 200, description: 'Returns stops for the stint' })
-  @ApiResponse({ status: 404, description: 'No stops found for the stint' })
-  findByStint(@Param('stintId', ParseIntPipe) stintId: number) {
-    return this.stopsService.findAllByStint(stintId);
-  }
-
   /*  @Put(':id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
@@ -287,7 +269,7 @@ export class StopsController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
-    summary: '[NEEDS UPDATING] Remove a stop and update sequence numbers',
+    summary: 'Remove a stop and update sequence numbers',
   })
   @ApiParam({ name: 'stopId', description: 'Stop ID' })
   @ApiResponse({ status: 200, description: 'Stop removed successfully' })

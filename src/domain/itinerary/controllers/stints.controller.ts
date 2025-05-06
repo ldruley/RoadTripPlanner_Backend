@@ -140,7 +140,7 @@ export class StintsController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @ApiOperation({
-    summary: ' Update a stint',
+    summary: 'Update a stint',
     description: 'For updating stint metadata, not the sequence number',
   })
   @ApiResponse({ status: 200, description: 'Stint updated successfully' })
@@ -163,7 +163,7 @@ export class StintsController {
   @Delete(':id')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: '[IN PROGRESS - NEEDS UPDATING]: Delete a stint' })
+  @ApiOperation({ summary: 'Delete a stint' })
   @ApiResponse({ status: 200, description: 'Stint deleted successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })

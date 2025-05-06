@@ -492,13 +492,11 @@ export class ItineraryService {
         // Coordination logic
 
         await this.updateLegsAfterStopChanges(stop.stint_id, [stop], manager);
-        console.log('updatedlegs');
         await this.stintsService.updateLocationReferences(
           stint,
           { end_location_id: stop.location_id },
           manager,
         );
-        console.log('updated location references');
         await this.recalculateStintTimeline(stint.stint_id, manager);
 
         return stop;
@@ -581,10 +579,8 @@ export class ItineraryService {
             remainingStops,
             manager,
           );
-          console.log('Updated legs after stop changes');
           // Update stint start/end locations
           const lastStop = remainingStops[remainingStops.length - 1];
-          console.log(lastStop);
           await stintRepo.update(stint.stint_id, {
             end_location_id: lastStop.location_id,
           });
@@ -699,17 +695,6 @@ export class ItineraryService {
           (a, b) => a.sequence_number - b.sequence_number,
         );
 
-        console.log(
-          'Reordering plan:',
-          JSON.stringify(
-            sortedReorderingPlan.map((p) => ({
-              stop_id: p.stop_id,
-              old_seq: p.stop.sequence_number,
-              new_seq: p.sequence_number,
-            })),
-          ),
-        );
-
         // Now update all stops with their new sequence numbers
         const updatedStops: Stop[] = [];
 
@@ -754,8 +739,6 @@ export class ItineraryService {
       return;
     }
 
-    console.log('update legs');
-
     const stint = await manager.getRepository(Stint).findOne({
       where: { stint_id: stintId },
       relations: ['start_location'],
@@ -792,10 +775,8 @@ export class ItineraryService {
       where: { stint_id: stintId },
     });
     if (existingLegs.length > 0) {
-      console.log('removing existing legs');
       await legRepo.remove(existingLegs);
     }
-    console.log('removed existing legs');
     // If there are no stops, don't create legs
     if (stops.length === 0) {
       return;
@@ -810,8 +791,6 @@ export class ItineraryService {
       distance: 10, // This should be calculated based on API calls
       estimated_travel_time: 10, // This should be calculated based on API calls
     });
-    console.log('saving first leg');
-    console.log(leg);
     await legRepo.save(leg);
 
     // Create legs between consecutive stops
@@ -827,12 +806,8 @@ export class ItineraryService {
         distance: 10, // This should be calculated based on API calls
         estimated_travel_time: 10, // This should be calculated based on API calls
       });
-      console.log('saving legs');
-      console.log(leg);
       await legRepo.save(leg);
-      console.log('legs saved');
     }
-    console.log('all legs saved');
   }
 
   /**
@@ -897,7 +872,6 @@ export class ItineraryService {
     const legRepo = manager
       ? manager.getRepository(Leg)
       : this.dataSource.getRepository(Leg);
-    console.log('start');
 
     const stint = await this.stintsService.findById(stint_id);
     if (!stint) {
@@ -928,7 +902,6 @@ export class ItineraryService {
         firstLeg.estimated_travel_time,
       );
     }
-    console.log('looping stops');
     for (const stop of stops) {
       stop.arrival_time = currentTime;
 
