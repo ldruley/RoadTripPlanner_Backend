@@ -91,9 +91,10 @@ export class StopsService {
       !createStopDto.sequence_number ||
       createStopDto.sequence_number > maxSequence + 1
     ) {
+      // If no sequence provided or it's beyond the end, add to the end
       createStopDto.sequence_number = maxSequence + 1;
     } else {
-      // Shift existing stops if necessary
+      // If we're inserting at a specific position, shift existing stops
       await this.shiftStopSequences(
         createStopDto.stint_id,
         createStopDto.sequence_number,
@@ -144,7 +145,6 @@ export class StopsService {
       locationId = location.location_id;
     }
     createStopDto.location_id = locationId;
-    // Create the stop
     const stop = repo.create(createStopDto);
     return repo.save(stop);
   }
@@ -184,12 +184,11 @@ export class StopsService {
       return null;
     }
     const { stint_id, sequence_number } = stop;
-    // Remove the stop
     const removedStop = await repo.findOne({ where: { stop_id: stopId } });
 
     // Shift sequence numbers down
     await this.shiftStopSequences(stint_id, sequence_number + 1, -1, manager);
-
+    await repo.delete({ stop_id: stopId });
     return removedStop;
   }
 
@@ -228,18 +227,18 @@ export class StopsService {
   ): Promise<void> {
     const repo = manager ? manager.getRepository(Stop) : this.stopRepository;
 
-    const stopsToShift = await repo.find({
-      where: {
-        stint_id: stintId,
-        sequence_number: MoreThanOrEqual(startSequence),
-      },
-      order: { sequence_number: 'ASC' },
-    });
-
-    for (const stop of stopsToShift) {
-      stop.sequence_number += offset;
-      await repo.save(stop);
-    }
+    await repo
+      .createQueryBuilder()
+      .update(Stop)
+      .set({
+        sequence_number: () => `sequence_number + ${offset}`,
+        updated_at: () => 'CURRENT_TIMESTAMP',
+      })
+      .where('stint_id = :stintId AND sequence_number >= :startSequence', {
+        stintId,
+        startSequence,
+      })
+      .execute();
   }
 
   /**

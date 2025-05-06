@@ -126,4 +126,15 @@ export class LegsService {
   //async update
   //async remove
   //update legs after stop changes
+  async deleteLegsByStopId(stop_id: number, manager: EntityManager) {
+    const legs = await this.legRepository.find({
+      where: [{ start_stop_id: stop_id }, { end_stop_id: stop_id }],
+    });
+
+    if (legs.length > 0) {
+      for (const leg of legs) {
+        await manager.delete(Leg, leg.leg_id);
+      }
+    }
+  }
 }

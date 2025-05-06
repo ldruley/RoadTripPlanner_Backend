@@ -300,212 +300,6 @@ export class ItineraryService {
     };
   }
 
-  /*async getTripTimeline(tripId: number, userId: number): Promise<TripTimeline> {
-    // First verify the trip exists and the user has access
-    const trip = await this.tripsService.findOne(tripId);
-    if (!trip) {
-      throw new NotFoundException(`Trip with ID ${tripId} not found`);
-    }
-
-    // Check if user has access to the trip
-    const hasAccess = await this.tripsService.checkUserInTrip(tripId, userId);
-    if (!hasAccess) {
-      throw new ForbiddenException(
-        'You do not have permission to view this trip',
-      );
-    }
-
-    // Get all stints for the trip
-    const stints = await this.stintsService.findAllByTripWithRelations(tripId);
-
-    // Build the timeline
-    const timeline: TripTimeline = {
-      trip_id: tripId,
-      title: trip.title,
-      description: trip.description,
-      start_date: trip.start_date,
-      end_date: trip.end_date,
-      total_distance: 0, // Will calculate below
-      total_duration: 0, // Will calculate below
-      stints: [],
-    };
-
-    if (!stints || stints.length === 0) {
-      throw new NotFoundException(`No stints found for trip with ID ${tripId}`);
-    }
-
-    for (const stint of stints) {
-      // Sort stops by sequence number
-      const sortedStops =
-        stint.stops?.sort((a, b) => a.sequence_number - b.sequence_number) ||
-        [];
-
-      // Sort legs by sequence number
-      const sortedLegs =
-        stint.legs?.sort((a, b) => a.sequence_number - b.sequence_number) || [];
-
-      const stintTimeline: TimelineStint = {
-        stint_id: stint.stint_id,
-        name: stint.name,
-        sequence_number: stint.sequence_number,
-        distance: stint.distance,
-        estimated_duration: stint.estimated_duration,
-        notes: stint.notes,
-        timeline: [],
-        continues_from_previous: stint.continues_from_previous,
-        start_time: stint.start_time,
-        end_time: stint.end_time,
-      };
-
-      // Add start location data
-      if (stint.start_location) {
-        stintTimeline.start_location_name = stint.start_location.name;
-      }
-
-      if (stint.end_location) {
-        stintTimeline.end_location_name = stint.end_location.name;
-      }
-
-      const timelineItems: TimelineItem[] = [];
-
-      // Handle departure from start location
-      if (stint.start_location) {
-        timelineItems.push({
-          type: 'departure',
-          sequence_number: 0,
-          item: {
-            stop_id: 0, // No actual stop_id for start location
-            name: stint.start_location.name,
-            latitude: stint.start_location.latitude,
-            longitude: stint.start_location.longitude,
-            address: stint.start_location.address || '',
-            stop_type: StopType.DEPARTURE,
-            arrival_time: stint.start_time, // Use stint start time
-            departure_time: stint.start_time, // Use stint start time
-            duration: 0, // No wait at departure point
-            sequence_number: 0,
-            notes: `Departure from ${stint.start_location.name}`,
-          },
-        });
-      }
-
-      // Add legs and stops to timeline
-      // First, add the leg from start location to first stop, if it exists
-      const firstLeg = sortedLegs.find(
-        (leg) => leg.start_location_id === stint.start_location_id,
-      );
-      if (firstLeg) {
-        timelineItems.push({
-          type: 'leg',
-          sequence_number: 0.5, // Before first stop
-          item: {
-            leg_id: firstLeg.leg_id,
-            distance: firstLeg.distance,
-            estimated_travel_time: firstLeg.estimated_travel_time,
-            route_type: firstLeg.route_type,
-            polyline: firstLeg.polyline,
-            notes: firstLeg.notes,
-            start_stop_name: stint.start_location?.name,
-            end_stop_name: firstLeg.end_stop?.name,
-          },
-        });
-      }
-
-      // Add regular stops and legs between them
-      sortedStops.forEach((stop, index) => {
-        // Add the stop
-        timelineItems.push({
-          type: 'stop',
-          sequence_number: stop.sequence_number,
-          item: {
-            stop_id: stop.stop_id,
-            name: stop.name,
-            latitude: stop.location.latitude,
-            longitude: stop.location.longitude,
-            address: stop.location.address || '',
-            stop_type: stop.stop_type,
-            arrival_time: stop.arrival_time,
-            departure_time: stop.departure_time,
-            duration: stop.duration,
-            sequence_number: stop.sequence_number,
-            notes: stop.notes,
-          },
-        });
-
-        // Add the leg after this stop (if not the last stop)
-        if (index < sortedStops.length - 1) {
-          const nextStop = sortedStops[index + 1];
-          const leg = sortedLegs.find(
-            (l) =>
-              l.start_stop_id === stop.stop_id &&
-              l.end_stop_id === nextStop.stop_id,
-          );
-
-          if (leg) {
-            timelineItems.push({
-              type: 'leg',
-              sequence_number: stop.sequence_number + 0.5, // Between stops
-              item: {
-                leg_id: leg.leg_id,
-                distance: leg.distance,
-                estimated_travel_time: leg.estimated_travel_time,
-                route_type: leg.route_type,
-                polyline: leg.polyline,
-                notes: leg.notes,
-                start_stop_name: stop.name,
-                end_stop_name: nextStop.name,
-              },
-            });
-          }
-        }
-      });
-
-      // Sort timeline items by sequence number
-      timelineItems.sort((a, b) => a.sequence_number - b.sequence_number);
-
-      stintTimeline.timeline = timelineItems;
-
-      // Calculate stint totals from database values, not by recomputing
-      if (!stintTimeline.distance) {
-        stintTimeline.distance = sortedLegs.reduce(
-          (total, leg) => total + (leg.distance || 0),
-          0,
-        );
-      }
-
-      if (!stintTimeline.estimated_duration) {
-        // Calculate from legs and stop durations
-        const legDuration = sortedLegs.reduce(
-          (total, leg) => total + (leg.estimated_travel_time || 0),
-          0,
-        );
-
-        const stopDuration = sortedStops.reduce(
-          (total, stop) => total + (stop.duration || 0),
-          0,
-        );
-
-        stintTimeline.estimated_duration = legDuration + stopDuration;
-      }
-
-      // Add stint to trip timeline
-      timeline.stints.push(stintTimeline);
-
-      // Add to total trip distance and duration
-      if (stintTimeline.distance) {
-        timeline.total_distance =
-          (timeline.total_distance || 0) + stintTimeline.distance;
-      }
-
-      if (stintTimeline.estimated_duration) {
-        timeline.total_duration =
-          (timeline.total_duration || 0) + stintTimeline.estimated_duration;
-      }
-    }
-
-    return timeline;
-  }*/
-
   /**
    * Create a new stint with optional initial stop
    */
@@ -603,31 +397,6 @@ export class ItineraryService {
           manager,
         );
 
-        /*// Create the initial stop
-        const createStopDto: CreateStopDto = {
-          name: dto.initialStop.name,
-          latitude: dto.initialStop.latitude,
-          longitude: dto.initialStop.longitude,
-          address: dto.initialStop.address,
-          stop_type: StopType.DEPARTURE,
-          sequence_number: 0,
-          notes: dto.initialStop.notes,
-          trip_id: dto.trip_id,
-          stint_id: stint.stint_id,
-          arrival_time: start_time,
-          departure_time: DateUtils.addMinutes(
-            start_time ?? new Date(),
-            dto.initialStop.duration || 0,
-          ),
-          duration: dto.initialStop.duration,
-        };
-
-        const savedStop = await this.stopsService.create(
-          createStopDto,
-          userId,
-          manager,
-        );*/
-
         stint = await this.stintsService.updateLocationReferences(
           stint,
           { start_location_id: savedLocation.location_id },
@@ -697,7 +466,7 @@ export class ItineraryService {
           manager,
         );
         console.log('updated location references');
-        await this.recalculateStintTimeline(stint, manager);
+        await this.recalculateStintTimeline(stint.stint_id, manager);
 
         return stop;
       })
@@ -732,52 +501,70 @@ export class ItineraryService {
 
     await this.tripsService.checkUserInTrip(stint.trip_id, userId);
 
-    let nextStop: Stop | null;
-    if (stop.sequence_number === 0) {
-      nextStop = await this.stopsService.getStopWithOffset(
-        stop.stint_id,
-        stop.sequence_number,
-        1,
+    // Check if this is the only stop in the stint
+    const stopCount = await this.stopsService.countByStint(stop.stint_id);
+    if (stopCount <= 1) {
+      throw new ForbiddenException(
+        'Cannot remove the only stop in a stint. Delete the entire stint instead.',
       );
-      if (!nextStop) {
-        throw new ForbiddenException(
-          'Cannot remove the departure stop when it is the only stop in the stint',
-        );
-      }
     }
 
     return this.dataSource
       .transaction(async (manager) => {
         const stintRepo = manager.getRepository(Stint);
+        const legRepo = manager.getRepository(Leg);
+        const stopRepo = manager.getRepository(Stop);
 
-        // TODO: consider moving this functionality to stintsService.
-        // If this is the first stop in the stint we need to update
-        if (stop.sequence_number === 0 && nextStop) {
-          stint.start_location_id = nextStop.stop_id;
-          await stintRepo.save(stint);
+        // Find and delete all legs that reference this stop
+        const affectedLegs = await legRepo.find({
+          where: [{ start_stop_id: stopId }, { end_stop_id: stopId }],
+        });
+
+        if (affectedLegs.length > 0) {
+          await legRepo.remove(affectedLegs);
         }
 
-        // Delete the stop
-        await this.stopsService.delete(stopId, userId, manager);
+        // Get the sequence number for shifting
+        const deletedSequence = stop.sequence_number;
+        await stopRepo.remove(stop);
 
-        // Get previous stop to send for updating legs
-        // TODO: Evaluate if we still need this
-        const previousStop = await this.stopsService.getStopWithOffset(
+        await this.stopsService.shiftStopSequences(
           stop.stint_id,
-          stop.sequence_number,
-          -1,
-        );
-
-        // Update legs and stint metadata
-        await this.updateLegsAfterStopChanges(
-          stop.stint_id,
-          previousStop ? [previousStop] : undefined,
+          deletedSequence + 1, // Start from the next sequence number
+          -1, // Shift down by 1
           manager,
         );
-        await this.updateStintStartEndLocations(stop.stint_id, manager);
-        await this.recalculateStintTimeline(stint, manager);
+
+        // Get updated list of stops
+        const remainingStops = await stopRepo.find({
+          where: { stint_id: stop.stint_id },
+          order: { sequence_number: 'ASC' },
+        });
+
+        if (remainingStops.length > 0) {
+          // Update legs between all stops
+          await this.updateLegsAfterStopChanges(
+            stop.stint_id,
+            remainingStops,
+            manager,
+          );
+          console.log('Updated legs after stop changes');
+          // Update stint start/end locations
+          const lastStop = remainingStops[remainingStops.length - 1];
+          console.log(lastStop);
+          await stintRepo.update(stint.stint_id, {
+            end_location_id: lastStop.location_id,
+          });
+
+          // Recalculate timeline
+          await this.recalculateStintTimeline(stint.stint_id, manager);
+        } else {
+          stint.end_location_id = stint.start_location_id;
+          await stintRepo.save(stint);
+        }
       })
       .then(() => {
+        // Update duration and distance calculations
         this.updateStintDuration(stop.stint_id).catch((error) => {
           console.error(
             `Failed to update stint duration for stint ID ${stop.stint_id}: ${error}`,
@@ -834,7 +621,7 @@ export class ItineraryService {
         const stopMap = new Map<number, Stop>();
         allStops.forEach((stop) => stopMap.set(stop.stop_id, stop));
 
-        // First, validate that all stops in the request belong to this stint
+        // validate that all stops in the request belong to this stint
         for (const item of stopOrder) {
           if (!stopMap.has(item.stop_id)) {
             throw new ForbiddenException(
@@ -843,7 +630,7 @@ export class ItineraryService {
           }
         }
 
-        // Create a comprehensive reordering plan including ALL stops in the stint
+        // Create a comprehensive reordering plan with all stops
         const reorderingPlan: {
           stop_id: number;
           sequence_number: number;
@@ -909,7 +696,7 @@ export class ItineraryService {
 
         await this.updateLegsAfterStopChanges(stintId, updatedStops, manager);
         await this.updateStintStartEndLocations(stintId, manager);
-        await this.recalculateStintTimeline(stint, manager);
+        await this.recalculateStintTimeline(stintId, manager);
       })
       .then(() => {
         this.updateStintDuration(stintId).catch((error) => {
@@ -925,109 +712,7 @@ export class ItineraryService {
       });
   }
 
-  /**
-   * Update legs after stops have been added, removed, or resequenced
-   * We are using manager to ensure that this is done in the same transaction
-   * TODO: maybe come back to this approach, check api if we can get legs in a single call
-   */
-  /* private async updateLegsAfterStopChanges(
-    stintId: number,
-    stopsChanged: Stop[] | undefined,
-    manager: EntityManager,
-  ): Promise<void> {
-    // If undefined or empty, no need to update legs - this should represent a removal of the first stop.
-    if (!stopsChanged || stopsChanged.length === 0) {
-      return;
-    }
-
-    // Get all stops in the stint, ordered by sequence
-    const stops = await manager.getRepository(Stop).find({
-      where: { stint_id: stintId },
-      order: { sequence_number: 'ASC' },
-    });
-
-    const legRepo = manager.getRepository(Leg);
-
-    // No legs needed with 0 or 1 stops - make sure we have no leftover legs in this case.
-    if (stops.length <= 1) {
-      const existingLegs = await legRepo.find({
-        where: { stint_id: stintId },
-      });
-      if (existingLegs.length > 0) {
-        await legRepo.remove(existingLegs);
-      }
-      return;
-    }
-
-    // Get affected legs based on passed stops and remove them
-    // TODO: they may already be removed, if this method is called from stop removal
-    let affectedLegs: Leg[] = [];
-    for (const stop of stopsChanged) {
-      const legs = await legRepo.find({
-        where: [{ start_stop_id: stop.stop_id }, { end_stop_id: stop.stop_id }],
-      });
-      affectedLegs = [...affectedLegs, ...legs];
-    }
-
-    // Remove affected legs
-    if (affectedLegs.length > 0) {
-      await legRepo.remove(affectedLegs);
-    }
-
-    // Get all remaining legs to update their sequence numbers if needed
-    // Approach is different that stops as it's more complex to determine
-    const remainingLegs = await legRepo.find({
-      where: { stint_id: stintId },
-      order: { sequence_number: 'ASC' },
-    });
-
-    // Create a map of stop_id to sequence_number for quick lookup
-    const stopSequenceMap = new Map<number, number>();
-    stops.forEach((stop) => {
-      stopSequenceMap.set(stop.stop_id, stop.sequence_number);
-    });
-
-    // Update sequence numbers of remaining legs based on their starting stop's sequence
-    for (const leg of remainingLegs) {
-      const startStopSequence = stopSequenceMap.get(leg.start_stop_id);
-      if (
-        startStopSequence !== undefined &&
-        leg.sequence_number !== startStopSequence
-      ) {
-        leg.sequence_number = startStopSequence;
-        await legRepo.save(leg);
-      }
-    }
-
-    // Create new legs between consecutive stops
-    for (let i = 0; i < stops.length - 1; i++) {
-      const currentStop = stops[i];
-      const nextStop = stops[i + 1];
-
-      const leg = await legRepo.findOne({
-        where: {
-          start_stop_id: currentStop.stop_id,
-          end_stop_id: nextStop.stop_id,
-        },
-      });
-
-      if (!leg) {
-        const newLeg = legRepo.create({
-          stint_id: stintId,
-          start_stop_id: currentStop.stop_id,
-          end_stop_id: nextStop.stop_id,
-          sequence_number: currentStop.sequence_number,
-          distance: 10, // This should be calculated based on api calls
-          estimated_travel_time: 10, // This should be calculated based on api calls
-        });
-
-        await legRepo.save(newLeg);
-      }
-    }
-  }*/
-
-  //TODO: this needs updating, left in a wierd state after refactors/changes
-  private async updateLegsAfterStopChanges(
+  async updateLegsAfterStopChanges(
     stintId: number,
     stopsChanged: Stop[] | undefined,
     manager: EntityManager,
@@ -1074,7 +759,13 @@ export class ItineraryService {
       where: { stint_id: stintId },
     });
     if (existingLegs.length > 0) {
+      console.log('removing existing legs');
       await legRepo.remove(existingLegs);
+    }
+    console.log('removed existing legs');
+    // If there are no stops, don't create legs
+    if (stops.length === 0) {
+      return;
     }
 
     // Create leg between start location and first stop.
@@ -1087,6 +778,7 @@ export class ItineraryService {
       estimated_travel_time: 10, // This should be calculated based on API calls
     });
     console.log('saving first leg');
+    console.log(leg);
     await legRepo.save(leg);
 
     // Create legs between consecutive stops
@@ -1098,14 +790,16 @@ export class ItineraryService {
         stint_id: stintId,
         start_stop_id: currentStop.stop_id,
         end_stop_id: nextStop.stop_id,
-        sequence_number: currentStop.sequence_number, // This will be 1, 2, 3...
+        sequence_number: currentStop.sequence_number,
         distance: 10, // This should be calculated based on API calls
         estimated_travel_time: 10, // This should be calculated based on API calls
       });
       console.log('saving legs');
+      console.log(leg);
       await legRepo.save(leg);
       console.log('legs saved');
     }
+    console.log('all legs saved');
   }
 
   /**
@@ -1144,94 +838,23 @@ export class ItineraryService {
     // Update the stint with the new duration
     const stint = await this.stintsService.findById(stintId);
     stint.estimated_duration = legDuration + stopDuration;
+    const lastStop = await this.stopsService.getStintEnd(stintId, manager);
+    if (lastStop) {
+      stint.end_time = lastStop.departure_time;
+    }
+
     await repo.save(stint);
   }
 
-  /*async recalculateStintTimeline(
-    stint: Stint,
-    manager?: EntityManager,
-  ): Promise<void> {
-    const stopRepo = manager
-      ? manager.getRepository(Stop)
-      : this.dataSource.getRepository(Stop);
-
-    const legRepo = manager
-      ? manager.getRepository(Leg)
-      : this.dataSource.getRepository(Leg);
-    const freshStops = await stopRepo.find({
-      where: { stint_id: stint.stint_id },
-      order: { sequence_number: 'ASC' },
-      relations: ['location'],
-    });
-
-    const freshLegs = await legRepo.find({
-      where: { stint_id: stint.stint_id },
-      order: { sequence_number: 'ASC' },
-    });
-
-    let currentTime = stint.start_time;
-    const updatedStops: Stop[] = [];
-    const updatedLegs: Leg[] = [];
-
-    // Handle first leg (from start location to first stop)
-    const firstLeg = freshLegs.find(
-      (leg) => leg.start_location_id === stint.start_location_id,
-    );
-    if (firstLeg && currentTime) {
-      currentTime = DateUtils.addMinutes(
-        currentTime,
-        firstLeg.estimated_travel_time,
-      );
-      updatedLegs.push(firstLeg);
-    }
-
-    // Process each stop and the leg after it
-    for (const stop of freshStops) {
-      // Update stop timing
-      stop.arrival_time = currentTime;
-      stop.departure_time = DateUtils.addMinutes(
-        stop.arrival_time,
-        stop.duration || 0,
-      );
-      updatedStops.push(stop);
-
-      // Update current time to departure time
-      currentTime = stop.departure_time;
-
-      // Find the leg starting from this stop
-      const nextLeg = freshLegs.find(
-        (leg) => leg.start_stop_id === stop.stop_id,
-      );
-      if (nextLeg) {
-        // Update current time based on leg travel time
-        currentTime = DateUtils.addMinutes(
-          currentTime,
-          nextLeg.estimated_travel_time,
-        );
-        updatedLegs.push(nextLeg);
-      }
-    }
-
-    // Update stint end location and time
-    if (freshStops.length > 0) {
-      const lastStop = freshStops[freshStops.length - 1];
-      stint.end_location_id = lastStop.location_id;
-      stint.end_time = lastStop.departure_time;
-      await manager?.getRepository(Stint).save(stint);
-    }
-
-    // Save all updated stops and legs
-    if (updatedStops.length > 0) {
-      await stopRepo.save(updatedStops);
-    }
-
-    if (updatedLegs.length > 0) {
-      await legRepo.save(updatedLegs);
-    }
-  }*/
-
+  /**
+   * Recalculate the timeline for a stint based on its stops and legs
+   * This is called after adding/removing stops or legs
+   * @param stint_id The ID of the stint to recalculate
+   * @param manager Optional EntityManager for transaction
+   * @returns Promise<void>
+   */
   async recalculateStintTimeline(
-    stint: Stint,
+    stint_id: number,
     manager?: EntityManager,
   ): Promise<void> {
     const stopRepo = manager
@@ -1242,12 +865,22 @@ export class ItineraryService {
       ? manager.getRepository(Leg)
       : this.dataSource.getRepository(Leg);
     console.log('start');
-    const stops = stint.stops.sort(
-      (a, b) => a.sequence_number - b.sequence_number,
-    );
-    const legs = stint.legs.sort(
-      (a, b) => a.sequence_number - b.sequence_number,
-    );
+
+    const stint = await this.stintsService.findById(stint_id);
+    if (!stint) {
+      throw new NotFoundException(`Stint with ID ${stint_id} not found`);
+    }
+    const stops = await stopRepo.find({
+      where: { stint_id: stint_id },
+      order: { sequence_number: 'ASC' },
+      relations: ['location'],
+    });
+
+    const legs = await legRepo.find({
+      where: { stint_id: stint_id },
+      order: { sequence_number: 'ASC' },
+    });
+
     let currentTime = stint.start_time;
     const updatedStops: Stop[] = [];
     const updatedLegs: Leg[] = [];
@@ -1293,114 +926,6 @@ export class ItineraryService {
     await stopRepo.save(updatedStops);
     await legRepo.save(updatedLegs);
   }
-
-  /**
-   * Update all arrival and departure times for a stint based on legs and stop durations
-   * This should be called after any stop changes or leg updates
-   * TODO: Investigate combining some of these post-processing methods
-   */
-  /*private async updateStintTimings(
-    stintId: number,
-    manager: EntityManager,
-  ): Promise<void> {
-    const stint = await manager.getRepository(Stint).findOne({
-      where: { stint_id: stintId },
-      relations: ['start_location'],
-    });
-
-    if (!stint) {
-      throw new NotFoundException(`Stint with ID ${stintId} not found`);
-    }
-
-    // If this is a continuation stint, we need to set the start location and time
-    if (stint.continues_from_previous && !stint.start_location_id) {
-      const lastStop = await this.stopsService.getStintEnd(stintId, manager);
-      if (lastStop) {
-        stint.start_location_id = lastStop.location_id;
-        stint.start_time = lastStop.departure_time;
-      }
-    }
-
-    /!* let currentTime = stint.start_time;
-    if (stint.continues_from_previous && stint.start_location_id) {
-      const previousStintEndLocation = await manager
-        .getRepository(Stop)
-        .findOne({
-          where: { stop_id: stint.start_location_id },
-        });
-
-      if (previousStintEndLocation && previousStintEndLocation.departure_time) {
-        currentTime = previousStintEndLocation.departure_time;
-        stint.start_time = currentTime;
-        await manager.getRepository(Stint).save(stint);
-      }
-    }*!/
-
-    const startTime = stint.start_time;
-    if (!startTime) {
-      throw new NotFoundException(`Stint with ID ${stintId} has no start time`);
-    }
-
-    const stops = await manager.getRepository(Stop).find({
-      where: { stint_id: stintId },
-      order: { sequence_number: 'ASC' },
-    });
-
-    const legs = await manager.getRepository(Leg).find({
-      where: { stint_id: stintId },
-      order: { sequence_number: 'ASC' },
-    });
-
-    if (stops.length === 0) {
-      return;
-    }
-    let currentTime = startTime;
-    // We need to set the arrival and departure times for each stop, accounting for the first leg which is from the departure location (not stop)
-    for (let i = 0; i < stops.length; i++) {
-      const stop = stops[i];
-
-      if (i === 0) {
-        // First stop is the start location
-        stop.arrival_time = startTime;
-        stop.departure_time = startTime;
-      }
-
-      // Find the leg that arrives at this stop
-      const incomingLeg = legs.find((leg) => leg.end_stop_id === stop.stop_id);
-
-      if (incomingLeg) {
-        // Calculate arrival time based on previous stop's departure + leg travel time
-        stop.arrival_time = DateUtils.addMinutes(
-          currentTime,
-          incomingLeg.estimated_travel_time,
-        );
-        currentTime = stop.arrival_time;
-      } else {
-        // If no incoming leg, use current time
-        stop.arrival_time = currentTime;
-      }
-
-      // Calculate departure time based on arrival + duration
-      if (stop.duration) {
-        stop.departure_time = DateUtils.addMinutes(
-          stop.arrival_time,
-          stop.duration,
-        );
-        currentTime = stop.departure_time;
-      } else {
-        stop.departure_time = stop.arrival_time;
-      }
-
-      await manager.getRepository(Stop).save(stop);
-    }
-
-    // Update stint end time
-    if (stops.length > 0) {
-      const lastStop = stops[stops.length - 1];
-      stint.end_time = lastStop.departure_time;
-      await manager.getRepository(Stint).save(stint);
-    }
-  }*/
 
   /**
    * Update the start and end locations of a stint based on its stops
