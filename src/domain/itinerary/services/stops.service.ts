@@ -1,9 +1,16 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateStopDto } from '../dto/create-stop.dto';
 import { Stop } from '../entities/stop.entity';
 import { EntityManager, MoreThanOrEqual, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { LocationsService } from '../../locations/locations.service';
+import { UpdateStopDto } from '../dto/update-stop.dto';
+import { Stint } from '../entities/stint.entity';
+import { DateUtils } from '../../../common/utils';
 
 @Injectable()
 export class StopsService {
@@ -149,25 +156,48 @@ export class StopsService {
     return repo.save(stop);
   }
 
-  /** Update a stop
-   * @param id The ID of the stop to update
-   * @param updateStopDto The DTO containing the updated stop data
+  /**
+   * Update a stop with limited fields (only duration, stop_type, and notes)
+   * @param stopId The ID of the stop to update
+   * @param updateStopDto The DTO with the fields to update
    * @param userId The ID of the user making the request
    * @param manager Optional EntityManager for transaction handling
+   * @returns The updated stop
    */
-  /*  async update(
-    id: number,
-    updateStopDto: Partial<Stop>,
+  async update(
+    stopId: number,
+    updateStopDto: UpdateStopDto,
     userId: number,
     manager?: EntityManager,
   ): Promise<Stop> {
     const repo = manager ? manager.getRepository(Stop) : this.stopRepository;
-    const stop = await this.findById(id, manager);
-    if (!stop) {
-      throw new NotFoundException(`Stop with ID ${id} not found`);
+
+    // Find the stop
+    const stop = await this.findById(stopId, manager);
+    console.log(stop);
+
+    // Only update allowed fields
+    if (updateStopDto.duration !== undefined) {
+      stop.duration = updateStopDto.duration;
+      // If duration changes, we should update the departure time
+      if (stop.arrival_time) {
+        stop.departure_time = DateUtils.addMinutes(
+          stop.arrival_time,
+          updateStopDto.duration,
+        );
+      }
     }
 
-  }*/
+    if (updateStopDto.stop_type !== undefined) {
+      stop.stop_type = updateStopDto.stop_type;
+    }
+
+    if (updateStopDto.notes !== undefined) {
+      stop.notes = updateStopDto.notes;
+    }
+    // Save and return the updated stop
+    return repo.save(stop);
+  }
 
   /**
    * Remove a stop with sequence handling

@@ -16,12 +16,13 @@ describe('SuppliesController', () => {
     name: '4 person tent',
     category: SupplyCategory.GEAR,
     created_at: new Date(),
+    tripSupplies: [],
   };
 
   beforeEach(async () => {
     const mockSuppliesService = {
       create: jest.fn(),
-      findAll: jest.fn(),
+      findAllSupplies: jest.fn(),
       findOne: jest.fn(),
       findByCategory: jest.fn(),
       update: jest.fn(),
@@ -58,19 +59,19 @@ describe('SuppliesController', () => {
       const result = await controller.create(createSupplyDto);
 
       expect(service.create).toHaveBeenCalledWith(createSupplyDto);
-      expect(result).toBe(mockSupply);
+      expect(result).toEqual(mockSupply);
     });
   });
 
   describe('findAll', () => {
     it('should return all supplies', async () => {
       const supplies = [mockSupply];
-      service.findAll.mockResolvedValue(supplies);
+      service.findAllSupplies.mockResolvedValue(supplies);
 
       const result = await controller.findAll();
 
-      expect(service.findAll).toHaveBeenCalled();
-      expect(result).toBe(supplies);
+      expect(service.findAllSupplies).toHaveBeenCalled();
+      expect(result).toEqual(supplies);
     });
   });
 
@@ -81,7 +82,7 @@ describe('SuppliesController', () => {
       const result = await controller.findOne(1);
 
       expect(service.findOne).toHaveBeenCalledWith(1);
-      expect(result).toBe(mockSupply);
+      expect(result).toEqual(mockSupply);
     });
 
     it('should throw NotFoundException when supply not found', async () => {
@@ -99,7 +100,7 @@ describe('SuppliesController', () => {
       const result = await controller.findByCategory(SupplyCategory.GEAR);
 
       expect(service.findByCategory).toHaveBeenCalledWith(SupplyCategory.GEAR);
-      expect(result).toBe(supplies);
+      expect(result).toEqual(supplies);
     });
   });
 
@@ -116,7 +117,7 @@ describe('SuppliesController', () => {
       const result = await controller.update(1, updateSupplyDto);
 
       expect(service.update).toHaveBeenCalledWith(1, updateSupplyDto);
-      expect(result).toBe(updatedSupply);
+      expect(result).toEqual(updatedSupply);
     });
 
     it('should throw NotFoundException when supply not found', async () => {

@@ -21,6 +21,7 @@ describe('VehiclesController', () => {
     updated_at: new Date(),
     created_trips: [],
     owned_vehicles: [],
+    tripParticipants: [],
   };
 
   const mockVehicle: Vehicle = {
@@ -80,7 +81,7 @@ describe('VehiclesController', () => {
         ...createVehicleDto,
         owner_id: mockUser.user_id,
       });
-      expect(result).toBe(mockVehicle);
+      expect(result).toEqual(mockVehicle);
     });
   });
 
@@ -91,7 +92,7 @@ describe('VehiclesController', () => {
       const result = await controller.findOne(1);
 
       expect(service.findOne).toHaveBeenCalledWith(1);
-      expect(result).toBe(mockVehicle);
+      expect(result).toEqual(mockVehicle);
     });
 
     it('should throw NotFoundException when vehicle not found', async () => {
@@ -109,7 +110,7 @@ describe('VehiclesController', () => {
       const result = await controller.findByOwner(1);
 
       expect(service.findByOwner).toHaveBeenCalledWith(1);
-      expect(result).toBe(vehicles);
+      expect(result).toEqual(vehicles);
     });
 
     it('should throw NotFoundException when no vehicles found', async () => {
@@ -129,7 +130,7 @@ describe('VehiclesController', () => {
       const result = await controller.findByAuthenticatedUser(mockUser);
 
       expect(service.findByOwner).toHaveBeenCalledWith(mockUser.user_id);
-      expect(result).toBe(vehicles);
+      expect(result).toEqual(vehicles);
     });
   });
 
@@ -156,7 +157,7 @@ describe('VehiclesController', () => {
         updateVehicleDto,
         mockUser.user_id,
       );
-      expect(result).toBe(updatedVehicle);
+      expect(result).toEqual(updatedVehicle);
     });
 
     it('should throw ForbiddenException when user is not owner', async () => {

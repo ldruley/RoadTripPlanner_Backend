@@ -154,12 +154,12 @@ export class StopsController {
     return this.stopsService.findById(id);
   }
 
-  /*  @Put(':id')
+  @Patch(':id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
-    summary: '[IN PROGRESS]: Update a stop',
-    description: 'For updating stop metadata, not the sequence number',
+    summary: 'Update a stop',
+    description: "Update a stop's duration, stop type, or notes",
   })
   @ApiParam({ name: 'id', description: 'Stop ID' })
   @ApiResponse({ status: 200, description: 'Stop updated successfully' })
@@ -170,13 +170,36 @@ export class StopsController {
     description: 'Forbidden - user does not have permission',
   })
   @ApiResponse({ status: 404, description: 'Stop not found' })
+  @ApiBody({
+    type: UpdateStopDto,
+    examples: {
+      'Update Duration': {
+        value: {
+          duration: 180,
+        },
+        summary: 'Update stop duration',
+      },
+      'Update Stop Type': {
+        value: {
+          stop_type: 'overnight',
+        },
+        summary: 'Change stop type',
+      },
+      'Update Notes': {
+        value: {
+          notes: 'Bring hiking shoes and warm clothes',
+        },
+        summary: 'Update stop notes',
+      },
+    },
+  })
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateStopDto: UpdateStopDto,
     @GetUser() user: User,
   ) {
-    return this.stopsService.update(id, updateStopDto, user.user_id);
-  }*/
+    return this.itineraryService.updateStop(id, updateStopDto, user.user_id);
+  }
 
   @Patch('stint/:stintId/reorder-stops')
   @UseGuards(JwtAuthGuard)

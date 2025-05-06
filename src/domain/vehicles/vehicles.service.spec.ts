@@ -1,14 +1,15 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { VehiclesService } from './vehicles.service';
-import { VehiclesRepository } from './repository/vehicles.repository';
+import { getRepositoryToken } from '@nestjs/typeorm';
 import { CreateVehicleDto } from './dto/create-vehicle-dto';
 import { UpdateVehicleDto } from './dto/update-vehicle-dto';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Vehicle } from './entities/vehicle.entity';
+import { Repository } from 'typeorm';
 
 describe('VehiclesService', () => {
   let service: VehiclesService;
-  let repository: jest.Mocked<VehiclesRepository>;
+  let repository: jest.Mocked<Repository<Vehicle>>;
 
   const mockVehicle: Vehicle = {
     vehicle_id: 1,
@@ -23,11 +24,11 @@ describe('VehiclesService', () => {
   };
 
   beforeEach(async () => {
-    const mockVehiclesRepository = {
+    const mockRepository = {
       create: jest.fn(),
       save: jest.fn(),
-      findById: jest.fn(),
-      findByOwner: jest.fn(),
+      findOne: jest.fn(),
+      find: jest.fn(),
       remove: jest.fn(),
     };
 
@@ -35,14 +36,23 @@ describe('VehiclesService', () => {
       providers: [
         VehiclesService,
         {
-          provide: VehiclesRepository,
-          useValue: mockVehiclesRepository,
+          provide: getRepositoryToken(Vehicle),
+          useValue: mockRepository,
         },
       ],
     }).compile();
 
     service = module.get<VehiclesService>(VehiclesService);
-    repository = module.get(VehiclesRepository);
+    repository = module.get(getRepositoryToken(Vehicle));
+
+    // Mock BaseService methods
+    (service as any).findOneOrThrow = jest.fn();
+    (service as any).findAll = jest.fn();
+    (service as any).getRepo = jest.fn().mockReturnValue(repository);
+  });
+
+  it('should be defined', () => {
+    expect(service).toBeDefined();
   });
 
   describe('create', () => {
@@ -62,22 +72,27 @@ describe('VehiclesService', () => {
 
       expect(repository.create).toHaveBeenCalledWith(createVehicleDto);
       expect(repository.save).toHaveBeenCalledWith(mockVehicle);
-      expect(result).toBe(mockVehicle);
+      expect(result).toEqual(mockVehicle);
     });
   });
 
   describe('findOne', () => {
     it('should return a vehicle when found', async () => {
-      repository.findById.mockResolvedValue(mockVehicle);
+      (service as any).findOneOrThrow.mockResolvedValue(mockVehicle);
 
       const result = await service.findOne(1);
 
-      expect(repository.findById).toHaveBeenCalledWith(1);
-      expect(result).toBe(mockVehicle);
+      expect((service as any).findOneOrThrow).toHaveBeenCalledWith(
+        { vehicle_id: 1 },
+        undefined,
+      );
+      expect(result).toEqual(mockVehicle);
     });
 
     it('should throw NotFoundException when vehicle not found', async () => {
-      repository.findById.mockResolvedValue(null);
+      (service as any).findOneOrThrow.mockRejectedValue(
+        new NotFoundException(),
+      );
 
       await expect(service.findOne(999)).rejects.toThrow(NotFoundException);
     });
@@ -86,16 +101,19 @@ describe('VehiclesService', () => {
   describe('findByOwner', () => {
     it('should return vehicles for owner', async () => {
       const vehicles = [mockVehicle];
-      repository.findByOwner.mockResolvedValue(vehicles);
+      (service as any).findAll.mockResolvedValue(vehicles);
 
       const result = await service.findByOwner(1);
 
-      expect(repository.findByOwner).toHaveBeenCalledWith(1);
-      expect(result).toBe(vehicles);
+      expect((service as any).findAll).toHaveBeenCalledWith(
+        { owner_id: 1 },
+        undefined,
+      );
+      expect(result).toEqual(vehicles);
     });
 
     it('should throw NotFoundException when no vehicles found for owner', async () => {
-      repository.findByOwner.mockResolvedValue([]);
+      (service as any).findAll.mockResolvedValue([]);
 
       await expect(service.findByOwner(999)).rejects.toThrow(NotFoundException);
     });
@@ -111,18 +129,20 @@ describe('VehiclesService', () => {
 
     it('should update vehicle successfully when user is owner', async () => {
       const updatedVehicle = { ...mockVehicle, ...updateVehicleDto };
-      repository.findById.mockResolvedValue(mockVehicle);
+
+      // Mock the findOne method to return the mock vehicle
+      service.findOne = jest.fn().mockResolvedValue(mockVehicle);
       repository.save.mockResolvedValue(updatedVehicle);
 
       const result = await service.update(1, updateVehicleDto, 1);
 
-      expect(repository.findById).toHaveBeenCalledWith(1);
+      expect(service.findOne).toHaveBeenCalledWith(1);
       expect(repository.save).toHaveBeenCalled();
       expect(result).toEqual(updatedVehicle);
     });
 
     it('should throw ForbiddenException when user is not owner', async () => {
-      repository.findById.mockResolvedValue(mockVehicle);
+      service.findOne = jest.fn().mockResolvedValue(mockVehicle);
 
       await expect(service.update(1, updateVehicleDto, 999)).rejects.toThrow(
         ForbiddenException,
@@ -131,7 +151,7 @@ describe('VehiclesService', () => {
     });
 
     it('should throw NotFoundException when vehicle not found', async () => {
-      repository.findById.mockResolvedValue(null);
+      service.findOne = jest.fn().mockRejectedValue(new NotFoundException());
 
       await expect(service.update(999, updateVehicleDto, 1)).rejects.toThrow(
         NotFoundException,
@@ -141,24 +161,24 @@ describe('VehiclesService', () => {
 
   describe('remove', () => {
     it('should remove vehicle successfully when user is owner', async () => {
-      repository.findById.mockResolvedValue(mockVehicle);
+      service.findOne = jest.fn().mockResolvedValue(mockVehicle);
       repository.remove.mockResolvedValue(mockVehicle);
 
       await service.remove(1, 1);
 
-      expect(repository.findById).toHaveBeenCalledWith(1);
+      expect(service.findOne).toHaveBeenCalledWith(1);
       expect(repository.remove).toHaveBeenCalledWith(mockVehicle);
     });
 
     it('should throw ForbiddenException when user is not owner', async () => {
-      repository.findById.mockResolvedValue(mockVehicle);
+      service.findOne = jest.fn().mockResolvedValue(mockVehicle);
 
       await expect(service.remove(1, 999)).rejects.toThrow(ForbiddenException);
       expect(repository.remove).not.toHaveBeenCalled();
     });
 
     it('should throw NotFoundException when vehicle not found', async () => {
-      repository.findById.mockResolvedValue(null);
+      service.findOne = jest.fn().mockRejectedValue(new NotFoundException());
 
       await expect(service.remove(999, 1)).rejects.toThrow(NotFoundException);
     });

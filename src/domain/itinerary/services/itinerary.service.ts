@@ -31,6 +31,7 @@ import { Trip } from '../../trips/entities/trip.entity';
 import { TripParticipant } from '../../trips/entities/trip-participant.entity';
 import { StintVehicle } from '../entities/stint-vehicle.entity';
 import { TripSupply } from '../../trips/entities/trip.supplies.entity';
+import { UpdateStopDto } from '../dto/update-stop.dto';
 
 //TODO: Implement TimelineLeg and TimelineStop interfaces - or figure out a combiined approach to interweave them into the timeline
 //TODO: potentially a dto for timeline?
@@ -136,12 +137,19 @@ export class ItineraryService {
     return plainToInstance(TripTimelineResponseDto, timelineModel);
   }
   private buildTripTimeline(trip: Trip, stints: Stint[]): TripTimelineModel {
+    let startDate = trip.start_date;
+    let endDate = trip.end_date;
+    if (stints.length > 0) {
+      startDate = stints[0].start_time;
+      endDate = stints[stints.length - 1].end_time;
+    }
+
     const timeline: TripTimelineModel = {
       tripId: trip.trip_id,
       title: trip.title,
       description: trip.description,
-      startDate: this.formatDateToIso(trip.start_date),
-      endDate: this.formatDateToIso(trip.end_date),
+      startDate: this.formatDateToIso(startDate),
+      endDate: this.formatDateToIso(endDate),
       totalDistance: 0,
       totalDuration: 0,
       stints: [],
@@ -498,6 +506,7 @@ export class ItineraryService {
           manager,
         );
         await this.recalculateStintTimeline(stint.stint_id, manager);
+        await this.updateTripMetadata(stint.trip_id, manager);
 
         return stop;
       })
@@ -514,6 +523,24 @@ export class ItineraryService {
         );
         return savedStop;
       });
+  }
+
+  updateStop(
+    stopId: number,
+    updateStopDto: UpdateStopDto,
+    userId: number,
+  ): Promise<Stop> {
+    return this.dataSource.transaction(async (manager) => {
+      const stop = await this.stopsService.update(
+        stopId,
+        updateStopDto,
+        userId,
+        manager,
+      );
+      const stint = await this.stintsService.findById(stop.stint_id, manager);
+      await this.updateTripMetadata(stint.trip_id, manager);
+      return stop;
+    });
   }
 
   /**
@@ -591,6 +618,7 @@ export class ItineraryService {
           stint.end_location_id = stint.start_location_id;
           await stintRepo.save(stint);
         }
+        await this.updateTripMetadata(stint.trip_id, manager);
       })
       .then(() => {
         // Update duration and distance calculations
@@ -715,6 +743,7 @@ export class ItineraryService {
         await this.updateLegsAfterStopChanges(stintId, updatedStops, manager);
         await this.updateStintStartEndLocations(stintId, manager);
         await this.recalculateStintTimeline(stintId, manager);
+        await this.updateTripMetadata(stint.trip_id, manager);
       })
       .then(() => {
         this.updateStintDuration(stintId).catch((error) => {
@@ -955,6 +984,79 @@ export class ItineraryService {
     }
     stint.end_location_id = stop.location_id;
     await manager.getRepository(Stint).save(stint);
+  }
+
+  /**
+   * Update trip metadata based on its stints, stops and legs
+   * @param tripId The ID of the trip to update
+   * @param manager Optional EntityManager for transaction
+   * @returns Promise<Trip> The updated trip
+   */
+  async updateTripMetadata(
+    tripId: number,
+    manager?: EntityManager,
+  ): Promise<Trip> {
+    // Reuse the transaction pattern if no manager provided
+    if (!manager) {
+      return this.dataSource.transaction((manager) =>
+        this.updateTripMetadata(tripId, manager),
+      );
+    }
+
+    const tripRepo = manager.getRepository(Trip);
+    const trip = await this.tripsService.findOne(tripId, manager);
+
+    // Get all stints for this trip with their legs and stops
+    const stints = await this.stintsService.findAllByTripWithRelations(
+      tripId,
+      manager,
+    );
+
+    if (stints.length === 0) {
+      return trip; // Nothing to update
+    }
+
+    // Calculate total distance by summing all stint distances
+    let totalDistance = 0;
+
+    // Find the earliest start time and latest end time across all stints
+    let earliestStartTime: Date | null = null;
+    let latestEndTime: Date | null = null;
+
+    for (const stint of stints) {
+      // Add stint distance to total
+      totalDistance += stint.distance || 0;
+
+      // Check and update start date
+      if (
+        stint.start_time &&
+        (!earliestStartTime || stint.start_time < earliestStartTime)
+      ) {
+        earliestStartTime = stint.start_time;
+      }
+
+      // Check and update end date
+      if (
+        stint.end_time &&
+        (!latestEndTime || stint.end_time > latestEndTime)
+      ) {
+        latestEndTime = stint.end_time;
+      }
+    }
+
+    // Update trip properties
+    trip.total_distance = totalDistance;
+
+    if (earliestStartTime) {
+      trip.start_date = new Date(earliestStartTime.setHours(0, 0, 0, 0)); // Set to start of day
+    }
+
+    if (latestEndTime) {
+      trip.end_date = new Date(latestEndTime.setHours(23, 59, 59, 999)); // Set to end of day
+    }
+
+    // Save and return updated trip
+    return tripRepo.save(trip);
   }
 
   formatDateToIso(date?: Date | null): string | null {
