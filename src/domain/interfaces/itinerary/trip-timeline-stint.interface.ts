@@ -14,4 +14,5 @@ export class StintTimelineModel {
   endLocationName?: string;
   timeline: TimelineEventModel[];
   vehicles?: StintVehicleInfo[];
+  googleMapsUrl?: string;
 }

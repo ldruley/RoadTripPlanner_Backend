@@ -219,6 +219,38 @@ export class ItineraryService {
       }
     });
 
+    // Google maps url creation
+    const locations: GeoCoordinates[] = [];
+
+    // Add start location if it exists
+    if (stint.start_location) {
+      locations.push({
+        lat: stint.start_location.latitude,
+        lng: stint.start_location.longitude,
+      });
+    }
+
+    // Add each stop's location
+    for (const stop of sortedStops) {
+      if (stop.location) {
+        locations.push({
+          lat: stop.location.latitude,
+          lng: stop.location.longitude,
+        });
+      } else {
+        locations.push({
+          lat: stop.latitude,
+          lng: stop.longitude,
+        });
+      }
+    }
+
+    // Generate the Google Maps URL if we have enough locations
+    let googleMapsUrl: string | undefined;
+    if (locations.length >= 2) {
+      googleMapsUrl = this.buildGoogleMapsRouteUrl(locations);
+    }
+
     return {
       stintId: stint.stint_id,
       name: stint.name,
@@ -233,6 +265,7 @@ export class ItineraryService {
       startLocationName: stint.start_location?.name,
       endLocationName: stint.end_location?.name,
       vehicles: [],
+      googleMapsUrl: googleMapsUrl,
     };
   }
 
@@ -942,8 +975,6 @@ export class ItineraryService {
       where: { stint_id: stintId },
     });
 
-    const updated = false;
-
     if (!stint) {
       throw new NotFoundException(
         `Stint with ID ${stintId} not found while updating stint locations.`,
@@ -966,5 +997,31 @@ export class ItineraryService {
     }
 
     return date.toISOString();
+  }
+
+  buildGoogleMapsRouteUrl(locations: GeoCoordinates[]) {
+    if (!Array.isArray(locations) || locations.length < 2) {
+      throw new Error(
+        'At least two locations (start and destination) are required.',
+      );
+    }
+
+    const formatCoord = ({ lat, lng }) => `${lat},${lng}`;
+
+    const origin = formatCoord(locations[0]);
+    const destination = formatCoord(locations[locations.length - 1]);
+    // Max 9 waypoints for free version
+    const waypointCoords = locations.slice(1, -1).slice(0, 9);
+    const waypoints = waypointCoords.map(formatCoord).join('|');
+
+    const url = new URL('https://www.google.com/maps/dir/');
+    url.searchParams.set('api', '1');
+    url.searchParams.set('origin', origin);
+    url.searchParams.set('destination', destination);
+    if (waypoints) {
+      url.searchParams.set('waypoints', waypoints);
+    }
+
+    return url.toString();
   }
 }

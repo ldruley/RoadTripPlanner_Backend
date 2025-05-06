@@ -51,4 +51,8 @@ export class StintTimelineResponseDto {
   @Expose()
   @Type(() => TimelineEventResponseDto)
   timeline: TimelineEventResponseDto[];
+
+  @ApiProperty({ required: false })
+  @Expose()
+  googleMapsUrl?: string;
 }
