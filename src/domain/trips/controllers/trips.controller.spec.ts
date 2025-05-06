@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { TripsController } from './trips.controller';
+import { TripsController } from '../controllers/trips.controller';
 import { TripsService } from '../services/trips.service';
 import { ItineraryService } from '../../itinerary/services/itinerary.service';
 import { CreateTripDto } from '../dto/create-trip.dto';
@@ -23,6 +23,7 @@ describe('TripsController', () => {
     updated_at: new Date(),
     created_trips: [],
     owned_vehicles: [],
+    tripParticipants: [],
   };
 
   const mockTrip: Trip = {
@@ -38,7 +39,15 @@ describe('TripsController', () => {
     updated_at: new Date(),
     creator: mockUser,
     stints: [],
-    stops: [],
+    participants: [],
+    supplies: [],
+  };
+
+  const mockTimeline = {
+    tripId: 1,
+    title: 'Test Trip',
+    description: 'Test Description',
+    stints: [],
   };
 
   beforeEach(async () => {
@@ -117,13 +126,6 @@ describe('TripsController', () => {
   });
 
   describe('getTimeline', () => {
-    const mockTimeline = {
-      trip_id: 1,
-      title: 'Test Trip',
-      description: 'Test Description',
-      stints: [],
-    };
-
     it('should return trip timeline', async () => {
       itineraryService.getTripTimeline.mockResolvedValue(mockTimeline as any);
 
@@ -134,6 +136,16 @@ describe('TripsController', () => {
         mockUser.user_id,
       );
       expect(result).toBe(mockTimeline);
+    });
+
+    it('should throw NotFoundException when timeline not found', async () => {
+      itineraryService.getTripTimeline.mockRejectedValue(
+        new NotFoundException(),
+      );
+
+      await expect(controller.getTimeline(999, mockUser)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
