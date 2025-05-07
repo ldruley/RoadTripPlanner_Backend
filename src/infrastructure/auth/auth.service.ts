@@ -5,6 +5,8 @@ import { UsersService } from '../../domain/users/users.service';
 import { LoginDto } from './dto/login.dto';
 import { CreateUserDto } from '../../domain/users/dto/create-user-dto';
 import { RegisterDto } from './dto/register.dto';
+import { User } from '../../domain/users/entities/user.entity';
+import { OAuthUser } from '../../common/types/oauth-user.interface';
 
 @Injectable()
 export class AuthService {
@@ -80,6 +82,26 @@ export class AuthService {
         email: user.email,
         fullname: user.fullname,
       },
+    };
+  }
+
+  async findOrCreateUserFromOAuth(
+    userDetails: OAuthUser,
+  ): Promise<{ access_token: string; user: User }> {
+    let user = await this.usersService.findByEmail(userDetails.email);
+
+    if (!user) {
+      user = await this.usersService.createOAuthUser({
+        username: userDetails.username,
+        email: userDetails.email,
+        fullname: userDetails.fullname,
+        picture: userDetails.picture,
+      });
+    }
+    const payload = { sub: user.user_id, email: user.email };
+    return {
+      access_token: this.jwtService.sign(payload),
+      user,
     };
   }
 }

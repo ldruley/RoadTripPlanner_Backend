@@ -44,4 +44,10 @@ export class User {
 
   @OneToMany(() => Vehicle, (vehicle) => vehicle.owner)
   owned_vehicles: Vehicle[];
+
+  @Column({ nullable: true })
+  authProvider?: 'google' | 'local';
+
+  @Column({ nullable: true })
+  picture?: string;
 }
