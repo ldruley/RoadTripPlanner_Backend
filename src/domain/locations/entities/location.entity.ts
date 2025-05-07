@@ -105,15 +105,8 @@ export class Location {
   @OneToMany(() => Leg, (leg) => leg.start_location)
   legs: Leg[];
 
-  /* @ManyToMany(() => LocationType, (category) => category.locations, {
-    cascade: true,
-  })
-  @JoinTable({
-    name: 'location_categories',
-    joinColumn: { name: 'location_id', referencedColumnName: 'location_id' },
-    inverseJoinColumn: { name: 'category_id', referencedColumnName: 'id' },
-  })
-  categories: LocationType[];*/
+  @Column({ nullable: true, type: 'varchar', length: 50 })
+  category: string;
 
   // Helper method to create a GeoJSON Point
   static createPoint(latitude: number, longitude: number): Point {
