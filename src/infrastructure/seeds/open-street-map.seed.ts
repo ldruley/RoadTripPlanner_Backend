@@ -1,7 +1,7 @@
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from '../src/app.module';
-import { LocationsService } from '../src/domain/locations/locations.service';
 import axios from 'axios';
+import { AppModule } from '../../app.module';
+import { LocationsService } from '../../domain/locations/locations.service';
 
 // Helper function to map OSM tags to simple category strings
 function mapOsmTagsToCategory(tags: any): string {

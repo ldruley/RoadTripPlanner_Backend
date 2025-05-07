@@ -1,16 +1,52 @@
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from '../src/app.module';
-import { LocationsService } from '../src/domain/locations/locations.service';
 import axios from 'axios';
+import { AppModule } from '../../app.module';
+import { LocationsService } from '../../domain/locations/locations.service';
 
-async function bootstrap() {
+// Define interfaces for NPS API response structure
+interface NPSPointOfInterest {
+  id: string;
+  title: string;
+  description?: string;
+  latitude: string;
+  longitude: string;
+  address?: string;
+  city?: string;
+  postalCode?: string;
+  category?: string;
+}
+
+interface NPSApiResponse {
+  data: {
+    data: NPSPointOfInterest[];
+  };
+}
+
+// Interface for the location data we'll be creating
+interface LocationCreateData {
+  name: string;
+  description: string;
+  address: string;
+  city: string;
+  state: string;
+  postal_code: string;
+  country: string;
+  latitude: number;
+  longitude: number;
+  external_id: string;
+  external_source: string;
+  category: string;
+  is_verified: boolean;
+}
+
+async function bootstrap(): Promise<void> {
   const app = await NestFactory.createApplicationContext(AppModule);
   const locationsService = app.get(LocationsService);
 
   console.log('🌱 Starting national park location seed process...');
 
   // Define California national parks
-  const parks = [
+  const parks: { name: string; id: string }[] = [
     { name: 'Yosemite', id: 'yose' },
     { name: 'Death Valley', id: 'deva' },
     { name: 'Joshua Tree', id: 'jotr' },
@@ -28,8 +64,9 @@ async function bootstrap() {
 
     try {
       // Fetch points of interest from NPS API
+      // NOTE: You should replace YOUR_NPS_API_KEY with a valid key
       const apiUrl = `https://developer.nps.gov/api/v1/points?parkCode=${park.id}&api_key=YOUR_NPS_API_KEY`;
-      const response = await axios.get(apiUrl);
+      const response = await axios.get<NPSApiResponse>(apiUrl);
 
       if (!response.data.data || response.data.data.length === 0) {
         console.log(`  ⚠️ No points of interest found in ${park.name}`);
@@ -50,7 +87,7 @@ async function bootstrap() {
           if (poi.category === 'Scenic') category = 'Scenic Point';
 
           // Create location in the database
-          await locationsService.createLocation({
+          const locationData: LocationCreateData = {
             name: poi.title,
             description:
               poi.description ||
@@ -66,21 +103,37 @@ async function bootstrap() {
             external_source: 'nps',
             category: category,
             is_verified: true,
-          });
+          };
+
+          await locationsService.createLocation(locationData);
 
           totalLocations++;
         } catch (error) {
-          console.error(
-            `  ❌ Failed to save location: ${poi.title}`,
-            error.message,
-          );
+          if (error instanceof Error) {
+            console.error(
+              `  ❌ Failed to save location: ${poi.title}`,
+              error.message,
+            );
+          } else {
+            console.error(
+              `  ❌ Failed to save location: ${poi.title}`,
+              String(error),
+            );
+          }
         }
       }
     } catch (error) {
-      console.error(
-        `  ❌ Error fetching data for ${park.name}:`,
-        error.message,
-      );
+      if (error instanceof Error) {
+        console.error(
+          `  ❌ Error fetching data for ${park.name}:`,
+          error.message,
+        );
+      } else {
+        console.error(
+          `  ❌ Error fetching data for ${park.name}:`,
+          String(error),
+        );
+      }
     }
   }
 
@@ -92,7 +145,11 @@ async function bootstrap() {
 
 bootstrap()
   .then(() => process.exit(0))
-  .catch((error) => {
-    console.error('Error during NPS location seeding:', error);
+  .catch((error: unknown) => {
+    if (error instanceof Error) {
+      console.error('Error during NPS location seeding:', error.message);
+    } else {
+      console.error('Error during NPS location seeding:', String(error));
+    }
     process.exit(1);
   });
