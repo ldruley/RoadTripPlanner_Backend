@@ -25,7 +25,6 @@ import {
 import { User } from './entities/user.entity';
 import { JwtAuthGuard } from '../../infrastructure/auth/guards/jwt-auth-guard';
 import { GetUser } from '../../infrastructure/auth/decorators/get-user-decorator';
-import { DebugJwtAuthGuard } from '../../infrastructure/auth/guards/debug-auth-guard';
 
 @ApiTags('Users')
 @Controller('users')
@@ -53,8 +52,6 @@ export class UsersController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'User not found' })
   findByAuthenticatedUser(@GetUser() user: User) {
-    console.log(user.user_id);
-    console.log('me');
     return this.usersService.findById(user.user_id);
   }
 
@@ -89,7 +86,6 @@ export class UsersController {
     @Query('username') username?: string,
     @Query('email') email?: string,
   ) {
-    console.log('get');
     if (username) {
       return this.usersService.findByUsername(username);
     }
@@ -105,7 +101,6 @@ export class UsersController {
   @ApiResponse({ status: 200, description: 'Returns the user' })
   @ApiResponse({ status: 404, description: 'User not found' })
   findOne(@Param('id', ParseIntPipe) id: number) {
-    console.log('getid');
     return this.usersService.findOne(id);
   }
 
