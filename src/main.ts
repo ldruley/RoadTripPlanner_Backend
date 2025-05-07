@@ -11,10 +11,12 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 declare const module: any;
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestFastifyApplication>(
-    AppModule,
-    new FastifyAdapter(),
-  );
+  // const app = await NestFactory.create<NestFastifyApplication>(
+  //   AppModule,
+  //   new FastifyAdapter(),
+  // );
+
+  const app = await NestFactory.create(AppModule);
 
   // Enable validation pipes globally
   app.useGlobalPipes(
