@@ -14,6 +14,7 @@ import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user-dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import {
+  ApiBearerAuth,
   ApiBody,
   ApiOperation,
   ApiParam,
@@ -41,6 +42,17 @@ export class UsersController {
   @ApiBody({ type: CreateUserDto })
   create(@Body() createUserDto: CreateUserDto) {
     return this.usersService.create(createUserDto);
+  }
+
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get authenticated user' })
+  @ApiResponse({ status: 200, description: 'Returns the authenticated user' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  findByAuthenticatedUser(@GetUser() user: User) {
+    return this.usersService.findById(user.user_id);
   }
 
   @Get()
@@ -90,15 +102,6 @@ export class UsersController {
   @ApiResponse({ status: 404, description: 'User not found' })
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.usersService.findOne(id);
-  }
-
-  @Get('me')
-  @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: 'Get authenticated user' })
-  @ApiResponse({ status: 200, description: 'Returns the authenticated user' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  findByAuthenticatedUser(@GetUser() user: User) {
-    return this.usersService.findOne(user.user_id);
   }
 
   @Patch(':id')

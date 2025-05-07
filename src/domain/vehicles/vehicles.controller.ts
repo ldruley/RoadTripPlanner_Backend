@@ -65,6 +65,16 @@ export class VehiclesController {
     });
   }
 
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get vehicles by authenticated user' })
+  @ApiResponse({ status: 200, description: 'Vehicles found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  findByAuthenticatedUser(@GetUser() user: User) {
+    return this.vehiclesService.findByOwner(user.user_id);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get a vehicle by ID' })
   @ApiResponse({
@@ -94,16 +104,6 @@ export class VehiclesController {
   @ApiResponse({ status: 404, description: 'Vehicles not found' })
   findByOwner(@Param('ownerId', ParseIntPipe) ownerId: number) {
     return this.vehiclesService.findByOwner(ownerId);
-  }
-
-  @Get('me')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Get vehicles by authenticated user' })
-  @ApiResponse({ status: 200, description: 'Vehicles found' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  findByAuthenticatedUser(@GetUser() user: User) {
-    return this.vehiclesService.findByOwner(user.user_id);
   }
 
   @Patch(':id')
