@@ -3,8 +3,78 @@ import axios from 'axios';
 import { AppModule } from '../../app.module';
 import { LocationsService } from '../../domain/locations/locations.service';
 
+// Define interfaces for OpenStreetMap API response structure
+interface OSMTags {
+  name?: string;
+  description?: string;
+  tourism?: string;
+  amenity?: string;
+  historic?: string;
+  natural?: string;
+  leisure?: string;
+  'addr:street'?: string;
+  'addr:city'?: string;
+  'addr:state'?: string;
+  'addr:postcode'?: string;
+  'addr:country'?: string;
+  address?: string;
+  city?: string;
+  postcode?: string;
+}
+
+interface OSMElementCenter {
+  lat: number;
+  lon: number;
+}
+
+interface OSMElement {
+  type: 'node' | 'way' | 'relation';
+  id: number;
+  lat?: number;
+  lon?: number;
+  center?: OSMElementCenter;
+  tags?: OSMTags;
+}
+
+interface OSMApiResponse {
+  version: number;
+  generator: string;
+  osm3s?: {
+    timestamp_osm_base: string;
+    copyright: string;
+  };
+  elements: OSMElement[];
+}
+
+// Interface for the location data we'll be creating
+interface LocationCreateData {
+  name: string;
+  description: string;
+  address: string;
+  city: string;
+  state: string;
+  postal_code: string;
+  country: string;
+  latitude: number;
+  longitude: number;
+  external_id: string;
+  external_source: string;
+  category: string;
+  is_verified: boolean;
+}
+
+interface Region {
+  name: string;
+  bbox: string;
+}
+
+interface Category {
+  type: string;
+  name: string;
+}
+
 // Helper function to map OSM tags to simple category strings
-function mapOsmTagsToCategory(tags: any): string {
+function mapOsmTagsToCategory(tags: OSMTags | undefined): string {
   if (!tags) return 'Other';
 
   // Tourism-related mappings
@@ -37,7 +107,23 @@ function mapOsmTagsToCategory(tags: any): string {
 }
 
 // Helper function to extract address components from OSM tags
-function extractAddressComponents(tags: any) {
+function extractAddressComponents(tags: OSMTags | undefined): {
+  address: string;
+  city: string;
+  state: string;
+  postal_code: string;
+  country: string;
+} {
+  if (!tags) {
+    return {
+      address: '',
+      city: '',
+      state: 'CA',
+      postal_code: '',
+      country: 'USA',
+    };
+  }
+
   return {
     address: tags['addr:street'] || tags.address || '',
     city: tags['addr:city'] || tags.city || '',
@@ -47,9 +133,9 @@ function extractAddressComponents(tags: any) {
   };
 }
 
-async function fetchOverpassData(query: string): Promise<any> {
+async function fetchOverpassData(query: string): Promise<OSMApiResponse> {
   const overpassEndpoint = 'https://overpass-api.de/api/interpreter';
-  const response = await axios.post(overpassEndpoint, query, {
+  const response = await axios.post<OSMApiResponse>(overpassEndpoint, query, {
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
   });
   return response.data;
@@ -62,7 +148,7 @@ async function bootstrap() {
   console.log('🌱 Starting location seed process from OpenStreetMap data...');
 
   // Define regions in California to focus on (West Coast)
-  const regions = [
+  const regions: Region[] = [
     { name: 'San Francisco Bay Area', bbox: '37.2,-122.6,38.0,-121.7' },
     { name: 'Los Angeles', bbox: '33.7,-118.7,34.3,-117.7' },
     { name: 'San Diego', bbox: '32.5,-117.3,33.1,-116.8' },
@@ -73,7 +159,7 @@ async function bootstrap() {
   ];
 
   // Categories to extract from OSM
-  const categories = [
+  const categories: Category[] = [
     { type: 'tourism=attraction', name: 'Tourist Attractions' },
     { type: 'tourism=hotel', name: 'Hotels' },
     { type: 'tourism=museum', name: 'Museums' },
@@ -82,7 +168,7 @@ async function bootstrap() {
     { type: 'amenity=cafe', name: 'Cafes' },
     { type: 'amenity=fuel', name: 'Gas Stations' },
     { type: 'natural=beach', name: 'Beaches' },
-    { type: 'historic=*', name: 'Historic Sites' },
+    { type: 'historic', name: 'Historic Sites' },
     { type: 'leisure=park', name: 'Parks' },
   ];
 
@@ -100,11 +186,21 @@ async function bootstrap() {
         // Build Overpass query
         const overpassQuery = `
           [out:json];
-          (
-            node[${category.type}](${region.bbox});
-            way[${category.type}](${region.bbox});
-            relation[${category.type}](${region.bbox});
-          );
+            (
+              ${
+                category.type === 'historic'
+                  ? `
+                  node[historic](${region.bbox});
+                  way[historic](${region.bbox});
+                  relation[historic](${region.bbox});
+                `
+                  : `
+                  node[${category.type}](${region.bbox});
+                  way[${category.type}](${region.bbox});
+                  relation[${category.type}](${region.bbox});
+                `
+              }
+            );
           out center;
         `;
 
@@ -123,7 +219,7 @@ async function bootstrap() {
           if (!element.tags || !element.tags.name) continue;
 
           // Get coordinates (handle different element types)
-          let lat, lon;
+          let lat: number | undefined, lon: number | undefined;
           if (element.type === 'node') {
             lat = element.lat;
             lon = element.lon;
@@ -134,6 +230,9 @@ async function bootstrap() {
             continue; // Skip if no coordinates
           }
 
+          // Skip if coordinates are missing
+          if (lat === undefined || lon === undefined) continue;
+
           // Extract address components
           const addressComponents = extractAddressComponents(element.tags);
 
@@ -142,7 +241,7 @@ async function bootstrap() {
 
           try {
             // Create location in the database
-            await locationsService.createLocation({
+            const locationData: LocationCreateData = {
               name: element.tags.name,
               description:
                 element.tags.description ||
@@ -158,27 +257,42 @@ async function bootstrap() {
               longitude: lon,
               external_id: `osm_${element.type}_${element.id}`,
               external_source: 'openstreetmap',
-              // Instead of using external_category_id, use the new category field
               category: mappedCategory,
               is_verified: true,
-            });
+            };
+
+            await locationsService.createLocation(locationData);
 
             totalLocations++;
           } catch (error) {
-            console.error(
-              `  ❌ Failed to save location: ${element.tags.name}`,
-              error.message,
-            );
+            if (error instanceof Error) {
+              console.error(
+                `  ❌ Failed to save location: ${element.tags.name}`,
+                error.message,
+              );
+            } else {
+              console.error(
+                `  ❌ Failed to save location: ${element.tags.name}`,
+                String(error),
+              );
+            }
           }
         }
 
         // Small delay to avoid overwhelming the database
         await new Promise((resolve) => setTimeout(resolve, 100));
       } catch (error) {
-        console.error(
-          `  ❌ Error fetching ${category.name} in ${region.name}:`,
-          error.message,
-        );
+        if (error instanceof Error) {
+          console.error(
+            `  ❌ Error fetching ${category.name} in ${region.name}:`,
+            error.message,
+          );
+        } else {
+          console.error(
+            `  ❌ Error fetching ${category.name} in ${region.name}:`,
+            String(error),
+          );
+        }
       }
     }
   }
@@ -189,7 +303,11 @@ async function bootstrap() {
 
 bootstrap()
   .then(() => process.exit(0))
-  .catch((error) => {
-    console.error('Error during location seeding:', error);
+  .catch((error: unknown) => {
+    if (error instanceof Error) {
+      console.error('Error during location seeding:', error.message);
+    } else {
+      console.error('Error during location seeding:', String(error));
+    }
     process.exit(1);
   });

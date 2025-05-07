@@ -15,6 +15,7 @@ import { Leg } from '../entities/leg.entity';
 import { TimelineEventModel } from '../../interfaces/itinerary';
 import { TripsService } from '../../trips/services/trips.service';
 import { CreateStopDto } from '../dto/create-stop.dto';
+import { GeoCoordinates } from '../../interfaces/itinerary/geo-coordinates.interface';
 import { CreateStintDto } from '../dto/create-stint-dto';
 import { CreateStintWithStopDto } from '../dto/create-stint-with-stop.dto';
 import { CreateStintWithOptionalStopDto } from '../dto/create-sprint-with-optional-stop.dto';

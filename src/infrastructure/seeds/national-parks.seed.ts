@@ -65,18 +65,20 @@ async function bootstrap(): Promise<void> {
     try {
       // Fetch points of interest from NPS API
       // NOTE: You should replace YOUR_NPS_API_KEY with a valid key
-      const apiUrl = `https://developer.nps.gov/api/v1/points?parkCode=${park.id}&api_key=YOUR_NPS_API_KEY`;
+      const apiKey = process.env.NPS_API_KEY;
+      const apiUrl = `https://developer.nps.gov/api/v1/points?parkCode=${park.id}&api_key=${apiKey}`;
       const response = await axios.get<NPSApiResponse>(apiUrl);
 
-      if (!response.data.data || response.data.data.length === 0) {
+      const pointsOfInterest = response.data.data.data;
+      if (!pointsOfInterest || pointsOfInterest.length === 0) {
         console.log(`  ⚠️ No points of interest found in ${park.name}`);
         continue;
       }
 
-      console.log(`  ✓ Found ${response.data.data.length} points of interest`);
+      console.log(`  ✓ Found ${pointsOfInterest.length} points of interest`);
 
       // Process each point of interest
-      for (const poi of response.data.data) {
+      for (const poi of pointsOfInterest) {
         if (!poi.latitude || !poi.longitude) continue;
 
         try {

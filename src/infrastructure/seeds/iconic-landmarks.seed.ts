@@ -182,6 +182,7 @@ async function bootstrap() {
     } catch (error) {
       console.error(
         `❌ Failed to add landmark: ${landmark.name}`,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         error.message,
       );
     }
