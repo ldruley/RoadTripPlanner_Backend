@@ -71,6 +71,17 @@ export class TripsController {
     });
   }
 
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get trips by authenticated user' })
+  @ApiResponse({ status: 200, description: 'Trips found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'No trips found' })
+  findByAuthenticatedUser(@GetUser() user: User) {
+    return this.tripsService.findByCreator(user.user_id);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get a trip by ID' })
   @ApiResponse({
@@ -222,17 +233,6 @@ export class TripsController {
   })
   getTimeline(@Param('id', ParseIntPipe) id: number, @GetUser() user: User) {
     return this.itineraryService.getTripTimeline(id, user.user_id);
-  }
-
-  @Get('me')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Get trips by authenticated user' })
-  @ApiResponse({ status: 200, description: 'Trips found' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 404, description: 'No trips found' })
-  findByAuthenticatedUser(@GetUser() user: User) {
-    return this.tripsService.findByCreator(user.user_id);
   }
 
   @Patch(':id')

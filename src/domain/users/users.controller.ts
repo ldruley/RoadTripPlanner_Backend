@@ -83,15 +83,6 @@ export class UsersController {
     return this.usersService.findAll();
   }
 
-  @Get(':id')
-  @ApiOperation({ summary: 'Get a user by ID' })
-  @ApiParam({ name: 'id', description: 'User ID' })
-  @ApiResponse({ status: 200, description: 'Returns the user' })
-  @ApiResponse({ status: 404, description: 'User not found' })
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.usersService.findOne(id);
-  }
-
   @Get('me')
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Get authenticated user' })
@@ -99,6 +90,15 @@ export class UsersController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   findByAuthenticatedUser(@GetUser() user: User) {
     return this.usersService.findOne(user.user_id);
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Get a user by ID' })
+  @ApiParam({ name: 'id', description: 'User ID' })
+  @ApiResponse({ status: 200, description: 'Returns the user' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.usersService.findOne(id);
   }
 
   @Patch(':id')
