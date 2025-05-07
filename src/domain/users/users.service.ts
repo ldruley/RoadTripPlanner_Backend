@@ -144,4 +144,11 @@ export class UsersService extends BaseService<User> {
     });
     return repo.save(user);
   }
+
+  async findById(
+    user_id: number,
+    manager?: EntityManager,
+  ): Promise<User | null> {
+    return this.findOneOrNull({ user_id }, manager);
+  }
 }
