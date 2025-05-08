@@ -24,6 +24,8 @@ import { StintVehicleController } from './controllers/stint-vehicle.controller';
 import { StintVehicleService } from './services/stint-vehicle.service';
 import { VehiclesModule } from '../vehicles/vehicles.module';
 import { UsersModule } from '../users/users.module';
+import { HereApiService } from '../../infrastructure/api/here-api/here-api.service';
+import { HereApiModule } from '../../infrastructure/api/here-api/here-api.module';
 
 @Module({
   imports: [
@@ -32,6 +34,7 @@ import { UsersModule } from '../users/users.module';
     LocationsModule,
     VehiclesModule,
     UsersModule,
+    HereApiModule,
   ],
   controllers: [StintsController, StopsController, StintVehicleController],
   providers: [
