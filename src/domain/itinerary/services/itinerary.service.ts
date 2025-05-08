@@ -916,7 +916,7 @@ export class ItineraryService {
         routePoints.push({
           lat: stop.latitude,
           lng: stop.longitude,
-          duration: stop.duration || 0, // Use the stop duration if available
+          duration: stop.duration || 0,
         });
       });
 
@@ -931,16 +931,10 @@ export class ItineraryService {
       // Use departure time from stint if available
       const departureTime = stint.start_time || new Date();
 
-      // Get the HERE API service
-      const hereApiService = new HereApiService(
-        this.configService,
-        this.stopsService,
-      );
-
       // Calculate the route with all waypoints and their durations
-      let routeData;
+      let routeData: { routes: string | any[] };
       try {
-        routeData = await hereApiService.calculateRouteWithWaypoints(
+        routeData = await this.hereApiService.calculateRouteWithWaypoints(
           routePoints,
           departureTime,
         );
@@ -1053,8 +1047,7 @@ export class ItineraryService {
 
   // Helper method to determine route type based on the route section
   private determineRouteType(section: any): RouteType {
-    // This is a simplified logic - you might want to expand based on the actual data from HERE API
-    // For example, you could check for highways, city streets, etc. in the route
+    // This is a simplified logic - to really build out this feature we'd need to do expand our design
 
     // Default to mixed
     let routeType = RouteType.MIXED;
@@ -1079,70 +1072,6 @@ export class ItineraryService {
 
     return routeType;
   }
-
-  /* /!**
-   * Generate a route for an entire stint using the HERE API
-   * @param stintId ID of the stint
-   * @returns Route data from the HERE API
-   *!/
-  async generateStintRoute(stintId: number): Promise<any> {
-    try {
-      // Get the stint with related data
-      const stint =
-        await this.stintsService.findByIdWithRelationsOrThrow(stintId);
-
-      if (!stint.start_location) {
-        throw new NotFoundException('Stint has no start location');
-      }
-
-      // Get all stops for this stint in sequence order
-      const stops = await this.stopsService.findAllByStint(stintId);
-      if (!stops || stops.length === 0) {
-        throw new NotFoundException('No stops found for this stint');
-      }
-
-      // Extract coordinates for the route
-      const startLat = stint.start_location.latitude;
-      const startLng = stint.start_location.longitude;
-
-      // The waypoints are all stops except the last one
-      const waypoints = stops.slice(0, -1).map((stop) => ({
-        lat: stop.latitude,
-        lng: stop.longitude,
-      }));
-
-      // The endpoint is the last stop
-      const lastStop = stops[stops.length - 1];
-      const endLat = lastStop.latitude;
-      const endLng = lastStop.longitude;
-
-      // Get the route from the HERE API
-      const routeData = await this.hereApiService.getRouteWithWaypoints(
-        startLat,
-        startLng,
-        waypoints,
-        endLat,
-        endLng,
-      );
-      console.log(JSON.stringify(routeData));
-      // Update the stint with the total distance and duration from the route
-      if (routeData.routes && routeData.routes.length > 0) {
-        const route = routeData.routes[0];
-        const totalDistance = route.sections.reduce(
-          (sum, section) => sum + section.summary.length / 1000, // Convert to kilometers
-          0,
-        );
-        const totalDuration = route.sections.reduce(
-          (sum, section) => sum + section.summary.duration / 60, // Convert to minutes
-          0,
-        );
-      }
-
-      return routeData;
-    } catch (error) {
-      throw new Error(`Failed to generate stint route: ${error.message}`);
-    }
-  }*/
 
   /**
    * Calculate and update total distance for a stint

@@ -242,7 +242,7 @@ export class HereApiService {
       // Build the full URL with all parameters
       const url = `${this.routingBaseUrl}/routes`;
 
-      const response = await axios.get(url, {
+      const response: any = await axios.get(url, {
         params: {
           apiKey: this.apiKey,
           transportMode: 'car',
@@ -315,32 +315,17 @@ export class HereApiService {
       const initialDepartureTimeStr = initialDepartureTime.toISOString();
 
       // Build the via parameters with departure times based on durations
-      const viaParams = [];
-      let currentTime = new Date(initialDepartureTime.getTime());
-
-      // For routes with waypoints, we need to calculate estimated arrival time at each waypoint
-      // and add the stop duration to determine departure time from that waypoint
+      const viaParams: string[] = [];
       for (let i = 1; i < points.length - 1; i++) {
         const point = points[i];
-
-        // Add the via point
         viaParams.push(
           `&via=${encodeURIComponent(`${point.lat},${point.lng}`)}`,
         );
 
-        // If this point has a duration, add a waypoint duration parameter
+        // If this point has a duration, add only the waypointDuration parameter
         if (point.duration && point.duration > 0) {
-          // HERE API uses seconds for duration
           const durationInSeconds = Math.round(point.duration * 60);
-          viaParams.push(
-            `&departureTime=${encodeURIComponent(currentTime.toISOString())}`,
-          );
           viaParams.push(`&waypointDuration=${durationInSeconds}`);
-
-          // Update current time for next point
-          currentTime = new Date(
-            currentTime.getTime() + point.duration * 60 * 1000,
-          );
         }
       }
 
