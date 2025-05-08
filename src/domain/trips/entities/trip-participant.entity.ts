@@ -18,7 +18,7 @@ export class TripParticipant {
   @PrimaryColumn()
   user_id: number;
 
-  @ManyToOne(() => Trip)
+  @ManyToOne(() => Trip, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'trip_id' })
   trip: Trip;
 
