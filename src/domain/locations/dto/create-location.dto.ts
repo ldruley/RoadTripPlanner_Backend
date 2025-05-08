@@ -7,6 +7,7 @@ import {
   Min,
   Max,
   IsArray,
+  IsBoolean,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { LocationCategoryCode } from '../../../common/enums';
@@ -123,4 +124,22 @@ export class CreateLocationDto {
   @IsOptional()
   @IsString()
   external_source?: string;
+
+  @ApiProperty({
+    example: 'restaurant',
+    description: 'Category of the location',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  category?: string;
+
+  @ApiProperty({
+    example: true,
+    description: 'Whether the location is verified',
+    required: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  is_verified?: boolean = false;
 }

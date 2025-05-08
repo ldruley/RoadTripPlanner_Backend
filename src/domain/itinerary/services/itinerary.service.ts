@@ -11,10 +11,11 @@ import { StopsService } from './stops.service';
 import { LegsService } from './legs.service';
 import { Stint } from '../entities/stint.entity';
 import { Stop } from '../entities/stop.entity';
-import { Leg } from '../entities/leg.entity';
+import { Leg, RouteType } from '../entities/leg.entity';
 import { TimelineEventModel } from '../../interfaces/itinerary';
 import { TripsService } from '../../trips/services/trips.service';
 import { CreateStopDto } from '../dto/create-stop.dto';
+import { GeoCoordinates } from '../../interfaces/itinerary/geo-coordinates.interface';
 import { CreateStintDto } from '../dto/create-stint-dto';
 import { CreateStintWithStopDto } from '../dto/create-stint-with-stop.dto';
 import { CreateStintWithOptionalStopDto } from '../dto/create-sprint-with-optional-stop.dto';
@@ -32,6 +33,8 @@ import { TripParticipant } from '../../trips/entities/trip-participant.entity';
 import { StintVehicle } from '../entities/stint-vehicle.entity';
 import { TripSupply } from '../../trips/entities/trip.supplies.entity';
 import { UpdateStopDto } from '../dto/update-stop.dto';
+import { HereApiService } from '../../../infrastructure/api/here-api/here-api.service';
+import { Location } from '../../locations/entities/location.entity';
 
 //TODO: Implement TimelineLeg and TimelineStop interfaces - or figure out a combiined approach to interweave them into the timeline
 //TODO: potentially a dto for timeline?
@@ -48,6 +51,7 @@ export class ItineraryService {
     private stopsService: StopsService,
     private legsService: LegsService,
     private locationsService: LocationsService,
+    private hereApiService: HereApiService,
     private dataSource: DataSource,
   ) {}
 
@@ -768,59 +772,179 @@ export class ItineraryService {
       return;
     }
 
-    const stint = await manager.getRepository(Stint).findOne({
-      where: { stint_id: stintId },
-      relations: ['start_location'],
-    });
+    try {
+      const stint = await manager.getRepository(Stint).findOne({
+        where: { stint_id: stintId },
+        relations: ['start_location'],
+      });
 
-    if (!stint) {
-      throw new NotFoundException(`Stint with ID ${stintId} not found`);
-    }
-    if (!stint.start_location_id) {
-      throw new NotFoundException(
-        `Stint with ID ${stintId} has no start location`,
+      if (!stint) {
+        throw new NotFoundException(`Stint with ID ${stintId} not found`);
+      }
+      if (!stint.start_location_id) {
+        throw new NotFoundException(
+          `Stint with ID ${stintId} has no start location`,
+        );
+      }
+
+      const startLocation = await this.locationsService.findById(
+        stint.start_location_id,
+        manager,
       );
-    }
-    const startLocation = await this.locationsService.findById(
-      stint.start_location_id,
-      manager,
-    );
 
-    if (!startLocation) {
-      throw new NotFoundException(
-        `Start location for stint ${stintId} not found`,
+      if (!startLocation) {
+        throw new NotFoundException(
+          `Start location for stint ${stintId} not found`,
+        );
+      }
+
+      const stops = await manager.getRepository(Stop).find({
+        where: { stint_id: stintId },
+        order: { sequence_number: 'ASC' },
+        relations: ['location'],
+      });
+
+      const legRepo = manager.getRepository(Leg);
+
+      // Delete all existing legs for this stint to rebuild them
+      const existingLegs = await legRepo.find({
+        where: { stint_id: stintId },
+      });
+      if (existingLegs.length > 0) {
+        await legRepo.remove(existingLegs);
+      }
+
+      // If there are no stops, don't create legs
+      if (stops.length === 0) {
+        return;
+      }
+
+      // Prepare points for the route calculation
+      // First point is the start location
+      const routePoints = [
+        {
+          lat: startLocation.latitude,
+          lng: startLocation.longitude,
+          duration: 0, // No duration for start location
+        },
+      ];
+
+      // Add all stops with their durations
+      stops.forEach((stop) => {
+        routePoints.push({
+          lat: stop.latitude,
+          lng: stop.longitude,
+          duration: stop.duration || 0,
+        });
+      });
+
+      // If we have less than 2 points, we can't calculate a route
+      if (routePoints.length < 2) {
+        console.warn(
+          `Not enough points to calculate route for stint ${stintId}`,
+        );
+        return;
+      }
+
+      // Use departure time from stint if available
+      const departureTime = stint.start_time || new Date();
+
+      // Calculate the route with all waypoints and their durations
+      let routeData: { routes: string | any[] };
+      try {
+        routeData = await this.hereApiService.calculateRouteWithWaypoints(
+          routePoints,
+          departureTime,
+        );
+      } catch (error) {
+        console.error(
+          `Failed to calculate route for stint ${stintId}: ${error.message}`,
+        );
+        // Fallback to creating legs with default values
+        this.createLegsWithDefaultValues(
+          stintId,
+          startLocation,
+          stops,
+          legRepo,
+        );
+        return;
+      }
+
+      // Process the route data
+      if (!routeData || !routeData.routes || routeData.routes.length === 0) {
+        console.warn(`No route data returned for stint ${stintId}`);
+        this.createLegsWithDefaultValues(
+          stintId,
+          startLocation,
+          stops,
+          legRepo,
+        );
+        return;
+      }
+
+      const route = routeData.routes[0];
+
+      // Process each section of the route
+      // The first section is from start location to first stop
+      const firstSection = route.sections[0];
+      const firstLeg = legRepo.create({
+        stint_id: stintId,
+        start_location_id: startLocation.location_id,
+        end_stop_id: stops[0].stop_id,
+        sequence_number: 0,
+        distance: Math.round((firstSection.summary.length / 1609.34) * 10) / 10, // Convert meters to miles, round to 1 decimal
+        estimated_travel_time: Math.round(firstSection.summary.duration / 60), // Convert seconds to minutes
+        route_type: this.determineRouteType(firstSection),
+        polyline: firstSection.polyline || null,
+      });
+      await legRepo.save(firstLeg);
+
+      // Process sections between stops
+      for (let i = 1; i < route.sections.length; i++) {
+        const section = route.sections[i];
+        const startStop = stops[i - 1];
+        const endStop = stops[i];
+
+        const leg = legRepo.create({
+          stint_id: stintId,
+          start_stop_id: startStop.stop_id,
+          end_stop_id: endStop.stop_id,
+          sequence_number: startStop.sequence_number,
+          distance: Math.round((section.summary.length / 1609.34) * 10) / 10, // Convert meters to miles, round to 1 decimal
+          estimated_travel_time: Math.round(section.summary.duration / 60), // Convert seconds to minutes
+          route_type: this.determineRouteType(section),
+          polyline: section.polyline || null,
+        });
+        await legRepo.save(leg);
+      }
+
+      // Update the stint timeline to reflect the new legs and travel times
+      await this.recalculateStintTimeline(stintId, manager);
+    } catch (error) {
+      console.error(
+        `Error updating legs for stint ${stintId}: ${error.message}`,
       );
+      throw error;
     }
+  }
 
-    const stops = await manager.getRepository(Stop).find({
-      where: { stint_id: stintId },
-      order: { sequence_number: 'ASC' },
-    });
-
-    const legRepo = manager.getRepository(Leg);
-
-    // Delete all existing legs for this stint to rebuild them
-    const existingLegs = await legRepo.find({
-      where: { stint_id: stintId },
-    });
-    if (existingLegs.length > 0) {
-      await legRepo.remove(existingLegs);
-    }
-    // If there are no stops, don't create legs
-    if (stops.length === 0) {
-      return;
-    }
-
-    // Create leg between start location and first stop.
-    const leg = legRepo.create({
+  // Helper method to create legs with default values when route calculation fails
+  private async createLegsWithDefaultValues(
+    stintId: number,
+    startLocation: Location,
+    stops: Stop[],
+    legRepo: Repository<Leg>,
+  ): Promise<void> {
+    // Create leg between start location and first stop
+    const firstLeg = legRepo.create({
       stint_id: stintId,
       start_location_id: startLocation.location_id,
       end_stop_id: stops[0].stop_id,
       sequence_number: 0,
-      distance: 10, // This should be calculated based on API calls
-      estimated_travel_time: 10, // This should be calculated based on API calls
+      distance: 10, // Default value
+      estimated_travel_time: 15, // Default value
     });
-    await legRepo.save(leg);
+    await legRepo.save(firstLeg);
 
     // Create legs between consecutive stops
     for (let i = 0; i < stops.length - 1; i++) {
@@ -832,11 +956,39 @@ export class ItineraryService {
         start_stop_id: currentStop.stop_id,
         end_stop_id: nextStop.stop_id,
         sequence_number: currentStop.sequence_number,
-        distance: 10, // This should be calculated based on API calls
-        estimated_travel_time: 10, // This should be calculated based on API calls
+        distance: 10, // Default value
+        estimated_travel_time: 15, // Default value
       });
       await legRepo.save(leg);
     }
+  }
+
+  // Helper method to determine route type based on the route section
+  private determineRouteType(section: any): RouteType {
+    // This is a simplified logic - to really build out this feature we'd need to do expand our design
+
+    // Default to mixed
+    let routeType = RouteType.MIXED;
+
+    // Check if section has transport data
+    if (section.transport && section.transport.mode) {
+      if (section.transport.mode === 'car') {
+        // Try to determine based on speed
+        const averageSpeed = section.summary.length / section.summary.duration; // meters per second
+
+        if (averageSpeed > 20) {
+          // ~45 mph
+          routeType = RouteType.HIGHWAY;
+        } else if (averageSpeed > 10) {
+          // ~22 mph
+          routeType = RouteType.BACKROAD;
+        } else {
+          routeType = RouteType.CITY;
+        }
+      }
+    }
+
+    return routeType;
   }
 
   /**
